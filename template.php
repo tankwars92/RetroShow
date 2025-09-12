@@ -305,63 +305,11 @@ function showFooter() {
 ?>
 </div>
 		</td></tr></table>
-<center>
-<div style="width:790px; margin:0;">
-  <div id="footerDiv">
-    <div id="footerContent">
-      <div id="footerLinks">
-        <table border="0" cellpadding="0" cellspacing="0" width="90%" align="center"><tbody><tr valign="top">
-          <td>
-            <div>
-              <div class="footLabel">Ваш&nbsp;&nbsp;Аккаунт</div>
-              <div class="footValues">
-                <div class="column">
-                  <a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos'; } else { echo 'login.php'; } ?>">Мои видео</a><br>
-                  <a href="favourites.php">Избранное</a><br>
-                  <a href="account.php">Настройки</a>
-                </div>
-              </div>
-            </div>
-          </td>
-		  <td style="padding-left: 90px;"></td>
-          <td bgcolor="#CCCCCC" width="1"></td>
-          <td style="padding-left:60px; padding-right:60px;">
-            <div>
-              <div class="footLabel">RetroShow</div>
-              <div class="footValues">
-                <div class="column">
-                  <a href="index.php">Главная</a><br>
-                  <a href="upload.php">Загрузить видео</a><br>
-                  <a href="channel.php">Все видео</a>
-                </div>
-              </div>
-            </div>
-          </td>
-          <td bgcolor="#CCCCCC" width="1"></td>
-          <td style="padding-left:70px; padding-right:61px;">
-            <div>
-              <div class="footLabel">Помощь</div>
-              <div class="footValues">
-                <div class="column">
-                  <a href="#">Помощь</a><br>
-                  <a href="#">Правила</a><br>
-                  <a href="about.php">О проекте</a><br>
-                  <a href="#">Контакты</a><br>
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr></tbody></table>
-      </div> 
-    </div>
-    <div id="footerCopyright">
-	  <br>
-      Copyright © 2025 RetroShow, Inc.
-    </div>
-  </div>
-</div>
-
-</center>
-
-<div style="all: unset;"><div style="all: unset;"></div></div></body></html>
+		<table cellpadding="10" cellspacing="0" border="0" align="center">
+	<tbody><tr>
+		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a></span> 
+		<br><br>Copyright © 2025 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
+	</tr>
+</tbody></table>
+</body></html>
 <?php } ?> 
