@@ -49,10 +49,7 @@ RetroShow — это способ поделиться своими видео �
 <li><strong><a href="channel.php?username=dsalin">dsalin</a></strong> — Первый пользователь сайта, который занимался тестированием.</li>
 </ul>
 
-<div class="spacer">&nbsp;</div>
-									
 				</td>
-				<td><img src="img/pixel.gif" width="5" height="1"></td>
 			</tr>
 			<tr>
 				<td><img src="img/box_login_bl.gif" width="5" height="5"></td>
