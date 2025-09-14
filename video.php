@@ -960,8 +960,8 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
           <span id="vidTagsBegin">
             <?php 
             $tags = explode(' ', trim($video['tags']));
-            $visible_tags = array_slice($tags, 0, 4);
-            $hidden_tags = array_slice($tags, 4);
+            $visible_tags = array_slice($tags, 0, 5);
+            $hidden_tags = array_slice($tags, 5);
             
             foreach ($visible_tags as $tag): 
               $tag = trim($tag);
@@ -981,7 +981,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
               ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;<?php 
                 endif;
               endforeach; 
-              ?></span>&nbsp;<span id="vidTagsMore" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain'); hideInline('vidTagsMore'); showInline('vidTagsLess'); return false;">more</a>)</span><span id="vidTagsLess" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain'); hideInline('vidTagsLess'); showInline('vidTagsMore'); return false;">less</a>)</span>
+              ?></span>&nbsp;<span id="vidTagsMore" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain'); hideInline('vidTagsMore'); showInline('vidTagsLess'); return false;">ещё</a>)</span><span id="vidTagsLess" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain'); hideInline('vidTagsLess'); showInline('vidTagsMore'); return false;">меньше</a>)</span>
             <?php endif; ?>
           </span>
         </td>

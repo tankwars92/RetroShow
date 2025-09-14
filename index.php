@@ -322,17 +322,33 @@ showHeader("Главная");
                         <div class="vfacets">
                             <div class="vtagLabel">Теги:</div>
                             <div class="vtagValue">
-                                <?php 
-                                $tags = explode(' ', trim($video['tags']));
-                                $tag_links = [];
-                                foreach ($tags as $tag): 
-                                    $tag = trim($tag);
-                                    if (!empty($tag)):
-                                        $tag_links[] = '<a href="results.php?search_type=tag&search_query='.urlencode($tag).'" class="dg">'.htmlspecialchars($tag).'</a>';
-                                    endif;
-                                endforeach;
-                                echo implode(' &nbsp; ', $tag_links);
-                                ?>
+                                <span id="vidTagsBegin-<?=$video['id']?>">
+                                    <?php 
+                                    $tags = explode(' ', trim($video['tags']));
+                                    $visible_tags = array_slice($tags, 0, 5);
+                                    $hidden_tags = array_slice($tags, 5);
+                                    
+                                    foreach ($visible_tags as $tag): 
+                                      $tag = trim($tag);
+                                      if (!empty($tag)):
+                                    ?>
+                                      <a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;
+                                    <?php 
+                                      endif;
+                                    endforeach; 
+                                    
+                                    if (!empty($hidden_tags)):
+                                    ?>
+                                    <span id="vidTagsRemain-<?=$video['id']?>" style="display: none;">
+                                      <?php foreach ($hidden_tags as $tag): 
+                                        $tag = trim($tag);
+                                        if (!empty($tag)):
+                                      ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;<?php 
+                                        endif;
+                                      endforeach; 
+                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;">меньше</a>)</span>
+                                    <?php endif; ?>
+                                </span>
                             </div>
                         </div>
                         <?php endif; ?>
