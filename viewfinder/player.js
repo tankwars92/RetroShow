@@ -80,8 +80,13 @@ function togglePlay() {
 
 function toggleMute() {
     video.muted = !video.muted;
-    muteIcon.classList.toggle("hidden");
-    unmuteIcon.classList.toggle("hidden");
+    if (video.muted) {
+        muteIcon.style.display = "block";
+        unmuteIcon.style.display = "none";
+    } else {
+        muteIcon.style.display = "none";
+        unmuteIcon.style.display = "block";
+    }
 }
 
 function initializeVideo() {
