@@ -665,7 +665,7 @@ toggleVisibility('myAccountDropdown',0);
             <div class="playerScreen">
                 <div class="playbackArea">
                     <div class="videoContainer">
-                        <video class="videoObject" id="video">
+                        <video class="videoObject" id="video" autoplay muted>
                             <source src="<?=htmlspecialchars($video['file'])?>">
                          </video>
                     </div>
@@ -689,8 +689,8 @@ toggleVisibility('myAccountDropdown',0);
                     </div>
                     <div class="rBtnContainer">
                         <div class="button" id="muteButton">
-                            <img src="viewfinder/resource/mute.png" id="muteIcon">
-                            <img src="viewfinder/resource/unmute.png" class="hidden" id="unmuteIcon">
+                            <img src="viewfinder/resource/unmute.png" id="muteIcon">
+                            <img src="viewfinder/resource/mute.png" class="hidden" id="unmuteIcon">
                         </div>
                     </div>
                 </div>
