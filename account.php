@@ -33,6 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $last_n = trim($_POST['last_n'] ?? '');
     $relationship = $_POST['relationship'] ?? '';
     $website = trim($_POST['website'] ?? '');
+    
+    if (!empty($website) && !preg_match('/^https?:\/\//', $website)) {
+        $website = 'http://' . $website;
+    }
     $profile_icon = $_POST['profile_icon'] ?? '0';
     $profile_comm = $_POST['profile_comm'] ?? '1';
     $profile_bull = $_POST['profile_bull'] ?? '1';
