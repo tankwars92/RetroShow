@@ -434,7 +434,7 @@ function render_comments($tree, $level = 0) {
         $ml = ($level > 0 ? 'margin-left:'.(min($level, $max_level)*30).'px;' : '');
         echo '<div>';
         echo '<div style="background:#EEEEEE; padding:2px 6px;'.$ml.'">';
-        echo '<a href="#" style="color:#0033cc;text-decoration:underline;font-size:13px;"><b>'.htmlspecialchars($c['user']).'</b></a> ';
+        echo '<a href="channel.php?user='.urlencode($c['user']).'" style="color:#0033cc;text-decoration:underline;font-size:13px;"><b>'.htmlspecialchars($c['user']).'</b></a> ';
         echo '<span style="color:#888;font-size:11px;">('.time_ago($c['time']).')</span>';
         echo '</div>';
         echo '<div style="font-size:13px;color:#222;padding:4px 6px 0 6px;'.$ml.' word-break:break-all;">'.nl2br(htmlspecialchars($c['text'])).'</div>';
