@@ -61,12 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <tr><td>
 <div class="invite-title">Пригласить друзей</div>
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table>
+<?php if ($sent): ?>
+  <div class="confirmBox">Приглашения отправлены! (<?= $sent_count ?>)</div>
+<?php endif; ?>
 <div style="font-size:12px; color:#444; margin-bottom:8px;">RetroShow становится интереснее с друзьями!<br>
 Хотите поделиться семейными или праздничными видео? Пригласите родственников присоединиться!</div>
-
-<?php if ($sent): ?>
-  <div style="background:#E6FFE6; border:1px solid #99FF99; color:#006600; padding:10px; margin-bottom:10px; font-size:13px;">Приглашения отправлены! (<?= $sent_count ?>)</div>
-<?php endif; ?>
 
 <form method="post" action="my_friends_invite.php">
 <div class="invite-section">
