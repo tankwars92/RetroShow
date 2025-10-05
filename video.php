@@ -1030,7 +1030,6 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         </form>
       </div>
     </td>
-    <td align="center" style="width:1px; padding:0;" valign="top"></td>
   </tr>
 </table>
 <script type="text/javascript">
