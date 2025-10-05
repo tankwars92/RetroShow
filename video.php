@@ -963,7 +963,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         } else {
           echo '<div><a href="login.php" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
         }
-        echo '<div id="subscribeCount" class="smallText">to '.htmlspecialchars($video['user']).'</div>';
+        echo '<div id="subscribeCount" class="smallText">на '.htmlspecialchars($video['user']).'</div>';
         echo '</div>';
       }
       ?>
