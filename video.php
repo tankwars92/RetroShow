@@ -495,7 +495,7 @@ $current_rating = get_user_current_rating($db, $id, $user, $ip);
 <script type="text/javascript" src="img_/AJAX_ets1151038149.js"></script>
 <script type="text/javascript" src="img_/components_ets1149224151.js"></script>
 <link href="img/styles.css" rel="stylesheet" type="text/css">
-<link rel="alternate" type="application/rss+xml" title="YouTube " "="" recently="" added="" videos="" [rss]"="" href="rss/global/recently_added.rss">
+<link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss/global/recently_added.rss">
 <style type="text/css">
 .formTitle { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #333; }
 .error { background-color: #FFE6E6; border: 1px solid #FF9999; padding: 10px; margin: 10px 0px; color: #CC0000; font-size: 12px; }
@@ -506,7 +506,6 @@ $current_rating = get_user_current_rating($db, $id, $user, $ip);
 .pageIntro { font-size: 14px; margin-bottom: 15px; color: #333; line-height: 1.4; }
 .pageText { font-size: 12px; margin-bottom: 15px; color: #333; line-height: 1.4; }
 .codeArea { background-color: #F5F5F5; border: 1px solid #CCCCCC; padding: 10px; margin: 10px 0px; font-family: monospace; font-size: 11px; color: #333; }
-/* Стили для тегов */
 #vidFacetsDiv { margin-bottom: 3px; }
 #vidFacetsTable { width: 100%; }
 #vidFacetsTable .label { font-weight: bold; color: #333; font-size: 11px; text-align: left; padding-left: 8px; padding-right: 2px; width: 35px; }
@@ -939,11 +938,42 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
   <tr valign="top">
     <td style="width:100%; font-size:11px; color:#333;">
       <div style="padding-left: 8px;">
+      <div id="uploaderInfo" style="overflow:hidden; zoom:1;">
+      <?php
+      if ($video['user']) {
+        if (!isset($is_friend)) {
+          $friends_dir = __DIR__ . '/friends';
+          if (!is_dir($friends_dir)) mkdir($friends_dir);
+          $is_friend = false;
+          if ($user) {
+            $friends_file = $friends_dir . '/' . urlencode($user) . '.txt';
+            $friends_list = file_exists($friends_file) ? file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
+            $is_friend = in_array($video['user'], $friends_list);
+          }
+        }
+        echo '<div id="subscribeDiv" style="float:right; text-align:center; margin:2px 8px 4px 8px;">';
+        if ($user && $user === $video['user']) {
+          echo '<div><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" border="0" height="16" width="99"></div>';
+        } else if ($user) {
+          if ($is_friend) {
+            echo '<div><a href="video.php?id='.intval($id).'&friend_del='.urlencode($video['user']).'" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
+          } else {
+            echo '<div><a href="video.php?id='.intval($id).'&friend_add='.urlencode($video['user']).'" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
+          }
+        } else {
+          echo '<div><a href="login.php" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
+        }
+        echo '<div id="subscribeCount" class="smallText">to '.htmlspecialchars($video['user']).'</div>';
+        echo '</div>';
+      }
+      ?>
+      <div id="userInfoDiv">
       <span style="color:#333333;"><b>Загружено</b></span>&nbsp;&nbsp;<b><?=rus_date('j F Y', strtotime($video['time']))?></b><br>
       <span style="color:#333333;"><b>От</b></span>&nbsp;&nbsp;<b><a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc;"><?=htmlspecialchars($video['user'])?></a></b><br>
       </div>
+      </div>
+      </div>
       <?php if (trim($desc) !== ''): ?>
-        <br>
         <div style="padding-left: 8px;">
         <span id="desc-short" style="font-size:13px;"><?=htmlspecialchars($desc_short)?><?php if (mb_strlen($desc) > 50): ?> <a href="#" id="desc-more" style="color:#0033cc;">(ещё)</a><?php endif; ?></span>
         <span id="desc-full" style="display:none; font-size:13px;"><?=nl2br(htmlspecialchars($desc))?> <a href="#" id="desc-less" style="color:#0033cc;">(меньше)</a></span>
@@ -1000,46 +1030,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         </form>
       </div>
     </td>
-    <td align="center" style="width:30%; display: none;">
-      <?php
-      $friends_dir = __DIR__ . '/friends';
-      if (!is_dir($friends_dir)) mkdir($friends_dir);
-      $is_friend = false;
-      if ($user && $video['user'] && $user !== $video['user']) {
-        $friends_file = $friends_dir . '/' . urlencode($user) . '.txt';
-        $friends_list = file_exists($friends_file) ? file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
-        $is_friend = in_array($video['user'], $friends_list);
-        if (isset($_GET['friend_add']) && $_GET['friend_add'] === $video['user']) {
-          if (!$is_friend) {
-            $friends_list[] = $video['user'];
-            file_put_contents($friends_file, implode("\n", $friends_list));
-          }
-          header("Location: video.php?id=$id");
-          exit;
-        }
-        if (isset($_GET['friend_del']) && $_GET['friend_del'] === $video['user']) {
-          if ($is_friend) {
-            $friends_list = array_diff($friends_list, [$video['user']]);
-            file_put_contents($friends_file, implode("\n", $friends_list));
-          }
-          header("Location: video.php?id=$id");
-          exit;
-        }
-        if ($is_friend) {
-          echo '<a href="video.php?id='.intval($id).'&friend_del='.urlencode($video['user']).'" style="text-decoration:none;">';
-          echo '<img src="img/btn_subscribe_sm_yellow_99x16.gif" width="99" height="16" border="0" alt="SUBSCRIBE">';
-          echo '</a><br><span style="font-size:11px; color:#333;">на '.htmlspecialchars($video['user']).'</span>';
-        } else {
-          echo '<a href="video.php?id='.intval($id).'&friend_add='.urlencode($video['user']).'" style="text-decoration:none;">';
-          echo '<img src="img/btn_subscribe_sm_yellow_99x16.gif" width="99" height="16" border="0"alt="SUBSCRIBE">';
-          echo '</a><br><span style="font-size:11px; color:#333;">на '.htmlspecialchars($video['user']).'</span>';
-        }
-      } else {
-        echo '<img src="img/btn_subscribe_sm_yellow_99x16.gif" width="99" height="16" border="0" alt="SUBSCRIBE"><br>';
-        echo '<span style="font-size:11px; color:#333;">на '.htmlspecialchars($video['user']).'</span>';
-      }
-      ?>
-    </td>
+    <td align="center" style="width:1px; padding:0;" valign="top"></td>
   </tr>
 </table>
 <script type="text/javascript">
