@@ -1011,7 +1011,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
     <td width="110" style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;">От:</td>
     <td style="padding:8px;">
       <table cellpadding="0" cellspacing="0" border="0"><tr>
-        <td><img src="<?= get_profile_icon($_SESSION['user'], '0') ?>" width="140" height="108" style="border:1px solid #bbb; background:#eee;">
+        <td><img src="<?= get_profile_icon($_SESSION['user'], get_user_profile_icon_setting($_SESSION['user'])) ?>" width="140" height="108" style="border:1px solid #bbb; background:#eee;">
 		<br>
 		<a href="channel.php?user=<?=htmlspecialchars($_SESSION['user'])?>" style="font-weight:bold; color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($_SESSION['user'])?></a>
 		<br>
@@ -1107,7 +1107,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
       <tr>
         <td width="110" style="background:#f8f8f8; text-align:center; padding:8px; border-right:1px solid #bbb;">
           <a href="channel.php?user=<?=htmlspecialchars($c['user'])?>" style="font-weight:bold; color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($c['user'])?></a><br>
-          <?php $pi = get_user_profile_icon_setting($c['user']); $avatar = ($pi==='1') ? 'img_/no_videos_140.jpg' : get_profile_icon($c['user'], '0'); ?>
+          <?php $pi = get_user_profile_icon_setting($c['user']); $avatar = get_profile_icon($c['user'], $pi); ?>
           <br><img src="<?= $avatar ?>" width="64" height="50" style="border:1px solid #bbb; background:#eee;">
         </td>
         <td style="padding:8px; vertical-align:top;">
