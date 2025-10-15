@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
               if (!$has_video) {
                   $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
                            " -f lavfi -i color=c=black:s=640x360 -shortest " .
-                           " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset slow " .
+                           " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset slow " .
                            " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
                            " -movflags +faststart " .
                            " -brand mp42 " .
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                            " 2>" . escapeshellarg($log_file);
               } else {
                   $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                           " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset slow " .
+                           " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset slow " .
                            " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
                            " -vf \"" . $vf_filter . "\" " .
                            " -movflags +faststart " .
@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
               }
               
               $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                       " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset slow " .
+                       " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset slow " .
                        " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
                        " -vf \"" . $vf_filter . "\" " .
                        " -movflags +faststart " .
