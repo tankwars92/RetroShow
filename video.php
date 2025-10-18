@@ -782,7 +782,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
 <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>
 <br>
 <?php endif; ?>
-<a href="video.php?id=<?=intval($id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a><br>
+<a href="video.php?id=<?=intval($id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
 			</div>
 		</div>
 		<div id="statsDiv" style="float:left; width:28%; padding:4px; font-size:12px; color:#333;">
@@ -817,7 +817,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
             <?php else: ?>
               <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc;">Войти, чтобы добавить в избранное</a><br>
             <?php endif; ?>
-              <a href="video.php?id=<?=intval($id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a>
+              <a href="video.php?id=<?=intval($id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
             </div>
           </td>
           <td width="33%" style="font-size:12px; color:#333;">
