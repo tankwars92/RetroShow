@@ -196,7 +196,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
-                      <td width="120"><a href="video.php?id=<?=intval($video['id'])?>"><img src="uploads/<?=intval($video['id'])?>_preview.jpg" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
+                      <td width="120"><a href="video.php?id=<?=intval($video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
                         <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=intval($video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
                         <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'])?></div>
