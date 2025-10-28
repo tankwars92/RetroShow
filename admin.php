@@ -3,6 +3,7 @@ include("init.php");
 include("template.php");
 
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
+$admin_username = "BitByByByte"; // !!! ЗАМЕНИТЕ НА СВОЁ ИМЯ ПОЛЬЗОВАТЕЛЯ !!!
 
 if (!$user) {
     header('Location: login.php');
