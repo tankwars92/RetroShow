@@ -10,7 +10,7 @@ if (!$user) {
     exit;
 }
 
-if ($user !== 'BitByByte') {
+if ($user !== $admin_username) {
     header('Location: index.php');
     exit;
 }
