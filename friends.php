@@ -47,7 +47,7 @@ if ($view_user) {
 showHeader('Друзья');
 $user_disp = htmlspecialchars($view_user);
 $is_own = isset($_SESSION['user']) && $_SESSION['user'] === $view_user;
-$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
 $stmt_total->execute([$view_user]);
 $total_videos = $stmt_total->fetchColumn();
 $comments_count = 0;

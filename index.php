@@ -530,7 +530,7 @@ showHeader("Главная");
         $online_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $count_user_videos = function($u) use ($db) {
-            $q = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+            $q = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
             $q->execute([$u]);
             return (int)$q->fetchColumn();
         };

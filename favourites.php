@@ -134,7 +134,7 @@ showHeader('Избранное');
 </style>
 
 <?php
-$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
 $stmt_total->execute([$user]);
 $total = $stmt_total->fetchColumn();
 

@@ -141,7 +141,7 @@ if (file_exists($friends_file)) {
     }
 }
 
-$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
 $stmt_total->execute([$user]);
 $total = $stmt_total->fetchColumn();
 
@@ -212,7 +212,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 <?php
 
 if (!isset($total)) {
-    $stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+    $stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
     $stmt_total->execute([$user]);
     $total = $stmt_total->fetchColumn();
 }
@@ -1070,7 +1070,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 	$profile_comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
 	$comments_count = (file_exists($profile_comments_file)) ? count(file($profile_comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
 	
-	$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+	$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
 	$stmt_total->execute([$user]);
 	$total = $stmt_total->fetchColumn();
 
