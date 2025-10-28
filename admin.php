@@ -17,7 +17,6 @@ if ($user !== 'BitByByte') {
 $message = '';
 $error = '';
 
-// Загружаем текущий текст новости
 $news_file = __DIR__ . '/news.txt';
 $current_news = '';
 if (file_exists($news_file)) {
@@ -26,15 +25,11 @@ if (file_exists($news_file)) {
 
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'news_submit') {
     $news_text = trim($_POST['field_news_text'] ?? '');
-    
-    if (empty($news_text)) {
-        $error = 'Пожалуйста, введите текст новости.';
-    } elseif (mb_strlen($news_text) > 500) {
+    if (mb_strlen($news_text) > 500) {
         $error = 'Текст новости слишком длинный (макс. 500 символов).';
     } else {
-        // Сохраняем новость в файл
         file_put_contents($news_file, $news_text, LOCK_EX);
-        $current_news = $news_text; // Обновляем текущий текст для отображения
+        $current_news = $news_text;
         $message = 'Новость успешно добавлена!';
     }
 }
