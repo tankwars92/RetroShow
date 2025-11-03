@@ -149,6 +149,10 @@ $featured_videos = array_slice($featured_videos, 0, 5);
 showHeader("Главная");
 ?>
 
+<?php if (isset($_GET['error']) && $_GET['error'] === 'video_not_found'): ?>
+  <div class="errorBox">Видео не найдено.</div>
+<?php endif; ?>
+
 <style>
 .vfacets { margin: 5px 0; }
 .vtagLabel { font-size: 11px; color: #888; display: inline; }

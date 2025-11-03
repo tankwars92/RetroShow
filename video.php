@@ -60,7 +60,7 @@ function rus_date($format, $time) {
 if (session_status() == PHP_SESSION_NONE) session_start();
 
 if (!isset($_GET['id'])) {
-    header('Location: index.php');
+    header('Location: index.php?error=video_not_found');
     exit;
 }
 
@@ -68,7 +68,10 @@ $id = intval($_GET['id']);
 $stmt = $db->prepare("SELECT * FROM videos WHERE id = ?");
 $stmt->execute([$id]);
 $video = $stmt->fetch();
-if (!$video) { die("Видео не найдено"); }
+if (!$video) {
+    header('Location: index.php?error=video_not_found');
+    exit;
+}
 
 @include_once __DIR__ . '/duration_helper.php';
 $flash_len = 0;
