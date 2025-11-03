@@ -42,7 +42,7 @@ showHeader("Ежемесячный конкурс");
 				<td width="200" style="padding: 5px; text-align: center;">
 				<div style="margin-bottom: 10px; font-weight: bold; font-size: 13px;">Расписание конкурсов видео</div>
 				
-				Сентябрь 2005: <a href="results.php?search_query=backtoschool">backtoschool</a>
+				Сентябрь 2005: <a href="results.php?search_query=ИМЯ">ИМЯ</a>
 				<br>Октябрь 2005: Будет объявлено
 				<br>Ноябрь 2005: Будет объявлено
 				<br>Декабрь 2005: Будет объявлено

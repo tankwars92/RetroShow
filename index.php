@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 include("init.php"); 
 include("template.php");
 
-$contest = false;
+$contest = true;
 
 if (isset($_SESSION['user'])) {
     $stmt = $db->prepare("SELECT SUM(views) FROM videos WHERE user = ?");
@@ -413,9 +413,9 @@ showHeader("Главная");
 				<td width="170" style="padding: 5px; text-align: center;">
 				<div style="font-weight: bold; font-size: 13px;">Сентябрьский конкурс!</div>
 				
-				<a href="https://web.archive.org/web/20050815011340/http://www.youtube.com/watch.php?v=PaluLFfv0EI&amp;search=wherethehellismatt"><img src="https://web.archive.org/web/20050815011340im_/http://www.youtube.com/get_still.php?video_id=PaluLFfv0EI" width="80" height="60" style="border: 5px solid #FFFFFF; margin-top: 10px;"></a>
+				<a href="#"><img src="" width="80" height="60" style="border: 5px solid #FFFFFF; margin-top: 10px;"></a>
 				
-				<div style="font-size: 16px; font-weight: bold; padding-top: 5px;"><a href="monthly_contest.php">Снова в школу!</a></div>
+				<div style="font-size: 16px; font-weight: bold; padding-top: 5px;"><a href="monthly_contest.php">ИМЯ!</a></div>
 				<div style="font-size: 11px; padding: 10px 0px 5px 0px;">RetroShow представляет наш первый ежемесячный конкурс видео!</div>
 				
 								
