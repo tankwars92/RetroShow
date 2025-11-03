@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 include("init.php"); 
 include("template.php");
 
-$contest = true;
+$contest = false;
 
 if (isset($_SESSION['user'])) {
     $stmt = $db->prepare("SELECT SUM(views) FROM videos WHERE user = ?");
