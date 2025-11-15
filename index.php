@@ -529,6 +529,48 @@ showHeader("Главная");
         </div>
         
         <?php
+        $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
+        $all_tags = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $tags = explode(' ', trim($row['tags']));
+            foreach ($tags as $tag) {
+                $tag = trim($tag);
+                if (!empty($tag)) {
+                    if (!isset($all_tags[$tag])) {
+                        $all_tags[$tag] = 0;
+                    }
+                    $all_tags[$tag]++;
+                }
+            }
+        }
+        arsort($all_tags);
+        $top_tags = array_slice($all_tags, 0, 50, true);
+        $min_count = !empty($top_tags) ? min($top_tags) : 1;
+        $max_count = !empty($top_tags) ? max($top_tags) : 1;
+        $base_font_size = 12;
+        $max_font_size = 17;
+        ?>
+                <div style="margin: 10px 0px 5px 0px; font-size: 12px; font-weight: bold; color: #333;">Недавние теги:</div>
+                <div style="font-size: 13px; color: #333333;">
+                  <?php if (!empty($top_tags)): ?>
+                    <?php foreach ($top_tags as $tag => $count): ?>
+                      <?php
+                      if ($max_count > $min_count) {
+                          $ratio = ($count - $min_count) / ($max_count - $min_count);
+                          $font_size = round($base_font_size + ($max_font_size - $base_font_size) * $ratio);
+                      } else {
+                          $font_size = $base_font_size;
+                      }
+                      ?>
+                      <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> :
+                    <?php endforeach; ?>
+                  <?php else: ?>
+                    <div style="font-size: 12px; color: #888;">Теги пока не добавлены</div>
+                  <?php endif; ?>
+                </div>
+        </div>
+        
+        <?php
         $stmt = $db->prepare("SELECT login, COALESCE(last_login, 0) as last_login FROM users ORDER BY last_login DESC, id DESC LIMIT 8");
         $stmt->execute();
         $online_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
