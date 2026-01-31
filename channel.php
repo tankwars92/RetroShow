@@ -965,10 +965,10 @@ foreach ($filters as $filter_key => $filter_label) {
     <table cellpadding="10" cellspacing="0" border="0" align="center">
 	<tbody><tr>
 		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a></span> 
-		<br><br>Copyright © 2025 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
+		<br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
 		<br>
 		<br>
-		<script src="//downgrade.hoho.ws/services/ring/ring.php"></script> <img src="//downgrade.hoho.ws/services/counter/index.php?id=9" alt="Downgrade Counter">
+		<!--<!--<script src="//downgrade.hoho.ws/services/ring/ring.php"></script> <img src="//downgrade.hoho.ws/services/counter/index.php?id=9" alt="Downgrade Counter">-->
 	</td>
 	</tr>
 </tbody></table>
@@ -1351,7 +1351,7 @@ function showDescless(id) {
 <table cellpadding="10" cellspacing="0" border="0" align="center">
 <tr>
 <td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/retroshow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a> 
-<br><br>Copyright © 2025 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
+<br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
 </tr>
 </table>
 
