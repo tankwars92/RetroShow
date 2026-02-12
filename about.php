@@ -45,8 +45,8 @@ RetroShow — это способ поделиться своими видео �
 
 <br><br><span class="highlight">Спасибо!</span>
 <ul>
-<li><strong><a href="channel.php?username=BitByByte">BitByByte</a></strong> — изначальный владелец и разработчик сайта.</li>
-<li><strong><a href="channel.php?username=dsalin">dsalin</a></strong> — первый пользователь сайта, который занимался тестированием.</li>
+<li><strong><a href="channel.php?user=BitByByte">BitByByte</a></strong> — изначальный владелец и разработчик сайта.</li>
+<li><strong><a href="channel.php?user=dsalin">dsalin</a></strong> — первый пользователь сайта, который занимался тестированием.</li>
 </ul>
 
 				</td>
@@ -63,4 +63,3 @@ RetroShow — это способ поделиться своими видео �
 </tbody></table>
 
 <?php showFooter(); ?>
-
