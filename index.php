@@ -153,6 +153,10 @@ showHeader("Главная");
   <div class="errorBox">Видео не найдено.</div>
 <?php endif; ?>
 
+<?php if (isset($_GET['error']) && $_GET['error'] === 'video_not_allowed'): ?>
+  <div class="errorBox">Видео не найдено или у вас нет прав для его редактирования.</div>
+<?php endif; ?>
+
 <style>
 .vfacets { margin: 5px 0; }
 .vtagLabel { font-size: 11px; color: #888; display: inline; }
@@ -273,6 +277,7 @@ showHeader("Главная");
     </tr>
   </table>
 </div>
+
 		
 				<?php
                 function get_video_duration($file, $id) {

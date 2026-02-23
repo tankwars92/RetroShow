@@ -82,6 +82,17 @@ function get_profile_icon($username, $profile_icon_setting = '0') {
     }
     
     if ($profile_icon_setting === '1') {
+        global $db;
+        try {
+            $stmt = $db->prepare('SELECT profile_icon_custom FROM users WHERE login = ?');
+            $stmt->execute([$username]);
+            $custom = $stmt->fetchColumn();
+            if ($custom && is_string($custom) && $custom !== '') {
+                $icon_cache[$cache_key] = $custom;
+                return $custom;
+            }
+        } catch (Exception $e) {
+        }
         $icon_cache[$cache_key] = 'img/no_videos_140.jpg';
         return 'img/no_videos_140.jpg';
     }
@@ -395,14 +406,53 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
   $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
   $per_page = 5;
   $offset = ($page - 1) * $per_page;
+  $is_owner = isset($_SESSION['user']) && $_SESSION['user'] === $user;
+
+  $profile_icon_mode = '0';
+  if ($is_owner) {
+    $profile_icon_mode = get_user_profile_icon_setting($user);
+  }
+  $can_choose_avatar = $is_owner && $profile_icon_mode === '1';
+
+  if ($can_choose_avatar && isset($_GET['set_avatar'])) {
+    $set_id = intval($_GET['set_avatar']);
+    if ($set_id > 0) {
+      try {
+        $stmtSet = $db->prepare("SELECT preview FROM videos WHERE id = ? AND user = ?");
+        $stmtSet->execute([$set_id, $user]);
+        $vrow = $stmtSet->fetch(PDO::FETCH_ASSOC);
+        if ($vrow && !empty($vrow['preview'])) {
+          $stmtUpd = $db->prepare("UPDATE users SET profile_icon_custom = ? WHERE login = ?");
+          $stmtUpd->execute([$vrow['preview'], $user]);
+        }
+      } catch (Exception $e) {
+      }
+    }
+    $redir = 'channel.php?user=' . urlencode($user) . '&tab=videos';
+    if ($page > 1) {
+      $redir .= '&page=' . $page;
+    }
+    header('Location: ' . $redir);
+    exit;
+  }
+
+  if ($is_owner) {
+    $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
+  } else {
     $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+  }
   $stmt->execute([$user]);
   $total = $stmt->fetchColumn();
   $total_pages = ceil($total / $per_page);
-    $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file, tags FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT $offset, $per_page");
+
+  if ($is_owner) {
+    $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file, tags, private FROM videos WHERE user = ? ORDER BY id DESC LIMIT $offset, $per_page");
+  } else {
+    $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file, tags, private FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT $offset, $per_page");
+  }
   $stmt->execute([$user]);
-    $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    showHeader('Публичные видео // ' . htmlspecialchars($user));
+  $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  showHeader('Публичные видео // ' . htmlspecialchars($user));
     ?>
   <link rel="stylesheet" href="img_/styles_ets11562102812.css" type="text/css">
   <style>
@@ -466,7 +516,10 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                         <td width="120"><a href="video.php?id=<?=intval($row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                         <td width="100%" style="padding-left:8px;">
                           <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=intval($row['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['title'])?></a></div>
-                          <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($row['file'], $row['id'])?></div>
+                          <div style="font-size:12px; color:#222; margin:2px 0 2px 0;"><b><?=get_video_duration($row['file'], $row['id'])?></b>
+                          <?php if (!empty($row['private']) && $is_owner): ?>
+                            &nbsp;<font color="#FF0000"><b><i>(ПРИВАТНОЕ ВИДЕО!)</i></b></font>
+                          <?php endif; ?></div>
                           <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
                             <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
                           </span>
@@ -495,6 +548,16 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                           <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор</span> <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($row['user']) ?></b></a></div>
                           <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($row['views']) ?></div>
                           <?php list($rc,$ra)=channel_get_rating_stats($db,$row['id']); echo channel_render_avg_stars_html($ra,$rc); ?>
+                          <?php if ($is_owner): ?>
+                          <td style="padding-right:0px;padding-top:0px;">
+    <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='my_videos_edit.php?id=<?=intval($row['id'])?>';">
+      Редактировать видео</button>
+    <?php if ($can_choose_avatar): ?>
+    <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='channel.php?user=<?=urlencode($user)?>&tab=videos&set_avatar=<?=intval($row['id'])?><?php if ($page > 1): ?>&page=<?=$page?><?php endif; ?>';">
+      Сделать аватаром</button>
+    <?php endif; ?>
+  </td>
+                          <?php endif; ?>
                         </td>
                       </tr>
                     </table>
@@ -964,11 +1027,11 @@ foreach ($filters as $filter_key => $filter_label) {
 		</td></tr></table>
     <table cellpadding="10" cellspacing="0" border="0" align="center">
 	<tbody><tr>
-		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a></span> 
+		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
 		<br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
 		<br>
 		<br>
-		<!--<!--<script src="//downgrade.hoho.ws/services/ring/ring.php"></script> <img src="//downgrade.hoho.ws/services/counter/index.php?id=9" alt="Downgrade Counter">-->
+		<script src="//downgrade-net.ru/services/ring/ring.php"></script> <img src="//downgrade-net.ru/services/counter/index.php?id=21" alt="Downgrade Counter" border="0"> 
 	</td>
 	</tr>
 </tbody></table>
@@ -1350,7 +1413,7 @@ function showDescless(id) {
 
 <table cellpadding="10" cellspacing="0" border="0" align="center">
 <tr>
-<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/retroshow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a> 
+<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/retroshow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a>
 <br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
 </tr>
 </table>

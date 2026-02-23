@@ -23,6 +23,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS users (
     about_me TEXT,
     website TEXT,
     profile_icon TEXT DEFAULT '0',
+    profile_icon_custom TEXT,
     profile_comm TEXT DEFAULT '1',
     profile_bull TEXT DEFAULT '1',
     player_type TEXT DEFAULT 'auto',
@@ -96,6 +97,7 @@ $missing_cols = [
     'about_me' => 'TEXT',
     'website' => 'TEXT',
     'profile_icon' => 'TEXT DEFAULT "0"',
+    'profile_icon_custom' => 'TEXT',
     'profile_comm' => 'TEXT DEFAULT "1"',
     'profile_bull' => 'TEXT DEFAULT "1"',
     'player_type' => 'TEXT DEFAULT "auto"'

@@ -253,7 +253,7 @@ showHeader('Настройки аккаунта');
     <input type="radio" name="profile_icon" value="0" <?= ($user_data['profile_icon'] ?? '0') == '0' ? 'checked' : '' ?>> 
     <label for="1">Использовать последнее загруженное видео как фото профиля.</label><br>
     <input type="radio" name="profile_icon" value="1" <?= ($user_data['profile_icon'] ?? '0') == '1' ? 'checked' : '' ?>>
-    <label for="2">Я выберу фото профиля для "Мои видео".</label><br>
+    <label for="2">Я выберу фото профиля из "Мои видео".</label><br>
   </td>
 </tr>
 <tr>
