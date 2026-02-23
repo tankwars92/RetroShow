@@ -101,7 +101,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'avi') {
     
     $ffmpeg = "ffmpeg -i " . escapeshellarg($video['file']) . 
              " -c:v msmpeg4v2 " . 
-             " -c:a pcm_s16le " .
+             " -c:a libmp3lame -b:a 192k " .
              " -vf \"scale=320:240\" " .
              " -r 15 " .
              " -b:v 800k " .
@@ -728,6 +728,7 @@ toggleVisibility('myAccountDropdown',0);
         </div>
         </div>
     </div>
+    
     <script src="viewfinder/player.js"></script>
     <script>
     (function(){
@@ -762,8 +763,8 @@ toggleVisibility('myAccountDropdown',0);
         }
     })();
     </script>
-    
     </div>
+
     <div id="actionsAndStatsDiv" class="contentBox" style="border:1px solid #ccc; background:#fff; margin-bottom:10px; overflow:hidden; height:1%;">
 		<div id="ratingDivWrapper" style="float:left; width:32%; padding:4px;">
 			<div id="ratingDiv">
@@ -1093,14 +1094,17 @@ if (window.attachEvent) {
 </tr>
 </table><div style="padding: 0px 5px 0px 5px;">
 
-
 </div>
-		</td></tr></table>
+        </td></tr></table>
         <table cellpadding="10" cellspacing="0" border="0" align="center">
-	<tbody><tr>
-		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a></span> 
-		<br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
-	</tr>
+    <tbody><tr>
+        <td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
+        <br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
+        <br>
+        <br>
+        <script src="//downgrade-net.ru/services/ring/ring.php"></script> <img src="//downgrade-net.ru/services/counter/index.php?id=21" alt="Downgrade Counter" border="0"> 
+    </td>
+    </tr>
 </tbody></table>
 
 
