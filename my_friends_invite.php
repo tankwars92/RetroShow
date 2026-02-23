@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $receiver = urlencode($e['email']);
         $msg = urlencode($content);
 
-        @file_get_contents("http://localhost:1305/?receiver=$receiver&content=$msg");
+        @file_get_contents("http://localhost:1305/?receiver=$receiver&content=$msg"); // Пока не готово.
         $sent_count++;
     }
     $sent = true;
@@ -98,10 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <br>
       Здравствуйте,<br>
       <br>
-      RetroShow — отличный сайт для обмена и хранения личных видео. Я использую RetroShow, чтобы делиться видео с друзьями и семьёй. Я бы хотел добавить вас в список людей, с которыми могу делиться своими видео.<br>
+      RetroShow - это отличный сайт для обмена и хранения личных видео. Я использую RetroShow, чтобы делиться видео с друзьями и семьёй. Я бы хотел добавить вас в список людей, с которыми могу делиться своими видео.<br>
       <br>
       Ваше личное сообщение:<br>
-      <textarea name="personal_message" class="invite-textarea">Вы слышали о RetroShow? Мне очень нравится этот сайт.</textarea><br>
+      <textarea name="personal_message" class="invite-textarea">Вы слышали про RetroShow? Мне очень нравится этот сайт.</textarea><br>
       <br>
       Спасибо,<br>
       <?php echo isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : "ваше_имя"; ?>
