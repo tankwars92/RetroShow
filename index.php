@@ -270,12 +270,13 @@ showHeader("Главная");
 				<div class="moduleTitleBar">
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td style="font-size:14px; font-weight:bold; color:#444; text-align:left;">Популярные видео сегодня</td>
-      <td style="text-align:right; font-size:12px; padding-right:5px; white-space:nowrap;">
-		<nobr><a href="channel.php">Больше видео</a></nobr>
+      <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">Популярные видео сегодня</td>
+      <td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+		<nobr><a href="channel.php"><b>Больше видео</b></a></nobr>
 		</td>
     </tr>
   </table>
+  
 </div>
 
 		
