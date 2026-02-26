@@ -179,6 +179,14 @@ $paged_videos = array_slice($videos, $offset, $per_page);
 showHeader('Результаты поиска: ' . htmlspecialchars($search_query));
 ?>
 
+<style>
+.vfacets { margin: 5px 0; }
+.vtagLabel { font-size: 11px; color: #888; display: inline; }
+.vtagValue { display: inline; margin-left: 5px; }
+.vtagValue .dg { color: #333; text-decoration: underline; }
+.vtagValue .dg:hover { color: #333; text-decoration: underline; }
+</style>
+
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
   <tr valign="top">
     <td style="padding-right: 15px;">
@@ -271,7 +279,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                         <?php endif; ?>
                         <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Добавлено:</span> <?= time_ago(strtotime($video['time'])) ?></div>
                         <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор:</span> <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($video['user']) ?></b></a></div>
-                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($video['views']) ?> | Комментариев: <?=$comments_count?></div>
+                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($video['views']) ?></div>
                         <?= render_avg_stars_html($ra, $rc) ?>
                       </td>
                     </tr>
