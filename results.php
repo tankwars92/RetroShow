@@ -183,8 +183,17 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
 .vfacets { margin: 5px 0; }
 .vtagLabel { font-size: 11px; color: #888; display: inline; }
 .vtagValue { display: inline; margin-left: 5px; }
-.vtagValue .dg { color: #333; text-decoration: underline; }
-.vtagValue .dg:hover { color: #333; text-decoration: underline; }
+
+.vtagValue .dg,
+.vtagValue .dg:visited {
+  color: #333;
+  text-decoration: underline;
+}
+
+.vtagValue .dg:hover {
+  color: #333;
+  text-decoration: underline;
+}
 </style>
 
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
