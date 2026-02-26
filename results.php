@@ -89,6 +89,39 @@ function get_video_duration($file, $id) {
     return $duration;
 }
 
+function get_results_rating_stats($db, $video_id) {
+    $stmt = $db->query("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM ratings WHERE video_id = ".intval($video_id));
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $count = intval($row['cnt'] ?? 0);
+    $avg = $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : 0.0;
+    return [$count, $avg];
+}
+
+function render_avg_stars_html($avg, $count) {
+    $remaining = floatval($avg);
+    $parts = [];
+    for ($i=0; $i<5; $i++) {
+        if ($remaining >= 0.75) $parts[] = 'full';
+        elseif ($remaining >= 0.25) $parts[] = 'half';
+        else $parts[] = 'empty';
+        $remaining = max(0.0, $remaining - 1.0);
+    }
+    ob_start();
+    ?>
+    <div style="margin:2px 0 2px 0;">
+      <nobr>
+        <img src="img_/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img_/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img_/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img_/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img_/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+      </nobr>
+      <div class="rating"><?=intval($count)?> оценок</div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
 $search_query = isset($_GET['search_query']) ? trim($_GET['search_query']) : '';
 $search_type = isset($_GET['search_type']) ? trim($_GET['search_type']) : '';
 
@@ -100,9 +133,6 @@ if (empty($search_query)) {
 $videos = array();
 if ($search_query) {
     try {
-        $db = new PDO('sqlite:retroshow.sqlite');
-        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
         $search_term = '%' . $search_query . '%';
         
         $stmt = $db->prepare("SELECT * FROM videos WHERE (private = 0 OR private IS NULL) ORDER BY id DESC");
@@ -152,7 +182,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
   <tr valign="top">
     <td style="padding-right: 15px;">
-             <table width="595" align="center" cellpadding="0" cellspacing="0" border="0">
+             <table width="595" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC">
          <tr>
            <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
            <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
@@ -160,25 +190,19 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
          </tr>
          <tr>
            <td><img src="img/pixel.gif" width="5" height="1"></td>
-           <td style="padding: 0px 0px 0px 0px;">
-             <div class="headerRCBox">
-                 <b class="rch">
-                     <b class="rch1"><b></b></b>
-                     <b class="rch2"><b></b></b>
-                     <b class="rch3"></b>
-                     <b class="rch4"></b>
-                     <b class="rch5"></b>
-                 </b>
-                 <div class="content">
-                     <div class="headerTitleRight">
-                         Показано
-                         <b><?=($page-1)*$per_page+1?></b>-<b><?=min($page*$per_page, $total)?></b> из <b><?=$total?></b>
-                     </div>
-                     <div class="headerTitle">
-                         Результаты <span class="normalText">поиска по запросу</span>
-                         '<?=htmlspecialchars($search_query)?>'
-                     </div>
-                 </div>
+           <td width="585">
+             <div class="moduleTitleBar">
+               <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                 <tr>
+                   <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
+                     Результаты поиска: '<?=htmlspecialchars($search_query)?>'
+                   </td>
+                   <td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+                     Показано
+                     <b><?=($page-1)*$per_page+1?></b>-<b><?=min($page*$per_page, $total)?></b> из <b><?=$total?></b>
+                   </td>
+                 </tr>
+               </table>
              </div>
             
             <?php if (empty($videos)): ?>
@@ -192,23 +216,63 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                     $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
                     $desc_id = 'desc_' . $video['id'];
                     $desc_full = nl2br($desc);
+                    $comments_file = __DIR__ . '/comments/' . $video['id'] . '.txt';
+                    $comments_count = (file_exists($comments_file)) ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+                    list($rc, $ra) = get_results_rating_stats($db, $video['id']);
               ?>
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
                       <td width="120"><a href="video.php?id=<?=intval($video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
-                        <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=intval($video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
-                        <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'])?></div>
+                        <div class="vtitle">
+                          <a href="video.php?id=<?=intval($video['id'])?>"><?=htmlspecialchars($video['title'])?></a><br>
+                          <span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
+                        </div>
                         <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
                           <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
                         </span>
                         <span id="<?= $desc_id ?>-full" style="display:none; font-size:12px; color:#222; margin:2px 0 2px 0;">
                           <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
                         </span>
+                        <?php if (!empty($video['tags'])): ?>
+                        <div class="vfacets">
+                            <div class="vtagLabel">Теги:</div>
+                            <div class="vtagValue">
+                                <span id="vidTagsBegin-<?=$video['id']?>">
+                                    <?php 
+                                    $tags = explode(' ', trim($video['tags']));
+                                    $visible_tags = array_slice($tags, 0, 5);
+                                    $hidden_tags = array_slice($tags, 5);
+                                    
+                                    foreach ($visible_tags as $tag): 
+                                      $tag = trim($tag);
+                                      if (!empty($tag)):
+                                    ?>
+                                      <a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;
+                                    <?php 
+                                      endif;
+                                    endforeach; 
+                                    
+                                    if (!empty($hidden_tags)):
+                                    ?>
+                                    <span id="vidTagsRemain-<?=$video['id']?>" style="display: none;">
+                                      <?php foreach ($hidden_tags as $tag): 
+                                        $tag = trim($tag);
+                                        if (!empty($tag)):
+                                      ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;<?php 
+                                        endif;
+                                      endforeach; 
+                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;">меньше</a>)</span>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Добавлено:</span> <?= time_ago(strtotime($video['time'])) ?></div>
                         <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор:</span> <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($video['user']) ?></b></a></div>
-                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($video['views']) ?></div>
+                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($video['views']) ?> | Комментариев: <?=$comments_count?></div>
+                        <?= render_avg_stars_html($ra, $rc) ?>
                       </td>
                     </tr>
                   </table>
