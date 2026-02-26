@@ -2,8 +2,8 @@
 @ini_set('upload_max_filesize', '1000M');
 @ini_set('post_max_size', '1000M');
 @ini_set('memory_limit', '1000M');
-@ini_set('max_execution_time', '300');
-@ini_set('max_input_time', '300');
+@ini_set('max_execution_time', '0');
+@ini_set('max_input_time', '0');
 
 @ini_set('display_errors', 'Off');
 @ini_set('display_startup_errors', 'Off');
@@ -13,6 +13,26 @@
 include("init.php");
 include("template.php");
 
+
+$upload_background_redirect_started = false;
+function upload_start_background_redirect() {
+    global $upload_background_redirect_started;
+    if ($upload_background_redirect_started) {
+        return;
+    }
+    $upload_background_redirect_started = true;
+    ignore_user_abort(true);
+    if (session_id()) {
+        session_write_close();
+    }
+    if (!headers_sent()) {
+        header('Location: index.php?info=video_converting');
+        header('Connection: close');
+    }
+    
+    echo str_repeat(' ', 1024);
+    flush();
+}
 
 function get_video_dimensions($file) {
     $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 " . escapeshellarg($file);
@@ -78,155 +98,139 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     } elseif ($_FILES['video']['size'] > 1048576000) { 
         $error = "Файл слишком большой! Максимальный размер: 1000 МБ";
     } else {
-      $stmt = $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
-      $next_id = $stmt->fetch()['next_id'] ?? 1;
-      
-      $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
-      $preview_ext = 'jpg'; 
-      
-      $temp_video = 'uploads/temp_' . $next_id . '.' . $video_ext;
-      $final_video = 'uploads/' . $next_id . '.mp4';
-      $preview_file = 'uploads/' . $next_id . '_preview.' . $preview_ext;
-      
-      if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
-          $error = "Ошибка при сохранении видео. Убедитесь, что папка uploads существует и имеет права на запись.";
-      } else {
-          if ($video_ext != 'mp4') {
-              $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($temp_video);
-              $has_video = trim(shell_exec($ffprobe)) === 'video';
-              
-              $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
-              
-              $dimensions = get_video_dimensions($temp_video);
-              $vf_filter = "format=yuv420p";
-              
-              if ($dimensions && is_4_3_aspect_ratio($dimensions['width'], $dimensions['height'])) {
-                  $vf_filter .= ",scale=640:480";
-              }
-              
-              if (!$has_video) {
-                  $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                           " -f lavfi -i color=c=black:s=640x360 -shortest " .
-                           " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset slow " .
-                           " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
-                           " -movflags +faststart " .
-                           " -brand mp42 " .
-                           " -y " . 
-                           " -loglevel debug " . 
-                           escapeshellarg($final_video) . 
-                           " 2>" . escapeshellarg($log_file);
-              } else {
-                  $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                           " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset slow " .
-                           " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
-                           " -vf \"" . $vf_filter . "\" " .
-                           " -movflags +faststart " .
-                           " -brand mp42 " .
-                           " -y " .
-                           " -loglevel debug " .
-                           escapeshellarg($final_video) . 
-                           " 2>" . escapeshellarg($log_file);
-              }
-              
-              exec($ffmpeg, $output, $return_var);
-              
-              if ($return_var !== 0) {
-                  $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
-                  if (file_exists($temp_video)) {
-                      @unlink($temp_video);
-                  }
-                  if (file_exists($log_file)) {
-                      @unlink($log_file);
-                  }
-                  $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var . 
-                          "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
-              } else {
-                  usleep(100000);
-                  
-                  if (file_exists($temp_video)) {
-                      @unlink($temp_video);
-                  }
-                  if (file_exists($log_file)) {
-                      @unlink($log_file);
-                  }
-              }
-          } else {
-              $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
-              
-              $dimensions = get_video_dimensions($temp_video);
-              $vf_filter = "format=yuv420p";
-              
-              if ($dimensions && is_4_3_aspect_ratio($dimensions['width'], $dimensions['height'])) {
-                  $vf_filter .= ",scale=640:480";
-              }
-              
-              $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                       " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset slow " .
-                       " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
-                       " -vf \"" . $vf_filter . "\" " .
-                       " -movflags +faststart " .
-                       " -brand mp42 " .
-                       " -y " .
-                       " -loglevel debug " .
-                       escapeshellarg($final_video) . 
-                       " 2>" . escapeshellarg($log_file);
-              
-              exec($ffmpeg, $output, $return_var);
-              
-              if ($return_var !== 0) {
-                  $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
-                  if (file_exists($temp_video)) {
-                      @unlink($temp_video);
-                  }
-                  if (file_exists($log_file)) {
-                      @unlink($log_file);
-                  }
-                  $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var . 
-                          "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
-              } else {
-                  usleep(100000);
-                  
-                  if (file_exists($temp_video)) {
-                      @unlink($temp_video);
-                  }
-                  if (file_exists($log_file)) {
-                      @unlink($log_file);
-                  }
-              }
-          }
+        $stmt = $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
+        $next_id = $stmt->fetch()['next_id'] ?? 1;
+        
+        $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
+        $preview_ext = 'jpg'; 
+        
+        $temp_video = 'uploads/temp_' . $next_id . '.' . $video_ext;
+        $final_video = 'uploads/' . $next_id . '.mp4';
+        $preview_file = 'uploads/' . $next_id . '_preview.' . $preview_ext;
+        
+        if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
+            $error = "Ошибка при сохранении видео. Убедитесь, что папка uploads существует и имеет права на запись.";
+        } else {
+            $output = [];
+            $return_var = 0;
 
-          if (empty($error)) {
-              if (isset($_FILES['preview']) && $_FILES['preview']['size'] > 0) {
-                  if (!move_uploaded_file($_FILES['preview']['tmp_name'], $preview_file)) {
-                      if (file_exists($final_video)) {
-                          @unlink($final_video);
-                      }
-                      $error = "Ошибка при сохранении превью. Убедитесь, что папка uploads существует и имеет права на запись.";
-                  }
-              } else {
-                  $ffmpeg = "ffmpeg -i " . escapeshellarg($final_video) . " -ss 00:00:01 -vframes 1 -y " . escapeshellarg($preview_file);
-                  exec($ffmpeg, $output, $return_var);
-                  
-                  if ($return_var !== 0) {
-                      $im = imagecreatetruecolor(120, 90);
-                      $bg = imagecolorallocate($im, 0, 0, 0);
-                      imagefill($im, 0, 0, $bg);
-                      imagejpeg($im, $preview_file);
-                      imagedestroy($im);
-                  }
-              }
+            $dimensions = get_video_dimensions($temp_video);
+            $vf_filter = "format=yuv420p";
+            if ($dimensions && is_4_3_aspect_ratio($dimensions['width'], $dimensions['height'])) {
+                $vf_filter .= ",scale=640:480";
+            }
 
-              if (empty($error)) {
-                  $time = date("d.m.Y, H:i");
-                  $is_private = ($broadcast === 'private') ? 1 : 0;
-                  $tags = $tags ?? '';
-                  $stmt = $db->prepare("INSERT INTO videos (title, description, file, preview, user, time, private, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                  $stmt->execute([$title, $description, $final_video, $preview_file, $_SESSION['user'], $time, $is_private, $tags]);
-                  $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";
-              }
-          }
-      }
-  }
+            if ($video_ext != 'mp4') {
+                $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($temp_video);
+                $has_video = trim(shell_exec($ffprobe)) === 'video';
+                
+                $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
+                
+                if (!$has_video) {
+                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                             " -f lavfi -i color=c=black:s=640x360 -shortest " .
+                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset veryfast " .
+                             " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
+                             " -movflags +faststart " .
+                             " -brand mp42 " .
+                             " -y " . 
+                             " -loglevel debug " . 
+                             escapeshellarg($final_video) . 
+                             " 2>" . escapeshellarg($log_file);
+                } else {
+                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset veryfast " .
+                             " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
+                             " -vf \"" . $vf_filter . "\" " .
+                             " -movflags +faststart " .
+                             " -brand mp42 " .
+                             " -y " .
+                             " -loglevel debug " .
+                             escapeshellarg($final_video) . 
+                             " 2>" . escapeshellarg($log_file);
+                }
+                
+                exec($ffmpeg, $output, $return_var);
+                
+                if ($return_var !== 0) {
+                    $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                    $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var . 
+                            "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
+                } else {
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                }
+            } else {
+                $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
+                
+                $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                         " -c:v libx264 -profile:v baseline -level 3.0 -crf 35 -preset veryfast " .
+                         " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
+                         " -vf \"" . $vf_filter . "\" " .
+                         " -movflags +faststart " .
+                         " -brand mp42 " .
+                         " -y " .
+                         " -loglevel debug " .
+                         escapeshellarg($final_video) . 
+                         " 2>" . escapeshellarg($log_file);
+                
+                exec($ffmpeg, $output, $return_var);
+                
+                if ($return_var !== 0) {
+                    $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                    $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var . 
+                            "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
+                } else {
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                }
+            }
+
+            if (empty($error)) {
+                $output = [];
+                $return_var = 0;
+                $ffmpeg = "ffmpeg -i " . escapeshellarg($final_video) . " -ss 00:00:01 -vframes 1 -y " . escapeshellarg($preview_file);
+                exec($ffmpeg, $output, $return_var);
+                
+                if ($return_var !== 0) {
+                    $im = imagecreatetruecolor(120, 90);
+                    $bg = imagecolorallocate($im, 0, 0, 0);
+                    imagefill($im, 0, 0, $bg);
+                    imagejpeg($im, $preview_file);
+                    imagedestroy($im);
+                }
+            }
+
+            if (empty($error)) {
+                $time = date("d.m.Y, H:i");
+                $is_private = ($broadcast === 'private') ? 1 : 0;
+                $tags = $tags ?? '';
+                $stmt = $db->prepare("INSERT INTO videos (title, description, file, preview, user, time, private, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$title, $description, $final_video, $preview_file, $_SESSION['user'], $time, $is_private, $tags]);
+                $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";
+            }
+        }
+    }
 }
 
 showHeader("Загрузка видео");
