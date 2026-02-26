@@ -49,7 +49,7 @@ function showHeader($title = "RetroShow") {
 <link rel="stylesheet" href="img_/watch_ets1156799200.css" type="text/css">
 <script type="text/javascript" src="img/ui_ets.js"></script>
 <link href="img/styles.css" rel="stylesheet" type="text/css">
-<link rel="alternate" type="application/rss+xml" title="YouTube " "="" recently="" added="" videos="" [rss]"="" href="rss/global/recently_added.rss">
+<link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
 <style type="text/css">
 .formTitle { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #333; }
 .error { background-color: #FFE6E6; border: 1px solid #FF9999; padding: 10px; margin: 10px 0px; color: #CC0000; font-size: 12px; }
@@ -307,11 +307,11 @@ function showFooter() {
 		</td></tr></table>
 		<table cellpadding="10" cellspacing="0" border="0" align="center">
 	<tbody><tr>
-		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade.hoho.ws/">Downgrade Net</a></span> 
-		<br><br>Copyright © 2026 RetroShow | <a href="rss/global/recently_added.rss"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
+		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
+		<br><br>Copyright © 2026 RetroShow | <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
 		<br>
 		<br>
-		<!--<!--<script src="//downgrade.hoho.ws/services/ring/ring.php"></script> <img src="//downgrade.hoho.ws/services/counter/index.php?id=9" alt="Downgrade Counter">-->
+		<script src="//downgrade-net.ru/services/ring/ring.php"></script> <img src="//downgrade-net.ru/services/counter/index.php?id=21" alt="Downgrade Counter" border="0"> 
 	</td>
 	</tr>
 </tbody></table>
