@@ -5,6 +5,16 @@ include("template.php");
 $error = '';
 $success = '';
 
+$captcha_error = '';
+
+function register_generate_captcha() {
+    $a = rand(1, 9);
+    $b = rand(1, 9);
+    $_SESSION['register_captcha_a'] = $a;
+    $_SESSION['register_captcha_b'] = $b;
+    $_SESSION['register_captcha_answer'] = $a + $b;
+}
+
 if ($_POST) {
     if (isset($_POST['action_signup'])) {
         $email = trim($_POST['email'] ?? '');
@@ -16,9 +26,12 @@ if ($_POST) {
         $birthday_mon = $_POST['birthday_mon'] ?? '';
         $birthday_day = $_POST['birthday_day'] ?? '';
         $birthday_yr = $_POST['birthday_yr'] ?? '';
+        $captcha_answer = trim($_POST['captcha'] ?? '');
+        $expected = isset($_SESSION['register_captcha_answer']) ? (string)$_SESSION['register_captcha_answer'] : '';
 
-
-        if ($email == '' || $username == '' || $password1 == '' || $password2 == '') {
+        if ($captcha_answer === '' || $expected === '' || (string)intval($captcha_answer) !== $expected) {
+            $error = "Неверный ответ на проверочный вопрос.";
+        } elseif ($email == '' || $username == '' || $password1 == '' || $password2 == '') {
             $error = "Пожалуйста, заполните все обязательные поля.";
         } elseif ($password1 !== $password2) {
             $error = "Пароли не совпадают.";
@@ -65,6 +78,11 @@ if ($_POST) {
         }
     }
 }
+
+register_generate_captcha();
+
+$captcha_a = $_SESSION['register_captcha_a'] ?? 0;
+$captcha_b = $_SESSION['register_captcha_b'] ?? 0;
 
 showHeader("Регистрация");
 ?>
@@ -488,6 +506,15 @@ showHeader("Регистрация");
 				</td>
 			</tr>
 			<tr>
+                <td class="formLabel"><nobr>Проверка:</nobr></td>
+                <td class="formFieldSmall">
+                    <span style="font-size:12px;"><?= htmlspecialchars($captcha_a) ?> + <?= htmlspecialchars($captcha_b) ?> = </span>
+                    <input tabindex="5" type="text" size="4" maxlength="2" name="captcha" value="<?= htmlspecialchars($_POST['captcha'] ?? '') ?>">
+					<br>
+					<i>(защита от спам-ботов)</i>
+                </td>
+            </tr>
+			<tr>
 				
 				<td class="formFieldSmall"> &nbsp;</td>
 				<td class="formFieldSmall"><br>- Я подтверждаю, что мне больше 13 лет.
@@ -549,15 +576,11 @@ showHeader("Регистрация");
 		<li>Настраивать свой опыт с помощью плейлистов и подписок</li>
 		<li>Интегрировать RetroShow с вашим сайтом, используя встраивание видео или API</li>
 	</ul>
-	<p>Чтобы узнать больше о нашем сервисе, посетите <a href="/t/help_center">Центр помощи</a>.</p>
+	<p>Чтобы узнать больше о нашем сервисе, посетите <a href="help.php">Центр помощи</a>.</p>
 		</div>
 		
 		</td>
 	</tr>
 </tbody></table>
-
-<script type="text/javascript">
-	document.loginForm.username.focus();
-</script>
 
 <?php showFooter(); ?>
