@@ -157,6 +157,10 @@ showHeader("Главная");
   <div class="errorBox">Видео не найдено или у вас нет прав для его редактирования.</div>
 <?php endif; ?>
 
+<?php if (isset($_GET['info']) && $_GET['info'] === 'video_converting'): ?>
+  <div class="confirmBox">Ваше видео конвертируется! Скоро он будет доступно к просмотру.</div>
+<?php endif; ?>
+
 <style>
 .vfacets { margin: 5px 0; }
 .vtagLabel { font-size: 11px; color: #888; display: inline; }
@@ -241,7 +245,7 @@ showHeader("Главная");
 						?>
 						<td width="20%" align="center">
 		
-						<a href="video.php?id=<?= $video['id'] ?>"><img src="<?= $video['preview'] ?>" width="80" height="60" style="border: 5px solid #FFFFFF; margin-top: 10px;"></a>
+						<a href="video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>"><img src="<?= $video['preview'] ?>" width="80" height="60" style="border: 5px solid #FFFFFF; margin-top: 10px;"></a>
 						<div class="moduleFeaturedDetails" style="padding-top: 2px;">
 <?= time_ago(strtotime($video['time'])) ?>
 </div>
@@ -321,10 +325,10 @@ showHeader("Главная");
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
-                      <td width="120"><a href="video.php?id=<?= $video['id'] ?>"><img src="<?= $video['preview'] ?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
+                      <td width="120"><a href="video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>"><img src="<?= $video['preview'] ?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
 						<div class="vtitle">
-							<a href="video.php?id=<?= $video['id'] ?>"><?= htmlspecialchars($video['title']) ?></a><br>
+							<a href="video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>"><?= htmlspecialchars($video['title']) ?></a><br>
 							<span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
 						</div>
                         <?php

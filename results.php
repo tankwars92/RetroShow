@@ -240,10 +240,10 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
-                      <td width="120"><a href="video.php?id=<?=intval($video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
+                      <td width="120"><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
                         <div class="vtitle">
-                          <a href="video.php?id=<?=intval($video['id'])?>"><?=htmlspecialchars($video['title'])?></a><br>
+                          <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><?=htmlspecialchars($video['title'])?></a><br>
                           <span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
                         </div>
                         <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">

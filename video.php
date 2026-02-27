@@ -64,11 +64,27 @@ if (!isset($_GET['id'])) {
     exit;
 }
 
-$id = intval($_GET['id']);
-$stmt = $db->prepare("SELECT * FROM videos WHERE id = ?");
-$stmt->execute([$id]);
-$video = $stmt->fetch();
+$id_param = $_GET['id'];
+$video = null;
+$id = null;
+
+if (preg_match('/^[A-Za-z0-9_-]{6,20}$/', $id_param)) {
+    $stmt = $db->prepare("SELECT * FROM videos WHERE public_id = ?");
+    $stmt->execute([$id_param]);
+    $video = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($video) {
+        $id = intval($video['id']);
+    }
+}
+
 if (!$video) {
+    $id = intval($id_param);
+    $stmt = $db->prepare("SELECT * FROM videos WHERE id = ?");
+    $stmt->execute([$id]);
+    $video = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+if (!$video || !$id) {
     header('Location: index.php?error=video_not_found');
     exit;
 }
@@ -160,7 +176,7 @@ function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initi
     ob_start();
     ?>
 						<div id="ratingMessage" class="label" style="white-space:nowrap;">Оцените&nbsp;видео</div>
-		          		<form style="display:none;" name="ratingForm" action="video.php?id=<?=intval($video_id)?>&ajax=rating" method="POST">
+		          		<form style="display:none;" name="ratingForm" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video_id)?>&ajax=rating" method="POST">
 	<input type="hidden" name="action_add_rating" value="1">
 	<input type="hidden" name="video_id" value="<?=intval($video_id)?>">
 	<input type="hidden" name="rating" id="rating" value="">
@@ -279,7 +295,7 @@ if ($user && $video['user'] && $user !== $video['user']) {
             $friends_list[] = $video['user'];
             file_put_contents($friends_file, implode("\n", $friends_list));
         }
-        header("Location: video.php?id=$id");
+        header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
         exit;
     }
     if (isset($_GET['friend_del']) && $_GET['friend_del'] === $video['user']) {
@@ -287,7 +303,7 @@ if ($user && $video['user'] && $user !== $video['user']) {
             $friends_list = array_diff($friends_list, [$video['user']]);
             file_put_contents($friends_file, implode("\n", $friends_list));
         }
-        header("Location: video.php?id=$id");
+        header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
         exit;
     }
 }
@@ -380,7 +396,7 @@ if (isset($_POST['add_comment'])) {
         } else {
             $line = time() . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $user) . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $comment_text) . '|' . $parent_id . "\n";
             file_put_contents($comments_file, $line, FILE_APPEND | LOCK_EX);
-            header("Location: video.php?id=$id");
+            header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
             exit;
         }
     }
@@ -466,7 +482,7 @@ if ($user && isset($_GET['fav_add']) && $_GET['fav_add'] == 1) {
         $fav_list[] = $id;
         file_put_contents($fav_file, implode("\n", $fav_list));
     }
-    header("Location: video.php?id=$id");
+    header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
     exit;
 }
 if ($user && isset($_GET['fav_del']) && $_GET['fav_del'] == 1) {
@@ -474,7 +490,7 @@ if ($user && isset($_GET['fav_del']) && $_GET['fav_del'] == 1) {
         $fav_list = array_diff($fav_list, [$id]);
         file_put_contents($fav_file, implode("\n", $fav_list));
     }
-    header("Location: video.php?id=$id");
+    header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
     exit;
 }
 $fav_count = 0;
@@ -777,16 +793,16 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
 			<div class="actionRow" style="font-size:12px;">
         <?php if ($user): ?>
 <?php if ($is_fav): ?>
-  <a href="video.php?id=<?=intval($id)?>&fav_del=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>
+  <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&fav_del=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>
 <?php else: ?>
-  <a href="video.php?id=<?=intval($id)?>&fav_add=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>
+  <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&fav_add=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>
 <?php endif; ?>
 <br>
 <?php else: ?>
 <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>
 <br>
 <?php endif; ?>
-<a href="video.php?id=<?=intval($id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
+<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
 			</div>
 		</div>
 		<div id="statsDiv" style="float:left; width:28%; padding:4px; font-size:12px; color:#333;">
@@ -813,15 +829,15 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
             <div style="font-size:12px;">
             <?php if ($user): ?>
               <?php if ($is_fav): ?>
-                <a href="video.php?id=<?=intval($id)?>&fav_del=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>
+                <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&fav_del=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>
               <?php else: ?>
-                <a href="video.php?id=<?=intval($id)?>&fav_add=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>
+                <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&fav_add=1" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>
               <?php endif; ?>
               <br>
             <?php else: ?>
               <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc;">Войти, чтобы добавить в избранное</a><br>
             <?php endif; ?>
-              <a href="video.php?id=<?=intval($id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
+              <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
             </div>
           </td>
           <td width="33%" style="font-size:12px; color:#333;">
@@ -849,7 +865,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
 <div style="margin-bottom: 10px;">
 <?php if ($user): ?>
   <div id="commentFormBlock" style="display:none;">
-    <form method="post" action="video.php?id=<?=intval($id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;">
+    <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;">
       <input type="hidden" name="add_comment" value="1">
       <input type="hidden" name="form_id" value="comment_formmain_comment2">
       <input type="hidden" name="reply_parent_id" value="">
@@ -960,9 +976,9 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
           echo '<div><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" border="0" height="16" width="99"></div>';
         } else if ($user) {
           if ($is_friend) {
-            echo '<div><a href="video.php?id='.intval($id).'&friend_del='.urlencode($video['user']).'" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
+            echo '<div><a href="video.php?id='.htmlspecialchars($video['public_id'] ?? $id).'&friend_del='.urlencode($video['user']).'" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
           } else {
-            echo '<div><a href="video.php?id='.intval($id).'&friend_add='.urlencode($video['user']).'" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
+            echo '<div><a href="video.php?id='.htmlspecialchars($video['public_id'] ?? $id).'&friend_add='.urlencode($video['user']).'" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
           }
         } else {
           echo '<div><a href="login.php" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
@@ -1023,7 +1039,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         <?php endif; ?>
         <tr><td class="label">URL</td>
         <td>
-        <input name="video_link" value="http://retroshow.hoho.ws/video.php?id=<?= $video['id'] ?>" class="vidURLField" onclick="javascript:document.urlForm.video_link.focus();document.urlForm.video_link.select();" readonly="true" type="text">
+        <input name="video_link" value="http://retroshow.hoho.ws/video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>" class="vidURLField" onclick="javascript:document.urlForm.video_link.focus();document.urlForm.video_link.select();" readonly="true" type="text">
         </td>
         </tr>
         <tr><td class="smallLabel">Вставка</td>
@@ -1080,7 +1096,7 @@ if (window.attachEvent) {
         <table width="100%" cellpadding="2" cellspacing="0" border="0" style="background: #fff;">
           <tr style="background: #ffffcc;"><td width="60"><a href="#"><img src="<?=htmlspecialchars($video['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="#"><b><?=htmlspecialchars($video['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($video['file'], $video['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a><br>Просмотров: <?=intval($video['views'] ?? 212)?><br><b>&lt;&lt; Сейчас смотрите</b></span></td></tr>
           <?php foreach ($recommended as $rec): ?>
-          <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=intval($rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=intval($rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
+          <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
           <?php endforeach; ?>
           <tr>
             <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;">

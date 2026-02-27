@@ -13,25 +13,19 @@
 include("init.php");
 include("template.php");
 
-
-$upload_background_redirect_started = false;
-function upload_start_background_redirect() {
-    global $upload_background_redirect_started;
-    if ($upload_background_redirect_started) {
-        return;
+function generate_public_video_id(PDO $db) {
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+    while (true) {
+        $id = '';
+        for ($i = 0; $i < 11; $i++) {
+            $id .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+        $stmt = $db->prepare('SELECT COUNT(*) FROM videos WHERE public_id = ?');
+        $stmt->execute([$id]);
+        if ($stmt->fetchColumn() == 0) {
+            return $id;
+        }
     }
-    $upload_background_redirect_started = true;
-    ignore_user_abort(true);
-    if (session_id()) {
-        session_write_close();
-    }
-    if (!headers_sent()) {
-        header('Location: index.php?info=video_converting');
-        header('Connection: close');
-    }
-    
-    echo str_repeat(' ', 1024);
-    flush();
 }
 
 function get_video_dimensions($file) {
@@ -100,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     } else {
         $stmt = $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
         $next_id = $stmt->fetch()['next_id'] ?? 1;
+        $public_id = generate_public_video_id($db);
         
         $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
         $preview_ext = 'jpg'; 
@@ -225,8 +220,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                 $time = date("d.m.Y, H:i");
                 $is_private = ($broadcast === 'private') ? 1 : 0;
                 $tags = $tags ?? '';
-                $stmt = $db->prepare("INSERT INTO videos (title, description, file, preview, user, time, private, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$title, $description, $final_video, $preview_file, $_SESSION['user'], $time, $is_private, $tags]);
+                $stmt = $db->prepare("INSERT INTO videos (public_id, title, description, file, preview, user, time, private, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$public_id, $title, $description, $final_video, $preview_file, $_SESSION['user'], $time, $is_private, $tags]);
                 $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";
             }
         }

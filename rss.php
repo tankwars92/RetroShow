@@ -25,8 +25,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
 <description><?= htmlspecialchars($video['description']) ?></description>
 <author><?= htmlspecialchars($video['user']) ?></author>
 <pubDate><?= date(DATE_RSS, strtotime($video['time'])) ?></pubDate>
-<link><?= htmlspecialchars('http://' . $_SERVER['HTTP_HOST'] . '/video.php?id=' . $video['id']) ?></link>
-<guid><?= htmlspecialchars('http://' . $_SERVER['HTTP_HOST'] . '/video.php?id=' . $video['id']) ?></guid>
+<link><?= htmlspecialchars('http://' . $_SERVER['HTTP_HOST'] . '/video.php?id=' . ($video['public_id'] ?? $video['id'])) ?></link>
+<guid><?= htmlspecialchars('http://' . $_SERVER['HTTP_HOST'] . '/video.php?id=' . ($video['public_id'] ?? $video['id'])) ?></guid>
 </item>
 <?php endforeach; ?>
 

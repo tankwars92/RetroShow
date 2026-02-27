@@ -446,9 +446,9 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
   $total_pages = ceil($total / $per_page);
 
   if ($is_owner) {
-    $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file, tags, private FROM videos WHERE user = ? ORDER BY id DESC LIMIT $offset, $per_page");
+    $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file, tags, private FROM videos WHERE user = ? ORDER BY id DESC LIMIT $offset, $per_page");
   } else {
-    $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file, tags, private FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT $offset, $per_page");
+    $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file, tags, private FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT $offset, $per_page");
   }
   $stmt->execute([$user]);
   $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -513,9 +513,9 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                   <div class="moduleEntry">
                     <table width="565" cellpadding="0" cellspacing="0" border="0">
                       <tr valign="top">
-                        <td width="120"><a href="video.php?id=<?=intval($row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
+                        <td width="120"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                         <td width="100%" style="padding-left:8px;">
-                          <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=intval($row['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['title'])?></a></div>
+                          <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['title'])?></a></div>
                           <div style="font-size:12px; color:#222; margin:2px 0 2px 0;"><b><?=get_video_duration($row['file'], $row['id'])?></b>
                           <?php if (!empty($row['private']) && $is_owner): ?>
                             &nbsp;<font color="#FF0000"><b><i>(ПРИВАТНОЕ ВИДЕО!)</i></b></font>
@@ -669,7 +669,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             break;
 
         case 'rated':
-            $stmt = $db->prepare("SELECT v.id, v.title, v.preview, v.description, v.time, v.views, v.user, v.file, 
+            $stmt = $db->prepare("SELECT v.id, v.public_id, v.title, v.preview, v.description, v.time, v.views, v.user, v.file, 
                 COALESCE(AVG(r.rating),0) AS avg_rating, 
                 COUNT(r.id) AS votes_count,
                 (COALESCE(AVG(r.rating),0) * COUNT(r.id)) / (1 + COUNT(r.id)) AS weighted_rating
@@ -687,7 +687,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             break;
 
         case 'discussed':
-            $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file FROM videos WHERE private = 0");
+            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0");
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -726,7 +726,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             $videos = array_slice($all_videos, $offset, $per_page);
             break;
         case 'favorites':
-            $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file FROM videos WHERE private = 0");
+            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0");
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -764,7 +764,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
         $total = $stmt->fetchColumn();
         $total_pages = ceil($total / $per_page);
         
-        $stmt = $db->prepare("SELECT id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 ORDER BY $order_by LIMIT $offset, $per_page");
+        $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 ORDER BY $order_by LIMIT $offset, $per_page");
         $stmt->execute();
         $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -939,10 +939,10 @@ foreach ($filters as $filter_key => $filter_label) {
 			<td width="20%">
 				<div class="v120vEntry">
 					<div class="img">
-						<a href="video.php?id=<?=intval($video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="vimg" width="120" height="90"></a>
+                        <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="vimg" width="120" height="90"></a>
 					</div>
 					<div class="title" style="text-align:left;">
-						<b><a href="video.php?id=<?=intval($video['id'])?>"><?=htmlspecialchars($video['title'])?></a></b><br>
+						<b><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><?=htmlspecialchars($video['title'])?></a></b><br>
 						                <span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
 					</div>
 					<div class="facets" style="text-align:left;">
@@ -1330,9 +1330,9 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
         <div class="moduleEntry">
           <table width="565" cellpadding="0" cellspacing="0" border="0">
             <tr valign="top">
-              <td><a href="video.php?id=<?=intval($row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90"></a></td>
+              <td><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90"></a></td>
               <td width="100%">
-                <div class="moduleEntryTitle"><a href="video.php?id=<?=intval($row['id'])?>" style="color:#0033cc; text-decoration:none; font-size:15px; font-weight:bold;"><?=htmlspecialchars($row['title'])?></a></div>
+                <div class="moduleEntryTitle"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>" style="color:#0033cc; text-decoration:none; font-size:15px; font-weight:bold;"><?=htmlspecialchars($row['title'])?></a></div>
                 <?php
                 $desc = htmlspecialchars($row['description']);
                 $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;

@@ -36,6 +36,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS users (
 
 $db->exec("CREATE TABLE IF NOT EXISTS videos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    public_id TEXT UNIQUE,
     title TEXT,
     description TEXT,
     file TEXT,
@@ -116,6 +117,7 @@ $cols = $db->query("PRAGMA table_info(videos)")->fetchAll(PDO::FETCH_ASSOC);
 $existing_cols = array_column($cols, 'name');
 
 $missing_video_cols = [
+    'public_id' => 'TEXT',
     'tags' => 'TEXT',
     'private' => 'INTEGER DEFAULT 0',
     'views' => 'INTEGER DEFAULT 0'
@@ -129,3 +131,34 @@ foreach ($missing_video_cols as $col_name => $col_def) {
         }
     }
 }
+
+// -------------------------------------------------------------------------------------------------
+// Если у вас есть база данных в старом формате (без поддержки public_id), НЕ удаляйте эту функцию! 
+// Она присвоит public_id всем существующим видео.
+
+function init_generate_public_video_id(PDO $db) {
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+    while (true) {
+        $id = '';
+        for ($i = 0; $i < 11; $i++) {
+            $id .= $chars[random_int(0, strlen($chars) - 1)];
+        }
+        $stmt = $db->prepare('SELECT COUNT(*) FROM videos WHERE public_id = ?');
+        $stmt->execute([$id]);
+        if ($stmt->fetchColumn() == 0) {
+            return $id;
+        }
+    }
+}
+
+try {
+    $stmt = $db->query("SELECT id FROM videos WHERE public_id IS NULL OR public_id = ''");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $row) {
+        $pid = init_generate_public_video_id($db);
+        $up = $db->prepare("UPDATE videos SET public_id = ? WHERE id = ?");
+        $up->execute([$pid, $row['id']]);
+    }
+} catch (Exception $e) {
+}
+// -------------------------------------------------------------------------------------------------

@@ -103,12 +103,15 @@ $videos = array();
 if ($fav_list) {
     $db = new PDO('sqlite:retroshow.sqlite');
     $in = str_repeat('?,', count($fav_list)-1) . '?';
-    $stmt = $db->prepare("SELECT * FROM videos WHERE id IN ($in)");
+    $stmt = $db->prepare("SELECT id, public_id, user, title, description, file, tags, time, views, private, preview 
+                      FROM videos 
+                      WHERE id IN ($in)");
     $stmt->execute($fav_list);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        if (empty($row['private'])) {
-            $videos[$row['id']] = $row;
-        }
+      if (empty($row['private'])) {
+          $row['public_id'] = !empty($row['public_id']) ? $row['public_id'] : $row['id'];
+          $videos[$row['id']] = $row;
+      }
     }
 }
 
@@ -184,9 +187,9 @@ echo '</div>';
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
-                      <td width="120"><a href="video.php?id=<?=intval($video['id'])?>"><img src="uploads/<?=intval($video['id'])?>_preview.jpg" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
+                      <td width="120"><a href="video.php?id=<?=htmlspecialchars($video['public_id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
-                        <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=intval($video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
+                        <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?= htmlspecialchars($video['public_id']) ?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
                         <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'])?></div>
                         <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
                           <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
