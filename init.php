@@ -103,7 +103,9 @@ $missing_cols = [
     'profile_icon_custom' => 'TEXT',
     'profile_comm' => 'TEXT DEFAULT "1"',
     'profile_bull' => 'TEXT DEFAULT "1"',
-    'player_type' => 'TEXT DEFAULT "auto"'
+    'player_type' => 'TEXT DEFAULT "auto"',
+    'reset_token' => 'TEXT',
+    'reset_token_expires' => 'INTEGER'
 ];
 
 foreach ($missing_cols as $col_name => $col_def) {
@@ -163,4 +165,5 @@ try {
     }
 } catch (Exception $e) {
 }
+
 // -------------------------------------------------------------------------------------------------

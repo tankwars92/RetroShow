@@ -8,45 +8,9 @@ if (!empty($_SESSION['user'])) {
     exit;
 }
 
-function forgot_generateStrongPassword($length = 12, $add_dashes = false, $available_sets = 'luds')
+function forgot_generate_token()
 {
-    $sets = array();
-    if (strpos($available_sets, 'l') !== false)
-        $sets[] = 'abcdefghjkmnpqrstuvwxyz';
-    if (strpos($available_sets, 'u') !== false)
-        $sets[] = 'ABCDEFGHJKMNPQRSTUVWXYZ';
-    if (strpos($available_sets, 'd') !== false)
-        $sets[] = '23456789';
-    if (strpos($available_sets, 's') !== false)
-        $sets[] = '!@#$%&*?';
-
-    $all = '';
-    $password = '';
-    foreach ($sets as $set) {
-        $chars = str_split($set);
-        $password .= $chars[array_rand($chars)];
-        $all .= $set;
-    }
-
-    $allChars = str_split($all);
-    for ($i = 0; $i < $length - count($sets); $i++) {
-        $password .= $allChars[array_rand($allChars)];
-    }
-
-    $password = str_shuffle($password);
-
-    if (!$add_dashes) {
-        return $password;
-    }
-
-    $dash_len = floor(sqrt($length));
-    $dash_str = '';
-    while (strlen($password) > $dash_len) {
-        $dash_str .= substr($password, 0, $dash_len) . '-';
-        $password = substr($password, $dash_len);
-    }
-    $dash_str .= $password;
-    return $dash_str;
+    return md5(uniqid(mt_rand(), true));
 }
 
 $error = '';
@@ -67,26 +31,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['field_login_username'
         } elseif (empty($user['email'])) {
             $error = "У этого пользователя не указан email, восстановить пароль невозможно.";
         } else {
-            $new_password = forgot_generateStrongPassword(rand(12, 28));
+            $token = forgot_generate_token();
+            $expires = time() + 3600;
 
-            $upd = $db->prepare("UPDATE users SET pass = ? WHERE login = ?");
-            $upd->execute([$new_password, $user['login']]);
+            $upd = $db->prepare("UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE login = ?");
+            $upd->execute([$token, $expires, $user['login']]);
 
-            $subject = "Ваш аккаунт RetroShow";
+            $reset_link = "http://retroshow.hoho.ws/reset_password.php?login=" . urlencode($user['login']) . "&token=" . urlencode($token);
+
+            $subject = "Смена пароля RetroShow";
             $body = '<img src="http://retroshow.hoho.ws/img/logo_sm.png" width="147" height="50" hspace="12" vspace="12" alt="RetroShow"><br>' .
                 'Здравствуйте, ' . htmlspecialchars($user['login'], ENT_QUOTES, 'UTF-8') . ',<p>' .
-                'Вот ваши данные для входа на RetroShow:<br>' .
-                'Логин: ' . htmlspecialchars($user['login'], ENT_QUOTES, 'UTF-8') . '<br>' .
-                'Новый пароль: ' . htmlspecialchars($new_password, ENT_QUOTES, 'UTF-8') . '<p>' .
-                'Вы можете войти в свой аккаунт, используя эти данные.<br>' .
-                'В настройках аккаунта вы можете изменить свой пароль.<p>' .
+                'Вы запросили смену пароля на RetroShow.<br>' .
+                'Чтобы задать новый пароль, перейдите по ссылке ниже (она действительна в течение 1 часа):<br>' .
+                '<a href="' . htmlspecialchars($reset_link, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($reset_link, ENT_QUOTES, 'UTF-8') . '</a><p>' .
+                'Если вы не запрашивали смену пароля, просто проигнорируйте это письмо.<p>' .
                 'Спасибо, что пользуетесь RetroShow!<br>' .
                 '<i>RetroShow - Broadcast Yourself.</i><br><br><br><br>' .
                 '<center><div style="padding: 2px; padding-left: 7px; padding-top: 0px; margin-top: 10px; background-color: #E5ECF9; border-top: 1px dashed #3366CC; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: bold;">&nbsp;</div><br>' .
                 'Copyright © 2026 RetroShow, LLC';
 
             if (send_smtp_email_advanced($user['email'], $user['login'], $subject, $body, true)) {
-                $success = "Новый пароль отправлен на E-mail, указанный при регистрации.";
+                $success = "На E-mail, указанный при регистрации, отправлена ссылка для смены пароля.";
             } else {
                 $error = "Не удалось отправить письмо. Попробуйте позже.";
             }
@@ -111,7 +77,7 @@ showHeader("Забыли пароль");
         <td style="padding-right: 15px;">
             <span class="highlight">Забыли пароль? Не проблема!</span>
             <br><br>
-            Просто введите ваше имя пользователя, и мы отправим новый пароль на <b>E-mail</b>, указанный при регистрации.
+            Просто введите ваше имя пользователя, и мы отправим на <b>E-mail</b> специальную ссылку для смены пароля.
         </td>
         <td width="280">
             <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#E5ECF9">
@@ -140,7 +106,7 @@ showHeader("Забыли пароль");
                                 <tr>
                                     <td align="right"><span class="label">&nbsp;</span></td>
                                     <td>
-                                        <input type="submit" style="width:150px;" value="Выслать новый пароль"><br><br>
+                                        <input type="submit" style="width:110px;" value="Выслать ссылку"><br><br>
                                     </td>
                                 </tr>
                             </form>
