@@ -3,14 +3,15 @@ include("init.php");
 include("template.php");
 
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
-$admin_username = "ADMIN"; // !!! ЗАМЕНИТЕ НА СВОЁ ИМЯ ПОЛЬЗОВАТЕЛЯ !!!
+$admins = @unserialize(RETROSHOW_ADMINS);
+if (!is_array($admins)) $admins = [];
 
 if (!$user) {
     header('Location: login.php');
     exit;
 }
 
-if ($user !== $admin_username) {
+if (!in_array($user, $admins, true)) {
     header('Location: index.php');
     exit;
 }
@@ -70,4 +71,3 @@ showHeader("Админ панель");
 </form>
 </div>
 <?php showFooter(); ?>
-

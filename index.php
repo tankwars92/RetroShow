@@ -196,8 +196,8 @@ showHeader("Главная");
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr valign="top">
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
-					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php">Смотрите</a></div>
-					Мгновенно находите и смотрите тысячи быстрых потоковых видео.
+					<div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php">Смотрите</a></div>
+					Мгновенно находите и смотрите тысячи видео.
 					</td>
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
 					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="upload.php">Загружайте</a></div>
@@ -502,7 +502,7 @@ showHeader("Главная");
                 <table class="hpAboutTable" width="90%">
                   <tbody><tr>
                     <td class="label"><font size="2"><a href="channel.php">Смотрите</a></font></td>
-                    <td class="desc">Находите и смотрите тысячи потоковых видео.</td>
+                    <td class="desc">Находите и смотрите тысячи видео.</td>
                   </tr>
                   <tr>
                     <td class="label"><font size="2"><a href="upload.php">Загружайте</a></font></td>

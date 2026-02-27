@@ -1,7 +1,9 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 session_start();
 try {
-    $db = new PDO('sqlite:retroshow.sqlite');
+    $db = new PDO(RETROSHOW_DB_DSN);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Ошибка подключения к базе данных: " . $e->getMessage());

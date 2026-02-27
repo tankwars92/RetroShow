@@ -4,6 +4,8 @@ if (!isset($_SESSION['user'])) {
     header('Location: login.php');
     exit;
 }
+include_once "config.php";
+include_once __DIR__ . "/lib/mailer.php";
 include_once "template.php";
 
 showHeader("Пригласить друзей");
@@ -33,14 +35,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $user = isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : "ваше_имя";
     $personal = isset($_POST['personal_message']) ? trim($_POST['personal_message']) : '';
-    $content = $personal;
-	
-    foreach ($emails as $e) {
-        $receiver = urlencode($e['email']);
-        $msg = urlencode($content);
 
-        @file_get_contents("http://localhost:1305/?receiver=$receiver&content=$msg"); // Пока не готово.
-        $sent_count++;
+    $subject = "RetroShow";
+    $htmlTemplate = '
+<img src="http://retroshow.hoho.ws/img/logo_sm.png" vspace="12" alt="RetroShow"><br>
+RetroShow - это отличный сайт для обмена и хранения личных видео. Я использую
+<br>RetroShow, чтобы делиться видео с друзьями и семьёй. Я бы хотел 
+<br>добавить вас в список людей, с которыми могу делиться своими 
+<br>видео.
+<br><a href="http://retroshow.hoho.ws/">{link_text}</a>
+<p><i>RetroShow - Broadcast Yourself.</i><br><br>
+<center>
+<div style="padding: 2px; padding-left: 7px; padding-top: 0px; margin-top: 10px; background-color: #E5ECF9; border-top: 1px dashed #3366CC; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: bold;">
+&nbsp;</div><br>
+Copyright © 2026 RetroShow, LLC
+';
+
+    foreach ($emails as $e) {
+        $to_email = $e['email'];
+        $to_name  = $e['name'] !== '' ? $e['name'] : $to_email;
+
+        $link_text = $personal !== '' ? $personal : 'Перейти на RetroShow';
+        $safe_link_text = htmlspecialchars($link_text, ENT_QUOTES, 'UTF-8');
+        $body = str_replace('{link_text}', $safe_link_text, $htmlTemplate);
+
+        if (send_smtp_email_advanced($to_email, $to_name, $subject, $body, true)) {
+            $sent_count++;
+        }
     }
     $sent = true;
 }
