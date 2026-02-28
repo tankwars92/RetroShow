@@ -79,46 +79,21 @@ showHeader("Забыли пароль");
             <br><br>
             Просто введите ваше имя пользователя, и мы отправим на <b>E-mail</b> специальную ссылку для смены пароля.
         </td>
-        <td width="280">
-            <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#E5ECF9">
-                <tr>
-                    <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
-                    <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
-                    <td><img src="img/box_login_tr.gif" width="5" height="5"></td>
-                </tr>
-                <tr>
-                    <td><img src="img/pixel.gif" width="5" height="1"></td>
-                    <td align="center">
-                        <table width="100%" cellpadding="5" cellspacing="0" border="0">
-                            <form method="post" action="forgot.php">
-                                <input type="hidden" name="field_command" value="forgot_submit">
-                                <tr>
-                                    <td align="center" colspan="2">
-                                        <div style="font-size: 14px; font-weight: bold; color:#003366; margin-bottom: 5px;">
-                                            Восстановление пароля
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="right"><span class="label">Имя пользователя:</span></td>
-                                    <td><input type="text" size="20" name="field_login_username" value=""></td>
-                                </tr>
-                                <tr>
-                                    <td align="right"><span class="label">&nbsp;</span></td>
-                                    <td>
-                                        <input type="submit" style="width:110px;" value="Выслать ссылку"><br><br>
-                                    </td>
-                                </tr>
-                            </form>
-                        </table>
-                    </td>
-                    <td><img src="img/pixel.gif" width="5" height="1"></td>
-                </tr>
-                <tr>
-                    <td><img src="img/box_login_bl.gif" width="5" height="5"></td>
-                    <td><img src="img/pixel.gif" width="1" height="5"></td>
-                    <td><img src="img/box_login_br.gif" width="5" height="5"></td>
-                </tr>
+        <td width="300">
+            <table width="100%" cellpadding="5" cellspacing="0" bgcolor="#E5ECF9">
+                <form method="post" action="forgot.php">
+                    <input type="hidden" name="field_command" value="forgot_submit">
+                    <tr>
+                        <td align="right"><span class="label">Имя пользователя:</span></td>
+                        <td><input type="text" size="20" name="field_login_username" value=""></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>
+                            <input type="submit" style="width:110px;" value="Выслать ссылку">
+                        </td>
+                    </tr>
+                </form>
             </table>
         </td>
     </tr>

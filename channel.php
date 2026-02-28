@@ -1035,17 +1035,49 @@ foreach ($filters as $filter_key => $filter_label) {
 <div style="padding: 0px 5px 0px 5px;">
 
 </div>
-		</td></tr></table>
-    <table cellpadding="10" cellspacing="0" border="0" align="center">
-	<tbody><tr>
-		<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
-		<br><br>Copyright © 2026 RetroShow | <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
-		<br>
-		<br>
-		<script src="//downgrade-net.ru/services/ring/ring.php"></script> <img src="//downgrade-net.ru/services/counter/index.php?id=21" alt="Downgrade Counter" border="0"> 
-	</td>
-	</tr>
-</tbody></table>
+        </td></tr></table>
+
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tbody>
+        <tr>
+            <td align="center" valign="middle" style="font-family: Arial, sans-serif; font-size: 12px; line-height: 16px; text-align:center;">
+                
+                <table cellpadding="0" cellspacing="0" border="0" width="400" align="center">
+                <tr>
+                    <td align="center">
+                        <a href="about.php">О сайте</a> | 
+                        <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | 
+                        <a href="http://downgrade-net.ru/">Downgrade Net</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="height:2px; font-size:1px; line-height:1px;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td align="center">
+						<br>
+                        Copyright © 2026 RetroShow | 
+                        <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align:text-top;"></a>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="height:2px; font-size:1px; line-height:1px;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td align="center">
+						<br>
+                        <script src="//downgrade-net.ru/services/ring/ring.php"></script> 
+                        <img src="//downgrade-net.ru/services/counter/index.php?id=21" alt="Downgrade Counter" border="0">
+                    </td>
+                </tr>
+                </table>
+
+            </td>
+        </tr>
+        </tbody>
+        </table>
+</body>
+</html>
 
 <?php
 exit;

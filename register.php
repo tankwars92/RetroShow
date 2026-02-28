@@ -518,7 +518,7 @@ showHeader("Регистрация");
 				
 				<td class="formFieldSmall"> &nbsp;</td>
 				<td class="formFieldSmall"><br>- Я подтверждаю, что мне больше 13 лет.
-					<br>- Я согласен с <a href="/t/terms" target="_blank">условиями использования</a> и <a href="/t/privacy" target="_blank">политикой конфиденциальности</a>.
+					<br>- Я согласен с <a href="help.php?p=terms" target="_blank">условиями использования</a> и <a href="help.php?p=privacy" target="_blank">политикой конфиденциальности</a>.
 					<p><input tabindex="18" name="action_signup" type="submit" value="Зарегистрироваться"></p>	
 				</td>
 			</tr>
