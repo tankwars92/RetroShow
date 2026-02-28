@@ -21,6 +21,17 @@ function time_ago($time) {
     return $years.' лет назад';
 }
 
+function rus_date($time) {
+    $months = [
+        1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля', 5 => 'мая', 6 => 'июня',
+        7 => 'июля', 8 => 'августа', 9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
+    ];
+    $d = date('j', $time);
+    $m = $months[intval(date('n', $time))];
+    $y = date('Y', $time);
+    return "$d $m $y";
+}
+
 require_once 'duration_helper.php';
 
 function get_video_duration($file, $id) {
@@ -339,7 +350,7 @@ echo '</div>';
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <?php if ($about_me): ?>
   <div style="margin-bottom:10px; background:#fff;">
-    <div style="font-size:13px; color:#222; white-space:pre-line;"> <?=nl2br(htmlspecialchars($about_me))?> </div>
+    <div style="font-size:13px; color:#222; white-space:pre-line;"> <?=htmlspecialchars($about_me)?> </div>
     <hr style="border:0; border-top:1px dashed #888; height:1px; margin:2px 0 2px 0; background:none;">
   </div>
 <?php endif; ?>
@@ -1088,7 +1099,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
   <tr>
     <td style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;">Дата:</td>
     <td style="padding:8px; font-weight:bold; color:#666;">
-      <?=date('F d, Y, H:i A', $now)?>
+      <?=rus_date($now)?>, <?=date('H:i', $now)?>
     </td>
   </tr>
   <tr>
@@ -1174,7 +1185,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
           <br><img src="<?= $avatar ?>" width="64" height="50" style="border:1px solid #bbb; background:#eee;">
         </td>
         <td style="padding:8px; vertical-align:top;">
-          <div style="color:#888; font-size:13px;"><b><?=date('F d, Y', $c['time'])?></b></div>
+          <div style="color:#888; font-size:13px;"><b><?=rus_date($c['time'])?></b></div>
 		  <br>
           <div style="word-wrap: anywhere; width: 400px"><?=nl2br(htmlspecialchars($c['text']))?></div>
         </td>
