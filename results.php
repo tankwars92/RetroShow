@@ -242,10 +242,8 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                     <tr valign="top">
                       <td width="120"><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
-                        <div class="vtitle">
-                          <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><?=htmlspecialchars($video['title'])?></a><br>
-                          <span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
-                        </div>
+                        <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
+                        <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'])?></div>
                         <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
                           <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
                         </span>
@@ -258,7 +256,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                             <div class="vtagValue">
                                 <span id="vidTagsBegin-<?=$video['id']?>">
                                     <?php 
-                                    $tags = explode(' ', trim($video['tags']));
+                                    $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
                                     $visible_tags = array_slice($tags, 0, 5);
                                     $hidden_tags = array_slice($tags, 5);
                                     

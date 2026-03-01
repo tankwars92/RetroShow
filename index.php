@@ -196,7 +196,7 @@ showHeader("Главная");
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr valign="top">
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
-					<div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php">Смотрите</a></div>
+					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php">Смотрите</a></div>
 					Мгновенно находите и смотрите тысячи видео.
 					</td>
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
@@ -347,7 +347,7 @@ showHeader("Главная");
                             <div class="vtagValue">
                                 <span id="vidTagsBegin-<?=$video['id']?>">
                                     <?php 
-                                    $tags = explode(' ', trim($video['tags']));
+                                    $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
                                     $visible_tags = array_slice($tags, 0, 5);
                                     $hidden_tags = array_slice($tags, 5);
                                     
@@ -551,7 +551,7 @@ showHeader("Главная");
         $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
         $all_tags = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $tags = explode(' ', trim($row['tags']));
+            $tags = preg_split('/\s+/', trim($row['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
             foreach ($tags as $tag) {
                 $tag = trim($tag);
                 if (!empty($tag)) {

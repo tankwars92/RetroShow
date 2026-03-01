@@ -56,10 +56,16 @@ $success = '';
 
 $p = isset($_GET['p']) ? intval($_GET['p']) : 1;
 
+function normalize_tags($tags) {
+    $tags = trim($tags ?? '');
+    $parts = preg_split('/\s+/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+    return implode(' ', $parts);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 1) {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
-    $tags = trim($_POST['tags'] ?? '');
+    $tags = normalize_tags($_POST['tags'] ?? '');
     if ($title === '') {
         $error = 'Введите название видео.';
     } elseif ($tags === '') {
@@ -219,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
             if (empty($error)) {
                 $time = date("d.m.Y, H:i");
                 $is_private = ($broadcast === 'private') ? 1 : 0;
-                $tags = $tags ?? '';
+                $tags = normalize_tags($tags ?? '');
                 $stmt = $db->prepare("INSERT INTO videos (public_id, title, description, file, preview, user, time, private, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$public_id, $title, $description, $final_video, $preview_file, $_SESSION['user'], $time, $is_private, $tags]);
                 $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";

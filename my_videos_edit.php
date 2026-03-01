@@ -41,10 +41,16 @@ $description = $video['description'];
 $tags = $video['tags'];
 $broadcast = $video['private'] ? 'private' : 'public';
 
+function normalize_tags($tags) {
+    $tags = trim($tags ?? '');
+    $parts = preg_split('/\s+/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+    return implode(' ', $parts);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
-    $tags = trim($_POST['tags'] ?? '');
+    $tags = normalize_tags($_POST['tags'] ?? '');
     $broadcast = $_POST['broadcast'] ?? 'public';
 
     if ($title === '') {

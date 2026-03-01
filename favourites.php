@@ -203,7 +203,7 @@ echo '</div>';
                             <div class="vtagValue">
                                 <span id="vidTagsBegin-<?=$video['id']?>">
                                     <?php 
-                                    $tags = explode(' ', trim($video['tags']));
+                                    $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
                                     $visible_tags = array_slice($tags, 0, 5);
                                     $hidden_tags = array_slice($tags, 5);
                                     
