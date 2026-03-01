@@ -122,28 +122,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
             $output = [];
             $return_var = 0;
             $log_file = $uploads_dir . '/ffmpeg_' . $next_id . '.log';
-            $convert_filter = 'scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p';
 
-            $ffmpeg = "ffmpeg -y -i " . escapeshellarg($temp_video) .
-                     " -vf \"" . $convert_filter . "\"" .
-                     " -c:v libx264 -preset veryfast -crf 23" .
-                     " -c:a aac -b:a 128k -ar 44100 -ac 2" .
-                     " -movflags +faststart " .
-                     escapeshellarg($final_video) .
-                     " 2>" . escapeshellarg($log_file);
-            exec($ffmpeg, $output, $return_var);
+            $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($temp_video);
+            $has_video = trim(shell_exec($ffprobe)) === 'video';
 
-            if ($return_var !== 0) {
-                $output = [];
-                $ffmpeg_fallback = "ffmpeg -y -f lavfi -i color=c=black:s=320x240 -i " . escapeshellarg($temp_video) .
-                                 " -shortest" .
-                                 " -c:v libx264 -preset veryfast -crf 23" .
-                                 " -c:a aac -b:a 128k -ar 44100 -ac 2" .
-                                 " -movflags +faststart " .
-                                 escapeshellarg($final_video) .
-                                 " 2>>" . escapeshellarg($log_file);
-                exec($ffmpeg_fallback, $output, $return_var);
+            $dimensions = get_video_dimensions($temp_video);
+            $vf_filter = "format=yuv420p";
+            if ($dimensions && is_4_3_aspect_ratio($dimensions['width'], $dimensions['height'])) {
+                if ($dimensions['width'] > 800 || $dimensions['height'] > 600) {
+                    $vf_filter .= ",scale=800:600";
+                }
             }
+
+            if (!$has_video) {
+                $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
+                         " -f lavfi -i color=c=black:s=640x360 -shortest " .
+                         " -c:v libx264 -profile:v baseline -level 3.0 -crf 18 -preset slow " .
+                         " -c:a aac -b:a 128k -ar 44100 -ac 2 " .
+                         " -movflags +faststart " .
+                         " -y " .
+                         " -loglevel quiet " .
+                         escapeshellarg($final_video) .
+                         " 2>" . escapeshellarg($log_file);
+            } else {
+                $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
+                         " -c:v libx264 -profile:v baseline -level 3.1 -crf 18 -preset slow " .
+                         " -c:a aac -b:a 128k -ar 44100 -ac 2 " .
+                         " -vf \"" . $vf_filter . "\" " .
+                         " -movflags +faststart " .
+                         " -avoid_negative_ts make_zero " .
+                         " -y " .
+                         " -loglevel quiet " .
+                         escapeshellarg($final_video) .
+                         " 2>" . escapeshellarg($log_file);
+            }
+
+            exec($ffmpeg, $output, $return_var);
 
             if ($return_var !== 0) {
                 $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';

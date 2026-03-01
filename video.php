@@ -93,11 +93,11 @@ if (!$video || !$id) {
 $flash_len = 0;
 if (function_exists('get_video_duration_fast')) {
     $dur_str = get_video_duration_fast($video['file'], $id);
-    if ($dur_str && $dur_str !== '--:--') {
+    if ($dur_str && $dur_str != '--:--') {
         $parts = explode(':', $dur_str);
-        if (count($parts) === 3) {
+        if (count($parts) == 3) {
             $flash_len = intval($parts[0]) * 3600 + intval($parts[1]) * 60 + intval($parts[2]);
-        } elseif (count($parts) === 2) {
+        } elseif (count($parts) == 2) {
             $flash_len = intval($parts[0]) * 60 + intval($parts[1]);
         }
     }
@@ -157,7 +157,7 @@ if (isset($_GET['download']) && $_GET['download'] == 'avi') {
 function get_video_rating_stats($db, $video_id) {
     $row = $db->query("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM ratings WHERE video_id = ".intval($video_id))->fetch(PDO::FETCH_ASSOC);
     $count = intval($row['cnt'] ?? 0);
-    $avg = $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : 0;
+    $avg = $row['avg_rating'] != null ? round((float)$row['avg_rating'], 1) : 0;
     return [$count, $avg];
 }
 function get_user_current_rating($db, $video_id, $user, $ip) {
@@ -165,12 +165,12 @@ function get_user_current_rating($db, $video_id, $user, $ip) {
         $st = $db->prepare("SELECT rating FROM ratings WHERE video_id = ? AND user = ? ORDER BY rated_at DESC LIMIT 1");
         $st->execute([$video_id, $user]);
         $r = $st->fetchColumn();
-        if ($r !== false) return intval($r);
+        if ($r != false) return intval($r);
     }
     $st = $db->prepare("SELECT rating FROM ratings WHERE video_id = ? AND ip = ? ORDER BY rated_at DESC LIMIT 1");
     $st->execute([$video_id, $ip]);
     $r = $st->fetchColumn();
-    return $r !== false ? intval($r) : 0;
+    return $r != false ? intval($r) : 0;
 }
 function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initial_rating = 0) {
     ob_start();
@@ -193,7 +193,7 @@ function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initi
 		<div class="rating" style="white-space:nowrap;"><?=intval($ratings_count)?> оценок</div>
 	</div>
 	<script type="text/javascript">
-		if (typeof UTRating !== 'undefined') {
+		if (typeof UTRating != 'undefined') {
 			var ratingComponent = new UTRating('ratingDiv', 5, 'ratingComponent', 'ratingForm');
 			ratingComponent.starCount = <?=intval($initial_rating)?>;
 			ratingComponent.drawStars(<?=intval($initial_rating)?>);
@@ -549,6 +549,14 @@ $current_rating = get_user_current_rating($db, $id, $user, $ip);
 ?>
 
 <html><head><title><?=htmlspecialchars($video['title'])?></title>
+<script type="text/javascript">
+var onLoadFunctionList = [];
+function performOnLoadFunctions() {
+    for (var i = 0; i < onLoadFunctionList.length; i++) {
+        onLoadFunctionList[i]();
+    }
+}
+</script>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="stylesheet" href="img/styles.css" type="text/css">
@@ -801,8 +809,19 @@ toggleVisibility('myAccountDropdown',0);
         </div>
     </div>
     
-    <script src="viewfinder/player.js"></script>
-    <script>
+    <script type="text/javascript">
+    (function() {
+        var v = document.createElement('video');
+        var supportsVideo = !!(v && v.canPlayType);
+        if (!supportsVideo) return;
+        var s = document.createElement('script');
+        s.type = 'text/javascript';
+        s.src = 'viewfinder/player.js';
+        var head = document.getElementsByTagName('head')[0] || document.documentElement;
+        head.appendChild(s);
+    })();
+    </script>
+    <script type="text/javascript">
     (function(){
         function hasFlash(){
             var has = false;
