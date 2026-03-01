@@ -394,6 +394,10 @@ if (isset($_POST['add_comment'])) {
         } elseif (mb_strlen($comment_text) > 500) {
             $comment_error = 'Комментарий слишком длинный (макс. 500 символов)!';
         } else {
+            $comments_dir = __DIR__ . '/comments';
+            if (!is_dir($comments_dir)) {
+                mkdir($comments_dir, 0755, true);
+            }
             $line = time() . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $user) . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $comment_text) . '|' . $parent_id . "\n";
             file_put_contents($comments_file, $line, FILE_APPEND | LOCK_EX);
             header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));

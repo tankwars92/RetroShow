@@ -1137,8 +1137,12 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
         $comment = trim($_POST['comment'] ?? '');
         if ($comment === '') {
             $comment_error = 'Комментарий не может быть пустым!';
-    } else {
-            $comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
+        } else {
+            $comments_dir = __DIR__ . '/comments';
+            if (!is_dir($comments_dir)) {
+                mkdir($comments_dir, 0755, true);
+            }
+            $comments_file = $comments_dir . '/profile_' . urlencode($user) . '.txt';
             $line = time() . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $_SESSION['user']) . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $comment) . "\n";
             file_put_contents($comments_file, $line, FILE_APPEND | LOCK_EX);
             header('Location: channel.php?user='.urlencode($user).'&tab=comments');
