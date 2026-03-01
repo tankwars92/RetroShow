@@ -383,6 +383,42 @@ try {
 $comment_error = '';
 $comments_file = __DIR__ . '/comments/' . $id . '.txt';
 $comments_count = (file_exists($comments_file)) ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+if (isset($_GET['del_comment']) && $user) {
+    $del_id = $_GET['del_comment'];
+    if (file_exists($comments_file)) {
+        $lines = file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $comments_check = [];
+        foreach ($lines as $k => $l) {
+            $parts = explode('|', $l, 4);
+            if (count($parts) >= 3 && ($parts[0] ?? '') !== 'REMOVED') {
+                $comments_check[$k] = ['id' => $k, 'user' => $parts[1], 'parent_id' => $parts[3] ?? ''];
+            }
+        }
+        $get_descendants = function($pid) use ($comments_check, &$get_descendants) {
+            $ids = [ $pid ];
+            foreach ($comments_check as $c) {
+                if ((string)$c['parent_id'] === (string)$pid) {
+                    $ids = array_merge($ids, $get_descendants($c['id']));
+                }
+            }
+            return $ids;
+        };
+        if (isset($comments_check[$del_id]) && $comments_check[$del_id]['user'] === $user) {
+            $to_delete = $get_descendants($del_id);
+            $new_lines = [];
+            foreach ($lines as $idx => $l) {
+                $parts = explode('|', $l, 4);
+                if (count($parts) < 3 || ($parts[0] ?? '') === 'REMOVED') continue;
+                if (in_array($idx, $to_delete)) continue;
+                if (isset($parts[3]) && in_array($parts[3], $to_delete)) $parts[3] = '';
+                $new_lines[] = implode('|', $parts);
+            }
+            file_put_contents($comments_file, implode("\n", $new_lines) . (count($new_lines) ? "\n" : ""), LOCK_EX);
+        }
+    }
+    header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id) . "#comments");
+    exit;
+}
 if (isset($_POST['add_comment'])) {
     if (!$user) {
         $comment_error = 'Только для зарегистрированных пользователей!';
@@ -451,7 +487,7 @@ function build_comment_tree($comments, $parent_id = '', &$max_child_time = null)
     return $tree;
 }
 function render_comments($tree, $level = 0) {
-    global $user;
+    global $user, $video, $id;
     $max_level = 5;
     foreach ($tree as $c) {
         $ml = ($level > 0 ? 'margin-left:'.(min($level, $max_level)*30).'px;' : '');
@@ -464,6 +500,10 @@ function render_comments($tree, $level = 0) {
         echo '<div style="text-align:right;font-size:11px;color:#0033cc;padding:0 6px 2px 0;'.$ml.'">';
         if ($user) {
             echo '<a href="#" class="reply-link" data-id="'.$c['id'].'" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
+            if ($user === $c['user']) {
+                $vid = urlencode($video['public_id'] ?? $id);
+                echo ' <a href="video.php?id='.$vid.'&del_comment='.$c['id'].'#comments" onclick="return confirm(\'Удалить комментарий?\');" style="color:#0033cc;text-decoration:underline;font-size:11px;">(удалить)</a>';
+            }
         } else {
           echo '<a href="#" onclick="alert(\'Только для зарегистрированных пользователей!\'); return false;" data-id="'.$c['id'].'" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
         }
