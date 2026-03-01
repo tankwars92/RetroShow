@@ -184,11 +184,11 @@ function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initi
 
 	<div>
 		<nobr>
-			<a href="#" onclick="ratingComponent.setStars(1); return false;" onmouseover="ratingComponent.showStars(1);" onmouseout="ratingComponent.clearStars();"><img src="img_/star_smn_bg.gif" id="star_1" class="rating" style="border: 0px"></a>
-			<a href="#" onclick="ratingComponent.setStars(2); return false;" onmouseover="ratingComponent.showStars(2);" onmouseout="ratingComponent.clearStars();"><img src="img_/star_smn_bg.gif" id="star_2" class="rating" style="border: 0px"></a>
-			<a href="#" onclick="ratingComponent.setStars(3); return false;" onmouseover="ratingComponent.showStars(3);" onmouseout="ratingComponent.clearStars();"><img src="img_/star_smn_bg.gif" id="star_3" class="rating" style="border: 0px"></a>
-			<a href="#" onclick="ratingComponent.setStars(4); return false;" onmouseover="ratingComponent.showStars(4);" onmouseout="ratingComponent.clearStars();"><img src="img_/star_smn_bg.gif" id="star_4" class="rating" style="border: 0px"></a>
-			<a href="#" onclick="ratingComponent.setStars(5); return false;" onmouseover="ratingComponent.showStars(5);" onmouseout="ratingComponent.clearStars();"><img src="img_/star_smn_bg.gif" id="star_5" class="rating" style="border: 0px"></a>
+			<a href="#" onclick="ratingComponent.setStars(1); return false;" onmouseover="ratingComponent.showStars(1);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_1" class="rating" style="border: 0px"></a>
+			<a href="#" onclick="ratingComponent.setStars(2); return false;" onmouseover="ratingComponent.showStars(2);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_2" class="rating" style="border: 0px"></a>
+			<a href="#" onclick="ratingComponent.setStars(3); return false;" onmouseover="ratingComponent.showStars(3);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_3" class="rating" style="border: 0px"></a>
+			<a href="#" onclick="ratingComponent.setStars(4); return false;" onmouseover="ratingComponent.showStars(4);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_4" class="rating" style="border: 0px"></a>
+			<a href="#" onclick="ratingComponent.setStars(5); return false;" onmouseover="ratingComponent.showStars(5);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_5" class="rating" style="border: 0px"></a>
 		</nobr>
 		<div class="rating" style="white-space:nowrap;"><?=intval($ratings_count)?> оценок</div>
 	</div>
@@ -211,11 +211,11 @@ function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initi
  						<div id="ratingMessage" class="label" style="white-space:nowrap;">Спасибо за оценку!</div>
  	<div>
  		<nobr>
- 			<img src="img_/star_smn<?=($current>=1?'':'_bg')?>.gif" id="star_1" class="rating" style="border:0px" alt="1">
- 			<img src="img_/star_smn<?=($current>=2?'':'_bg')?>.gif" id="star_2" class="rating" style="border:0px" alt="2">
- 			<img src="img_/star_smn<?=($current>=3?'':'_bg')?>.gif" id="star_3" class="rating" style="border:0px" alt="3">
- 			<img src="img_/star_smn<?=($current>=4?'':'_bg')?>.gif" id="star_4" class="rating" style="border:0px" alt="4">
- 			<img src="img_/star_smn<?=($current>=5?'':'_bg')?>.gif" id="star_5" class="rating" style="border:0px" alt="5">
+ 			<img src="img/star_smn<?=($current>=1?'':'_bg')?>.gif" id="star_1" class="rating" style="border:0px" alt="1">
+ 			<img src="img/star_smn<?=($current>=2?'':'_bg')?>.gif" id="star_2" class="rating" style="border:0px" alt="2">
+ 			<img src="img/star_smn<?=($current>=3?'':'_bg')?>.gif" id="star_3" class="rating" style="border:0px" alt="3">
+ 			<img src="img/star_smn<?=($current>=4?'':'_bg')?>.gif" id="star_4" class="rating" style="border:0px" alt="4">
+ 			<img src="img/star_smn<?=($current>=5?'':'_bg')?>.gif" id="star_5" class="rating" style="border:0px" alt="5">
  		</nobr>
 		<div class="rating"><?=intval($ratings_count)?> оценок</div>
 	</div>
@@ -242,11 +242,11 @@ function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initi
  						<div id="ratingMessage" class="label">Оцените видео</div>
  	<div>
  		<nobr>
- 			<img src="img_/star_smn<?=($stars[0]==='full'?'':($stars[0]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="1">
- 			<img src="img_/star_smn<?=($stars[1]==='full'?'':($stars[1]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="2">
- 			<img src="img_/star_smn<?=($stars[2]==='full'?'':($stars[2]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="3">
- 			<img src="img_/star_smn<?=($stars[3]==='full'?'':($stars[3]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="4">
- 			<img src="img_/star_smn<?=($stars[4]==='full'?'':($stars[4]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="5">
+ 			<img src="img/star_smn<?=($stars[0]==='full'?'':($stars[0]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="1">
+ 			<img src="img/star_smn<?=($stars[1]==='full'?'':($stars[1]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="2">
+ 			<img src="img/star_smn<?=($stars[2]==='full'?'':($stars[2]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="3">
+ 			<img src="img/star_smn<?=($stars[3]==='full'?'':($stars[3]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="4">
+ 			<img src="img/star_smn<?=($stars[4]==='full'?'':($stars[4]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="5">
  		</nobr>
  		<div class="rating"><?=intval($ratings_count)?> оценок</div>
  	</div>
@@ -507,12 +507,12 @@ $current_rating = get_user_current_rating($db, $id, $user, $ip);
 <html><head><title><?=htmlspecialchars($video['title'])?></title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
-<link rel="stylesheet" href="img_/styles_ets11562102812.css" type="text/css">
-<link rel="stylesheet" href="img_/base_ets1156367996.css" type="text/css">
-<link rel="stylesheet" href="img_/watch_ets1156799200.css" type="text/css">
+<link rel="stylesheet" href="img/styles.css" type="text/css">
+<link rel="stylesheet" href="img/base.css" type="text/css">
+<link rel="stylesheet" href="img/watch.css" type="text/css">
 <script type="text/javascript" src="img/ui_ets.js"></script>
-<script type="text/javascript" src="img_/AJAX_ets1151038149.js"></script>
-<script type="text/javascript" src="img_/components_ets1149224151.js"></script>
+<script type="text/javascript" src="img/AJAX.js"></script>
+<script type="text/javascript" src="img/components.js"></script>
 <link href="img/styles.css" rel="stylesheet" type="text/css">
 <link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
 <style type="text/css">
@@ -573,7 +573,7 @@ $current_rating = get_user_current_rating($db, $id, $user, $ip);
               <?php else: ?>
 							<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong></td>
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|<span style="white-space: nowrap;">
-<a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img_/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
+<a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
 
 <div id="myAccountDropdown" class="myAccountMenu" onmouseover="showDropdown();" onmouseout="hideDropwdown();" style="display: none; position: absolute;">
 	<div id="menuContainer" class="menuBox">
@@ -666,6 +666,18 @@ toggleVisibility('myAccountDropdown',0);
 		<td style="border-bottom: 1px solid #FFFFFF"><img src="img/box_login_br.gif" width="5" height="5"></td>
 	</tr>
 </tbody></table>
+
+<form name="searchForm" id="searchForm" method="GET" action="results.php" style="margin: 0; padding: 0;">
+<table align="center" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
+	<tbody><tr>
+		<td style="padding-right: 5px;"><input tabindex="1" type="text" value="<?=htmlspecialchars($_GET['search_query'] ?? '')?>" name="search_query" maxlength="128" style="color:#ff3333; font-size: 12px; width: 300px;"></td>
+		<td><input type="submit" value="Искать видео"></td>
+	</tr></tbody></table>
+</form>
+
+<script language="javascript">
+	onLoadFunctionList.push(function () { document.searchForm.search_query.focus(); });
+</script>
 
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
@@ -1099,7 +1111,7 @@ if (window.attachEvent) {
           <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
           <?php endforeach; ?>
           <tr>
-            <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;">
+            <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;"> 
               <a href="channel.php" style="color:#0033cc;">Посмотрите все видео</a>
             </td>
           </tr>

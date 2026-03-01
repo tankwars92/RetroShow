@@ -44,9 +44,9 @@ function showHeader($title = "RetroShow") {
 		</script>
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-<link rel="stylesheet" href="img_/styles_ets11562102812.css" type="text/css">
-<link rel="stylesheet" href="img_/base_ets1156367996.css" type="text/css">
-<link rel="stylesheet" href="img_/watch_ets1156799200.css" type="text/css">
+<link rel="stylesheet" href="img/styles.css" type="text/css">
+<link rel="stylesheet" href="img/base.css" type="text/css">
+<link rel="stylesheet" href="img/watch.css" type="text/css">
 <script type="text/javascript" src="img/ui_ets.js"></script>
 <link href="img/styles.css" rel="stylesheet" type="text/css">
 <link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
@@ -143,7 +143,7 @@ function showHeader($title = "RetroShow") {
 						<?php else: ?>
 							<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong></td>
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|<span style="white-space: nowrap;">
-<a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img_/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
+<a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
 
 <div id="myAccountDropdown" class="myAccountMenu" onmouseover="showDropdown();" onmouseout="hideDropwdown();" style="display: none; position: absolute;">
 	<div id="menuContainer" class="menuBox">

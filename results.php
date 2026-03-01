@@ -110,11 +110,11 @@ function render_avg_stars_html($avg, $count) {
     ?>
     <div style="margin:2px 0 2px 0;">
       <nobr>
-        <img src="img_/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
       </nobr>
       <div class="rating"><?=intval($count)?> оценок</div>
     </div>
@@ -214,9 +214,9 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                    <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
                      Результаты поиска: '<?=htmlspecialchars($search_query)?>'
                    </td>
-                   <td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+                   <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
                      Показано
-                     <b><?=($page-1)*$per_page+1?></b>-<b><?=min($page*$per_page, $total)?></b> из <b><?=$total?></b>
+                     <?=($page-1)*$per_page+1?>-<?=min($page*$per_page, $total)?> из <?=$total?>
                    </td>
                  </tr>
                </table>

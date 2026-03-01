@@ -58,11 +58,11 @@ function channel_render_avg_stars_html($avg, $count) {
     ?>
     <div style="margin:2px 0 2px 0;">
       <nobr>
-        <img src="img_/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img_/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
       </nobr>
       <div class="rating"><?=intval($count)?> оценок</div>
     </div>
@@ -465,7 +465,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
   $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
   showHeader('Публичные видео // ' . htmlspecialchars($user));
     ?>
-  <link rel="stylesheet" href="img_/styles_ets11562102812.css" type="text/css">
+  <link rel="stylesheet" href="img/styles.css" type="text/css">
   <style>
   .vfacets { margin: 5px 0 !important; }
   .vtagLabel { font-size: 11px !important; color: #888 !important; display: inline !important; }
@@ -473,8 +473,8 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
   .vtagValue .dg { color: #333 !important; text-decoration: underline !important; }
   .vtagValue .dg:hover { color: #333 !important; text-decoration: underline !important; }
   </style>
-<link rel="stylesheet" href="img_/base_ets1156367996.css" type="text/css">
-<link rel="stylesheet" href="img_/watch_ets1156799200.css" type="text/css">
+<link rel="stylesheet" href="img/base.css" type="text/css">
+<link rel="stylesheet" href="img/watch.css" type="text/css">
 	<div style="padding:8px 0 12px 0; text-align:center; font-size:13px;">
   <a href="channel.php?user=<?=urlencode($user)?>">Профиль</a> |
   <b>Видео</b> (<?= $total ?>)</a>
@@ -814,14 +814,14 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title><?= $filter_name ?> видео - RetroShow</title>
-<link rel="stylesheet" href="img_/styles_ets11562102812.css" type="text/css">
-<link rel="stylesheet" href="img_/base_ets1156367996.css" type="text/css">
-<link rel="stylesheet" href="img_/watch_ets1156799200.css" type="text/css">
+<link rel="stylesheet" href="img/styles.css" type="text/css">
+<link rel="stylesheet" href="img/base.css" type="text/css">
+<link rel="stylesheet" href="img/watch.css" type="text/css">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <meta name="description" content="Share your videos with friends and family">
 <meta name="keywords" content="video,sharing,camera phone,video phone">
-<script type="text/javascript" src="img_/ui_ets11558746822.js"></script>
+<script type="text/javascript" src="img/ui_ets.js"></script>
 <script language="javascript" type="text/javascript">
 onLoadFunctionList = new Array();
 function performOnLoadFunctions() {
@@ -852,7 +852,7 @@ function performOnLoadFunctions() {
     <?php else: ?>
 <td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong></td>
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|<span style="white-space: nowrap;">
-<a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img_/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
+<a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
 
 <div id="myAccountDropdown" class="myAccountMenu" onmouseover="showDropdown();" onmouseout="hideDropwdown();" style="display: none; position: absolute;">
 	<div id="menuContainer" class="menuBox">
@@ -954,6 +954,19 @@ foreach ($filters as $filter_key => $filter_label) {
 <td style="border-bottom: 1px solid #FFFFFF"><img src="img/box_login_br.gif" width="5" height="5"></td>
 </tr>
 </table>
+
+<form name="searchForm" id="searchForm" method="GET" action="results.php" style="margin: 0; padding: 0;">
+<table align="center" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
+	<tbody><tr>
+		<td style="padding-right: 5px;"><input tabindex="1" type="text" value="<?=htmlspecialchars($_GET['search_query'] ?? '')?>" name="search_query" maxlength="128" style="color:#ff3333; font-size: 12px; width: 293px;"></td>
+		<td><input type="submit" value="Искать видео"></td>
+	</tr></tbody></table>
+</form>
+
+<script language="javascript">
+	onLoadFunctionList.push(function () { document.searchForm.search_query.focus(); });
+</script>
+
 	<table width="770" align="center" cellpadding="0" cellspacing="0" border="0">
 	<tr valign="top">
 	<td style="padding-right: 15px;">
@@ -971,8 +984,8 @@ foreach ($filters as $filter_key => $filter_label) {
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tr>
 						<td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;"><?= $filter_name ?> видео</td>
-						<td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-							Видео <b><?= ($offset + 1) ?></b>-<b><?= min($offset + $per_page, $total) ?></b> из <b><?= $total ?></b>
+						<td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+							Видео <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> из <?= $total ?>
 						</td>
 					</tr>
 				</table>
@@ -990,7 +1003,7 @@ foreach ($filters as $filter_key => $filter_label) {
 				foreach ($videos as $video):
 					if ($i % 5 == 0) echo '<tr valign="top">';
 					list($rc, $ra) = channel_get_rating_stats($db, $video['id']);
-					$title_display = mb_strlen($video['title']) > 20 ? mb_substr($video['title'], 0, 20) . '...' : $video['title'];
+					$title_display = mb_strlen($video['title']) > 20 ? mb_substr($video['title'], 0, 22) . '...' : $video['title'];
 				?>
 					<td width="20%" style="padding: 2px; vertical-align: top;">
 						<div style="padding: 4px;">
@@ -1276,7 +1289,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link href="img/styles.css" rel="stylesheet" type="text/css">
 
-<link rel="stylesheet" href="img/epiktube.css" type="text/css">
+<link rel="stylesheet" href="img/retroshow" type="text/css">
 <link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
 <style type="text/css">
 .formTitle { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #333; }
