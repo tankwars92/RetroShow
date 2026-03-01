@@ -677,6 +677,9 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
         case 'favorites':
             $filter_name = 'Избранные';
             break;
+        case 'random':
+            $filter_name = 'Случайные';
+            break;
         case 'linked':
             $filter_name = 'Ссылки';
             break;
@@ -783,9 +786,19 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             $total_pages = ceil($total / $per_page);
             $videos = array_slice($all_videos, $offset, $per_page);
             break;
+
+        case 'random':
+            $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0");
+            $stmt->execute();
+            $total = $stmt->fetchColumn();
+            $total_pages = ceil($total / $per_page);
+            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 ORDER BY RANDOM() LIMIT $offset, $per_page");
+            $stmt->execute();
+            $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            break;
     }
     
-    if ($filter !== 'discussed' && $filter !== 'favorites' && $filter !== 'rated') {
+    if ($filter !== 'discussed' && $filter !== 'favorites' && $filter !== 'rated' && $filter !== 'random') {
         $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0");
         $stmt->execute();
         $total = $stmt->fetchColumn();
@@ -908,7 +921,8 @@ $filters = [
     'viewed' => 'Популярные', 
     'rated' => 'Высоко оцененные',
     'discussed' => 'Обсуждаемые',
-    'favorites' => 'Избранные'
+    'favorites' => 'Избранные',
+    'random' => 'Случайные'
 ];
 
 $first = true;
@@ -940,102 +954,102 @@ foreach ($filters as $filter_key => $filter_label) {
 <td style="border-bottom: 1px solid #FFFFFF"><img src="img/box_login_br.gif" width="5" height="5"></td>
 </tr>
 </table>
-	<center>
-		<table width="790" cellpadding="0" cellspacing="0" border="0">
+	<table width="770" align="center" cellpadding="0" cellspacing="0" border="0">
 	<tr valign="top">
-	<td style="padding-right:15px;">
-		<div class="headerRCBox">
-		<b class="rch">
-		<b class="rch1"><b></b></b>
-		<b class="rch2"><b></b></b>
-		<b class="rch3"></b>
-		<b class="rch4"></b>
-		<b class="rch5"></b>
-		</b> <div class="content">    <div class="headerTitleRight">Видео <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> из <?= $total ?></div>
-		<div class="headerTitle" style="text-align:left;"><?= $filter_name ?> видео</div>
-	</div>
-		</div>
-
-	<div class="contentBox">	
-	<table cellpadding="0" cellspacing="0" border="0" width="100%">
-		<?php
-		$i = 0;
-		foreach ($videos as $video) {
-			if ($i % 4 == 0) echo '<tr valign="top">';
-			?>
-			<td width="20%">
-				<div class="v120vEntry">
-					<div class="img">
-                        <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="vimg" width="120" height="90"></a>
-					</div>
-					<div class="title" style="text-align:left;">
-						<b><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><?=htmlspecialchars($video['title'])?></a></b><br>
-						                <span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
-					</div>
-					<div class="facets" style="text-align:left;">
-						<span class="grayText">Добавлено:</span> <?=time_ago(strtotime($video['time']))?><br>
-						<span class="grayText">Автор:</span> <a href="channel.php?user=<?=urlencode($video['user'])?>"><?=htmlspecialchars($video['user'])?></a><br>
-						<span class="grayText">Просмотров:</span> <?=intval($video['views'])?><br>
-							<?php list($rc,$ra)=channel_get_rating_stats($db,$video['id']); echo channel_render_avg_stars_html($ra,$rc); ?>
-					</div>
-				</div>
-			</td>
-			<?php
-			$i++;
-			if ($i % 4 == 0) echo '</tr>';
-		}
-		if ($i % 4 != 0) {
-			for ($j = $i % 4; $j < 4; $j++) echo '<td width="20%"></td>';
-			echo '</tr>';
-		}
-		?>
-	</table>
-	</div>
-			<div class="footerBox">
-		
-		<div class="pagingDiv">
-				Стр.
-
-			    <?php
-                $start_page = max(1, $page - 2);
-                $end_page = min($total_pages, $page + 2);
-                
-                if ($start_page > 1) {
-                    echo '<span class="pagerNotCurrent"><a href="?page=1&filter='.$filter.'">1</a></span>';
-                    if ($start_page > 2) echo ' ... ';
-                }
-                
-                for ($i = $start_page; $i <= $end_page; $i++) {
-                    if ($i == $page) {
-                        echo '<span class="pagerCurrent">'.$i.'</span>';
-                    } else {
-                        echo '<span class="pagerNotCurrent"><a href="?page='.$i.'&filter='.$filter.'">'.$i.'</a></span>';
-                    }
-                }
-                
-                if ($end_page < $total_pages) {
-                    if ($end_page < $total_pages - 1) echo ' ... ';
-                    echo '<span class="pagerNotCurrent"><a href="?page='.$total_pages.'&filter='.$filter.'">'.$total_pages.'</a></span>';
-                }
-                
-                if ($page < $total_pages) {
-                    echo '<span class="pagerNotCurrent"><a href="?page='.($page + 1).'&filter='.$filter.'">Далее</a></span>';
-                }
-                ?>
-			</div> 
-	</div>
-</td>
-<td width="180">
-	<table width="180" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFEEBB">
+	<td style="padding-right: 15px;">
+		<table width="770" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC">
 		<tr>
 			<td><img src="img/box_login_tl.gif" width="5" height="5"></td>
-			<td><img src="img/pixel.gif" width="1" height="5"></td>
+			<td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
 			<td><img src="img/box_login_tr.gif" width="5" height="5"></td>
 		</tr>
 		<tr>
 			<td><img src="img/pixel.gif" width="5" height="1"></td>
-			<td width="170">
-				<div style="font-size: 16px; font-weight: bold; text-align: center; padding: 5px 5px 10px 5px;"><a href="register.php">Зарегистрируйтесь бесплатно!</a></div>
+			<td width="760" style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x;">
+			
+			<div class="moduleTitleBar">
+				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+					<tr>
+						<td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;"><?= $filter_name ?> видео</td>
+						<td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+							Видео <b><?= ($offset + 1) ?></b>-<b><?= min($offset + $per_page, $total) ?></b> из <b><?= $total ?></b>
+						</td>
+					</tr>
+				</table>
+			</div>
+      <div style="padding: 0 5px 0 5px;">
+
+			<?php if (empty($videos)): ?>
+				<div style="background-color:#FFFFFF;padding: 6px; ">
+					Нет видео.
+				</div>
+			<?php else: ?>
+				<table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding: 0 0 10px 0;">
+				<?php
+				$i = 0;
+				foreach ($videos as $video):
+					if ($i % 5 == 0) echo '<tr valign="top">';
+					list($rc, $ra) = channel_get_rating_stats($db, $video['id']);
+					$title_display = mb_strlen($video['title']) > 20 ? mb_substr($video['title'], 0, 20) . '...' : $video['title'];
+				?>
+					<td width="20%" style="padding: 2px; vertical-align: top;">
+						<div style="padding: 4px;">
+							<div class="moduleFeaturedThumb" style="float: left; margin: 0px;">
+								<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" width="120" height="90" border="0" style="display: block;"></a>
+							</div>
+							<div class="title" style="text-align:left; padding-top: 6px; clear: left;">
+								<b><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($title_display)?></a></b><br>
+								<span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
+							</div>
+							<div style="font-size:11px; text-align:left;">
+								<span style="color:#888;">Добавлено:</span> <?=time_ago(strtotime($video['time']))?><br>
+								<span style="color:#888;">Автор:</span> <a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['user'])?></a><br>
+								<span style="color:#888;">Просмотров:</span> <?=intval($video['views'])?><br>
+								<?= channel_render_avg_stars_html($ra, $rc) ?>
+							</div>
+						</div>
+					</td>
+				<?php
+					$i++;
+					if ($i % 5 == 0) echo '</tr>';
+				endforeach;
+				if ($i % 5 != 0) {
+					for ($j = $i % 5; $j < 5; $j++) echo '<td width="20%"></td>';
+					echo '</tr>';
+				}
+				?>
+				</table>
+        </div>
+
+				<?php if ($total_pages > 1): ?>
+				<div class="pagingDiv" style="background: #CCC; margin: 0px 0 0px 0; padding: 5px 0px; font-size: 13px; color: #333; font-weight: bold; text-align: right;">
+					Стр.
+					<?php
+					$start_page = max(1, $page - 2);
+					$end_page = min($total_pages, $page + 2);
+					$filter_param = 'filter=' . urlencode($filter) . '&';
+					if ($start_page > 1) {
+						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=1" style="color: #03C; text-decoration: underline;">1</a></span>';
+						if ($start_page > 2) echo ' ... ';
+					}
+					for ($pi = $start_page; $pi <= $end_page; $pi++) {
+						if ($pi == $page) {
+							echo '<span class="pagerCurrent" style="color: #333; background-color: #FFF; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; cursor: pointer;">' . $pi . '</span>';
+						} else {
+							echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . $pi . '" style="color: #03C; text-decoration: underline;">' . $pi . '</a></span>';
+						}
+					}
+					if ($end_page < $total_pages) {
+						if ($end_page < $total_pages - 1) echo ' ... ';
+						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . $total_pages . '" style="color: #03C; text-decoration: underline;">' . $total_pages . '</a></span>';
+					}
+					if ($page < $total_pages) {
+						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . ($page + 1) . '" style="color: #03C; text-decoration: underline;">Далее</a></span>';
+					}
+					?>
+				</div>
+				<?php endif; ?>
+			<?php endif; ?>
 			</td>
 			<td><img src="img/pixel.gif" width="5" height="1"></td>
 		</tr>
@@ -1044,14 +1058,11 @@ foreach ($filters as $filter_key => $filter_label) {
 			<td><img src="img/pixel.gif" width="1" height="5"></td>
 			<td><img src="img/box_login_br.gif" width="5" height="5"></td>
 		</tr>
+		</table>
+	</td>
+	</tr>
 	</table>
-</td>
-</tr>
-</table>
-<div style="padding: 0px 5px 0px 5px;">
-
-</div>
-        </td></tr></table>
+	</td></tr></table>
 
         <table cellpadding="0" cellspacing="0" border="0" width="100%">
         <tbody>
