@@ -1,0 +1,47 @@
+<IfModule mod_php.c>
+    php_value upload_max_filesize 1000M
+    php_value post_max_size 1000M
+    php_value memory_limit 1000M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value max_file_uploads 1
+    php_value file_uploads On
+    php_value allow_url_fopen On
+    php_value output_buffering Off
+    php_value implicit_flush On
+    php_value max_input_vars 10000
+    php_value max_input_nesting_level 100
+    
+    php_value display_errors Off
+    php_value display_startup_errors Off
+    php_value log_errors On
+    php_value error_reporting 22519
+</IfModule>
+
+<Files "retroshow.db">
+    Order allow,deny
+    Deny from all
+    Require all denied
+</Files>
+
+<Files "retroshow.sqlite">
+    Order allow,deny
+    Deny from all
+    Require all denied
+</Files>
+
+<FilesMatch "\.(sqlite|db|sqlite3)$">
+    Order allow,deny
+    Deny from all
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule retroshow\.sqlite$ - [F,NC]
+    RewriteRule \.(sqlite|db|sqlite3)$ - [F,NC]
+</IfModule>
+
+Options -Indexes
+
+ErrorDocument 504 /index.php
