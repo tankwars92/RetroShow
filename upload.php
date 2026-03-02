@@ -103,75 +103,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
         $public_id = generate_public_video_id($db);
         
         $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
-        if ($video_ext === '') {
-            $video_ext = 'bin';
-        }
-        $preview_ext = 'jpg';
-        $uploads_dir = 'uploads';
-        if (!is_dir($uploads_dir)) {
-            mkdir($uploads_dir, 0755, true);
-        }
-
-        $temp_video = $uploads_dir . '/temp_' . $next_id . '.' . $video_ext;
-        $final_video = $uploads_dir . '/' . $next_id . '.mp4';
-        $preview_file = $uploads_dir . '/' . $next_id . '_preview.' . $preview_ext;
+        $preview_ext = 'jpg'; 
+        
+        $temp_video = 'uploads/temp_' . $next_id . '.' . $video_ext;
+        $final_video = 'uploads/' . $next_id . '.mp4';
+        $preview_file = 'uploads/' . $next_id . '_preview.' . $preview_ext;
         
         if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
             $error = "Ошибка при сохранении видео. Убедитесь, что папка uploads существует и имеет права на запись.";
         } else {
             $output = [];
             $return_var = 0;
-            $log_file = $uploads_dir . '/ffmpeg_' . $next_id . '.log';
-
-            $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($temp_video);
-            $has_video = trim(shell_exec($ffprobe)) === 'video';
 
             $dimensions = get_video_dimensions($temp_video);
             $vf_filter = "format=yuv420p";
             if ($dimensions && is_4_3_aspect_ratio($dimensions['width'], $dimensions['height'])) {
-                if ($dimensions['width'] > 800 || $dimensions['height'] > 600) {
-                    $vf_filter .= ",scale=800:600";
-                }
+                $vf_filter .= ",scale=640:480";
             }
 
-            if (!$has_video) {
-                $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
-                         " -f lavfi -i color=c=black:s=640x360 -shortest " .
-                         " -c:v libx264 -profile:v baseline -level 3.0 -crf 18 -preset slow " .
-                         " -c:a aac -b:a 128k -ar 44100 -ac 2 " .
-                         " -movflags +faststart " .
-                         " -y " .
-                         " -loglevel quiet " .
-                         escapeshellarg($final_video) .
-                         " 2>" . escapeshellarg($log_file);
+            if ($video_ext != 'mp4') {
+                $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($temp_video);
+                $has_video = trim(shell_exec($ffprobe)) === 'video';
+                
+                $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
+                
+                if (!$has_video) {
+                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                             " -f lavfi -i color=c=black:s=640x360 -shortest " .
+                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
+                             " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
+                             " -movflags +faststart " .
+                             " -brand mp42 " .
+                             " -y " . 
+                             " -loglevel debug " . 
+                             escapeshellarg($final_video) . 
+                             " 2>" . escapeshellarg($log_file);
+                } else {
+                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
+                             " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
+                             " -vf \"" . $vf_filter . "\" " .
+                             " -movflags +faststart " .
+                             " -brand mp42 " .
+                             " -y " .
+                             " -loglevel debug " .
+                             escapeshellarg($final_video) . 
+                             " 2>" . escapeshellarg($log_file);
+                }
+                
+                exec($ffmpeg, $output, $return_var);
+                
+                if ($return_var !== 0) {
+                    $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                    $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var . 
+                            "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
+                } else {
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                }
             } else {
-                $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
-                         " -c:v libx264 -profile:v baseline -level 3.1 -crf 18 -preset slow " .
-                         " -c:a aac -b:a 128k -ar 44100 -ac 2 " .
+                $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
+                
+                $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                         " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
+                         " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
                          " -vf \"" . $vf_filter . "\" " .
                          " -movflags +faststart " .
-                         " -avoid_negative_ts make_zero " .
+                         " -brand mp42 " .
                          " -y " .
-                         " -loglevel quiet " .
-                         escapeshellarg($final_video) .
+                         " -loglevel debug " .
+                         escapeshellarg($final_video) . 
                          " 2>" . escapeshellarg($log_file);
-            }
-
-            exec($ffmpeg, $output, $return_var);
-
-            if ($return_var !== 0) {
-                $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
-                if (file_exists($temp_video)) {
-                    @unlink($temp_video);
-                }
-                $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var .
-                        "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
-            } else {
-                if (file_exists($temp_video)) {
-                    @unlink($temp_video);
-                }
-                if (file_exists($log_file)) {
-                    @unlink($log_file);
+                
+                exec($ffmpeg, $output, $return_var);
+                
+                if ($return_var !== 0) {
+                    $error_log = file_exists($log_file) ? file_get_contents($log_file) : 'Лог недоступен';
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
+                    $error = "Ошибка при конвертации в MP4. Код ошибки: " . $return_var . 
+                            "<br>Детали ошибки: <pre>" . htmlspecialchars($error_log) . "</pre>";
+                } else {
+                    if (file_exists($temp_video)) {
+                        @unlink($temp_video);
+                    }
+                    if (file_exists($log_file)) {
+                        @unlink($log_file);
+                    }
                 }
             }
 
