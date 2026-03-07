@@ -493,9 +493,18 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
           </tr>
           <tr>
             <td><img src="img/pixel.gif" width="5" height="1"></td>
-            <td style="padding: 5px 0px 5px 0px;">
+            <td width="585">
               <div class="moduleTitleBar">
-                <div class="moduleTitle">Публичные видео // <?=htmlspecialchars($user)?></div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
+                      Публичные видео // <?=htmlspecialchars($user)?>
+                    </td>
+                    <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+                      Видео <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> из <?= $total ?>
+                    </td>
+                  </tr>
+                </table>
               </div>
               <?php if (count($videos) == 0): ?>
                 <div style="padding:20px; background:#f8f8f8; border:1px solid #ccc; color:#888;">Нет видео.</div>
@@ -521,7 +530,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                   $desc_id = 'desc_chan_' . $row['id'];
                   $desc_full = nl2br($desc);
                   ?>
-                  <div class="moduleEntry">
+                  <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                     <table width="565" cellpadding="0" cellspacing="0" border="0">
                       <tr valign="top">
                         <td width="120"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
@@ -572,7 +581,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                           </div>
                           <?php endif; ?>
                           <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Добавлено:</span> <?= time_ago(strtotime($row['time'])) ?></div>
-                          <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор</span> <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($row['user']) ?></b></a></div>
+                          <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор:</span> <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($row['user']) ?></b></a></div>
                           <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($row['views']) ?></div>
                           <?php list($rc,$ra)=channel_get_rating_stats($db,$row['id']); echo channel_render_avg_stars_html($ra,$rc); ?>
                           <?php if ($is_owner): ?>
