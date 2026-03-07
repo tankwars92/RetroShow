@@ -8,22 +8,32 @@ include("template.php");
 $contest = false;
 
 if (isset($_SESSION['user'])) {
+    $current_user = $_SESSION['user'];
+
     $stmt = $db->prepare("SELECT SUM(views) FROM videos WHERE user = ?");
-    $stmt->execute([$_SESSION['user']]);
+    $stmt->execute([$current_user]);
     $video_views = $stmt->fetchColumn() ?: 0;
 
     $stmt = $db->prepare("SELECT profile_viewed FROM user_stats WHERE user = ?");
-    $stmt->execute([$_SESSION['user']]);
+    $stmt->execute([$current_user]);
     $channel_views = $stmt->fetchColumn() ?: 0;
 
+    $friends_dir = __DIR__ . '/friends';
+    $my_friends_file = $friends_dir . '/' . urlencode($current_user) . '.txt';
+    $my_friends = file_exists($my_friends_file)
+        ? file($my_friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+        : [];
+    $friends_count = count($my_friends);
+
     $subscribers_count = 0;
-    $friends_file = __DIR__ . '/friends/' . urlencode($_SESSION['user']) . '.txt';
-    $friends_count = file_exists($friends_file) ? count(file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
-    if (file_exists($friends_file)) {
-        $friends = file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($friends as $friend) {
-            $friend_friends_file = __DIR__ . '/friends/' . urlencode($friend) . '.txt';
-            if (!file_exists($friend_friends_file) || !in_array($_SESSION['user'], file($friend_friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES))) {
+    if (is_dir($friends_dir)) {
+        foreach (glob($friends_dir . '/*.txt') as $file) {
+            $other_user = urldecode(basename($file, '.txt'));
+            if ($other_user === $current_user) {
+                continue;
+            }
+            $list = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (in_array($current_user, $list, true) && !in_array($other_user, $my_friends, true)) {
                 $subscribers_count++;
             }
         }

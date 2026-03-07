@@ -152,12 +152,20 @@ $profile_comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.t
 $comments_count = (file_exists($profile_comments_file)) ? count(file($profile_comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
 
 $subscribers_count = 0;
-$friends_file = __DIR__ . '/friends/' . urlencode($user) . '.txt';
-if (file_exists($friends_file)) {
-    $friends = file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($friends as $friend) {
-        $friend_friends_file = __DIR__ . '/friends/' . urlencode($friend) . '.txt';
-        if (!file_exists($friend_friends_file) || !in_array($user, file($friend_friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES))) {
+$friends_dir = __DIR__ . '/friends';
+$my_friends_file = $friends_dir . '/' . urlencode($user) . '.txt';
+$my_friends = file_exists($my_friends_file)
+    ? file($my_friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+    : [];
+
+if (is_dir($friends_dir)) {
+    foreach (glob($friends_dir . '/*.txt') as $file) {
+        $other_user = urldecode(basename($file, '.txt'));
+        if ($other_user === $user) {
+            continue;
+        }
+        $list = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (in_array($user, $list, true) && !in_array($other_user, $my_friends, true)) {
             $subscribers_count++;
         }
     }
