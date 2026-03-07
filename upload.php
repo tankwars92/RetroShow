@@ -94,9 +94,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     } elseif (strlen($description) > 5000) {
         $error = "Описание не должно превышать 5000 символов.";
     } elseif (!isset($_FILES['video']) || $_FILES['video']['error'] !== UPLOAD_ERR_OK) {
-        $error = "Ошибка при загрузке видео. Убедитесь, что файл выбран и не превышает лимит.";
+        $error = "Ошибка при загрузке видео. Возможно, файл превышает лимит?";
     } elseif ($_FILES['video']['size'] > 1048576000) { 
-        $error = "Файл слишком большой! Максимальный размер: 1000 МБ";
+        $error = "Файл слишком большой! Максимальный размер: 1000 МБ.";
     } else {
         $stmt = $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
         $next_id = $stmt->fetch()['next_id'] ?? 1;
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
         $preview_file = 'uploads/' . $next_id . '_preview.' . $preview_ext;
         
         if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
-            $error = "Ошибка при сохранении видео. Убедитесь, что папка uploads существует и имеет права на запись.";
+            $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
         } else {
             $output = [];
             $return_var = 0;
@@ -286,7 +286,7 @@ showHeader("Загрузка видео");
   <div class="upload-step-title">Загрузка видео (Шаг 2 из 2)</div>
   <?php if ($error): ?><div class="errorBox"><?=$error?></div><?php endif; ?>
   <?php if ($success): ?><div class="confirmBox"><?=$success?></div><?php endif; ?>
-  <form method="post" enctype="multipart/form-data" action="upload.php?p=2">
+  <form method="post" enctype="multipart/form-data" action="upload.php?p=2" onsubmit="var b=document.getElementById('uploadBtn'); if(b){b.disabled=true; b.value='Загрузка...';}">
     <input type="hidden" name="title" value="<?=htmlspecialchars($title)?>">
     <input type="hidden" name="description" value="<?=htmlspecialchars($description)?>">
     <input type="hidden" name="MAX_FILE_SIZE" value="1048576000">
