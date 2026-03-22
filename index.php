@@ -92,6 +92,8 @@ function get_home_rating_stats($db, $video_id) {
     $avg = $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : 0.0;
     return [$count, $avg];
 }
+
+
 function render_avg_stars_html($avg, $count) {
     $remaining = floatval($avg);
     $parts = [];
@@ -117,41 +119,59 @@ function render_avg_stars_html($avg, $count) {
     return ob_get_clean();
 }
 
+function calculate_trending_score($video, $comments, $rating_avg, $rating_count) {
+  $age_hours = max(1, (time() - strtotime($video['time'])) / 3600);
+
+  $views_rate = $video['views'] / pow($age_hours, 1.2);
+
+  $comments_score = $comments * 2;
+
+  $rating_score = $rating_avg * log(1 + $rating_count) * 10;
+
+  $fresh_bonus = ($age_hours < 24) ? 50 : 0;
+
+  return $views_rate + $comments_score + $rating_score + $fresh_bonus;
+}  
+
 $stmt = $db->query("SELECT * FROM videos ORDER BY id DESC LIMIT 10");
 $recent_videos = array_filter($stmt->fetchAll(), function($v) { return empty($v['private']); });
 
-  $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
-  $per_page = 5;
-  $offset = ($page - 1) * $per_page;
-  
-  $stmt = $db->query("SELECT COUNT(*) FROM videos");
-  $total = $stmt->fetchColumn();
-  $total_pages = ceil($total / $per_page);
-  
-$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY id DESC");
+$page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+$per_page = 5;
+$offset = ($page - 1) * $per_page;
+
+$stmt = $db->query("SELECT COUNT(*) FROM videos");
+$total = $stmt->fetchColumn();
+$total_pages = ceil($total / $per_page);
+
+$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY id DESC LIMIT 200");
 $all_videos = $stmt->fetchAll();
 
 $featured_videos = [];
-$three_days_ago = time() - (3 * 24 * 60 * 60);
 
 foreach ($all_videos as $video) {
     $video_time = strtotime($video['time']);
-    
-    if ($video_time < $three_days_ago) {
-        continue;
-    }
-    
-    $age_in_hours = max(1, (time() - $video_time) / 3600);
-    $views_per_hour = $video['views'] / $age_in_hours;
-    
+    $age_hours = max(1, (time() - $video_time) / 3600);
+
+    if ($age_hours > 168) continue;
+
+    $comments_file = __DIR__ . '/comments/' . $video['id'] . '.txt';
+    $comments_count = file_exists($comments_file)
+        ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES))
+        : 0;
+
+    list($rc, $ra) = get_home_rating_stats($db, $video['id']);
+
+    $score = calculate_trending_score($video, $comments_count, $ra, $rc);
+
     $featured_videos[] = [
         'video' => $video,
-        'views_per_hour' => $views_per_hour
+        'score' => $score
     ];
 }
 
 usort($featured_videos, function($a, $b) {
-    return $b['views_per_hour'] <=> $a['views_per_hour'];
+    return $b['score'] <=> $a['score'];
 });
 
 $featured_videos = array_slice($featured_videos, 0, 5);
