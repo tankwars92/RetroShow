@@ -40,10 +40,16 @@ if ($view_user) {
     if (isset($_SESSION['user']) && $_SESSION['user'] === $view_user && isset($_GET['del']) && in_array($_GET['del'], $friends)) {
         $friends = array_diff($friends, [$_GET['del']]);
         file_put_contents($friends_file, implode("\n", $friends));
-        header("Location: friends.php");
+        header("Location: friends.php?user=" . urlencode($view_user));
         exit;
     }
 }
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$per_page = 5;
+$total_friends = count($friends);
+$total_pages = $total_friends ? ceil($total_friends / $per_page) : 1;
+$offset = ($page - 1) * $per_page;
+$paged_friends = array_slice($friends, $offset, $per_page);
 showHeader('Друзья');
 $user_disp = htmlspecialchars($view_user);
 $is_own = isset($_SESSION['user']) && $_SESSION['user'] === $view_user;
@@ -67,6 +73,12 @@ echo '<b>Друзья ('.$fr_count.')</b> | ';
 echo '<a href="channel.php?user='.urlencode($view_user).'&tab=comments">Комментарии ('.$comments_count.')</a>';
 echo '</div>';
 ?>
+<style>
+.channelPagingDiv { background: #CCC; margin: 0; padding: 5px 0; font-size: 13px; color: #333; font-weight: bold; text-align: right; }
+.channelPagingDiv .pagerCurrent { color: #333; background-color: #FFF; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; cursor: pointer; }
+.channelPagingDiv .pagerNotCurrent { color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer; }
+.channelPagingDiv .pagerNotCurrent a { color: #03C; text-decoration: underline; }
+</style>
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
   <td style="padding-right: 15px;">
@@ -78,9 +90,18 @@ echo '</div>';
       </tr>
       <tr>
         <td><img src="img/pixel.gif" width="5" height="1"></td>
-        <td style="padding: 5px 0px 5px 0px;">
+        <td width="585">
           <div class="moduleTitleBar">
-            <div class="moduleTitle">Друзья // <?=htmlspecialchars($view_user)?></div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
+                  Друзья // <?=htmlspecialchars($view_user)?>
+                </td>
+                <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+                  Друзья <?= $total_friends ? ($offset + 1) . '-' . min($offset + $per_page, $total_friends) . ' из ' . $total_friends : '0 из 0' ?>
+                </td>
+              </tr>
+            </table>
           </div>
 <?php
 if (!$view_user) {
@@ -91,7 +112,7 @@ if (!$view_user) {
   </div>";
 
 } else {
-    foreach ($friends as $friend) {
+    foreach ($paged_friends as $friend) {
         $videos_count = 0;
         $favs_count = 0;
         $fr_count = 0;
@@ -140,6 +161,34 @@ if (!$view_user) {
         echo '</table>';
         echo '</div>';
     }
+    if ($total_pages > 1): ?>
+    <div class="channelPagingDiv pagingDiv">
+      Стр.
+      <?php
+      $start_page = max(1, $page - 2);
+      $end_page = min($total_pages, $page + 2);
+      $user_param = $view_user ? ('user='.urlencode($view_user).'&') : '';
+      if ($start_page > 1) {
+          echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page=1">1</a></span>';
+          if ($start_page > 2) echo ' ... ';
+      }
+      for ($i = $start_page; $i <= $end_page; $i++) {
+          if ($i == $page) {
+              echo '<span class="pagerCurrent">'.$i.'</span>';
+          } else {
+              echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.$i.'">'.$i.'</a></span>';
+          }
+      }
+      if ($end_page < $total_pages) {
+          if ($end_page < $total_pages - 1) echo ' ... ';
+          echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.$total_pages.'">'.$total_pages.'</a></span>';
+      }
+      if ($page < $total_pages) {
+          echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.($page + 1).'">Далее</a></span>';
+      }
+      ?>
+    </div>
+    <?php endif;
 }
 ?>
         </td>

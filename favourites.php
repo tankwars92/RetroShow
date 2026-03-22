@@ -117,8 +117,8 @@ if ($fav_list) {
 
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $per_page = 5;
-$total = count($fav_list);
-$total_pages = ceil($total / $per_page);
+$fav_total = count($fav_list);
+$total_pages = ceil($fav_total / $per_page);
 $offset = ($page - 1) * $per_page;
 $paged_fav_list = array_slice($fav_list, $offset, $per_page);
 
@@ -134,6 +134,10 @@ showHeader('Избранное');
 .vtagValue { display: inline; margin-left: 5px; }
 .vtagValue .dg { color: #333; text-decoration: underline; }
 .vtagValue .dg:hover { color: #333; text-decoration: underline; }
+.channelPagingDiv { background: #CCC; margin: 0; padding: 5px 0; font-size: 13px; color: #333; font-weight: bold; text-align: right; }
+.channelPagingDiv .pagerCurrent { color: #333; background-color: #FFF; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; cursor: pointer; }
+.channelPagingDiv .pagerNotCurrent { color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer; }
+.channelPagingDiv .pagerNotCurrent a { color: #03C; text-decoration: underline; }
 </style>
 
 <?php
@@ -169,9 +173,18 @@ echo '</div>';
         </tr>
         <tr>
           <td><img src="img/pixel.gif" width="5" height="1"></td>
-          <td style="padding: 5px 0px 5px 0px;">
+          <td width="585">
             <div class="moduleTitleBar">
-              <div class="moduleTitle"><?=($is_own ? 'Мои избранные видео' : 'Избранные // '.$user_disp)?></div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
+                    <?=($is_own ? 'Мои избранные видео' : 'Избранные // '.$user_disp)?>
+                  </td>
+                  <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
+                    Видео <?= $fav_total ? ($offset + 1) . '-' . min($offset + $per_page, $fav_total) . ' из ' . $fav_total : '0 из 0' ?>
+                  </td>
+                </tr>
+              </table>
             </div>
             <?php if (!$fav_list): ?>
               <div style="padding:20px; background:#f8f8f8; border:1px solid #ccc; color:#888;">
@@ -243,40 +256,32 @@ echo '</div>';
                 </div>
               <?php endforeach; ?>
               <?php if ($total_pages > 1): ?>
-              <div class="pagingDiv" style="margin-top:10px; margin-bottom:4px;">
-                <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;"><tr>
-                <td style="padding:0 5px 0 0;">Страницы:</td>
-                <?php
-                $start_page = max(1, $page - 2);
-                $end_page = min($total_pages, $page + 2);
-                $user_param = $user ? ('user='.urlencode($user).'&') : '';
-                if ($start_page > 1) {
-                    echo '<td style="border:1px solid #999; background:#fff; padding:2px 8px;"><a href="?'.$user_param.'page=1" style="color:#0033CC; text-decoration:none;">1</a></td>';
-                    if ($start_page > 2) {
-                        echo '<td style="width:8px; text-align:center;">&nbsp;...&nbsp;</td>';
-                    } else {
-                        echo '<td style="width:5px;"></td>';
-                    }
-                }
-                for ($i = $start_page; $i <= $end_page; $i++) {
-                    if ($i == $page) {
-                        echo '<td style="border:1px solid #999; background:#ccc; font-weight:bold; padding:2px 8px;">'.$i.'</td>';
-                    } else {
-                        echo '<td style="border:1px solid #ccc; background:#fff; padding:2px 8px;"><a href="?'.$user_param.'page='.$i.'" style="color:#0033CC; text-decoration:none;">'.$i.'</a></td>';
-                    }
-                    if ($i < $end_page) echo '<td style="width:5px;"></td>';
-                }
-                if ($end_page < $total_pages) {
-                    if ($end_page < $total_pages - 1) {
-                        echo '<td style="width:8px; text-align:center;">&nbsp;...&nbsp;</td>';
-                    } else {
-                        echo '<td style="width:5px;"></td>';
-                    }
-                    echo '<td style="border:1px solid #999; background:#fff; padding:2px 8px;"><a href="?'.$user_param.'page='.$total_pages.'" style="color:#0033CC; text-decoration:none;">'.$total_pages.'</a></td>';
-                }
-                ?>
-                </tr></table>
-              </div>
+                <div class="channelPagingDiv pagingDiv">
+                  Стр.
+                  <?php
+                  $start_page = max(1, $page - 2);
+                  $end_page = min($total_pages, $page + 2);
+                  $user_param = $user ? ('user='.urlencode($user).'&') : '';
+                  if ($start_page > 1) {
+                      echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page=1">1</a></span>';
+                      if ($start_page > 2) echo ' ... ';
+                  }
+                  for ($i = $start_page; $i <= $end_page; $i++) {
+                      if ($i == $page) {
+                          echo '<span class="pagerCurrent">'.$i.'</span>';
+                      } else {
+                          echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.$i.'">'.$i.'</a></span>';
+                      }
+                  }
+                  if ($end_page < $total_pages) {
+                      if ($end_page < $total_pages - 1) echo ' ... ';
+                      echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.$total_pages.'">'.$total_pages.'</a></span>';
+                  }
+                  if ($page < $total_pages) {
+                      echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.($page + 1).'">Далее</a></span>';
+                  }
+                  ?>
+                </div>
               <?php endif; ?>
             <?php endif; ?>
           </td>
