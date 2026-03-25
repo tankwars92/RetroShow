@@ -1,7 +1,20 @@
 <?php
 require_once __DIR__ . '/config.php';
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    $lifetime = 60 * 60 * 24 * 30;
+    ini_set('session.gc_maxlifetime', (string)$lifetime);
+    ini_set('session.cookie_lifetime', (string)$lifetime);
+    session_set_cookie_params([
+        'lifetime' => $lifetime,
+        'path' => '/',
+        'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
+
 try {
     $db = new PDO(RETROSHOW_DB_DSN);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
