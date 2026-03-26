@@ -190,11 +190,25 @@ foreach ($missing_video_cols as $col_name => $col_def) {
 // Если у вас есть база данных в старом формате (где комментарии хранятся в файлах), НЕ удаляйте эту функцию! 
 // Она перенесёт комментарии и прочее из файлов в базу данных.
 
+function deleteDir($dir) {
+    if (!is_dir($dir)) return;
+
+    foreach (glob($dir . '/*') as $file) {
+        if (is_dir($file)) {
+            deleteDir($file);
+        } else {
+            unlink($file);
+        }
+    }
+    rmdir($dir);
+}
+
 try {
     $now = time();
     $migrated = $db->query("SELECT value FROM meta WHERE key='migrated_file_storage_to_db'")->fetchColumn();
 
     if ($migrated !== '1') {
+
         $friends_dir = __DIR__ . '/friends';
         if (is_dir($friends_dir)) {
             foreach (glob($friends_dir . '/*.txt') as $file) {
@@ -222,85 +236,99 @@ try {
                 }
             }
         }
-    }
 
-    $comments_dir = __DIR__ . '/comments';
-    if (is_dir($comments_dir)) {
-        foreach (glob($comments_dir . '/*.txt') as $file) {
-            $base = basename($file, '.txt');
-            if (strpos($base, 'profile_') === 0) continue;
+        $comments_dir = __DIR__ . '/comments';
+        if (is_dir($comments_dir)) {
 
-            $video_id = intval($base);
-            if ($video_id <= 0) continue;
+            foreach (glob($comments_dir . '/*.txt') as $file) {
+                $base = basename($file, '.txt');
+                if (strpos($base, 'profile_') === 0) continue;
 
-            $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
-            if (!$lines) continue;
-            $stmtHas = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
-            $stmtHas->execute([$video_id]);
-            $countExisting = (int)$stmtHas->fetchColumn();
-            if ($countExisting > 0) continue;
+                $video_id = intval($base);
+                if ($video_id <= 0) continue;
 
-            $db->prepare("DELETE FROM comments WHERE video_id = ?")->execute([$video_id]);
+                $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+                if (!$lines) continue;
 
-            $map = [];
-            $pending = [];
+                $stmtHas = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+                $stmtHas->execute([$video_id]);
+                if ((int)$stmtHas->fetchColumn() > 0) continue;
 
-            foreach ($lines as $idx => $line) {
-                $parts = explode('|', $line, 4);
-                if (count($parts) < 3) continue;
-                $t = intval($parts[0]);
-                $u = trim($parts[1]);
-                $text = trim($parts[2]);
-                $parent_idx = isset($parts[3]) ? trim($parts[3]) : '';
+                $db->prepare("DELETE FROM comments WHERE video_id = ?")->execute([$video_id]);
 
-                $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time) VALUES (?, NULL, ?, ?, ?)")
-                   ->execute([$video_id, $u, $text, $t ?: $now]);
-                $cid = (int)$db->lastInsertId();
-                $map[(string)$idx] = $cid;
-                if ($parent_idx !== '') {
-                    $pending[(string)$idx] = (string)$parent_idx;
+                $map = [];
+                $pending = [];
+
+                foreach ($lines as $idx => $line) {
+                    $parts = explode('|', $line, 4);
+                    if (count($parts) < 3) continue;
+
+                    $t = intval($parts[0]);
+                    $u = trim($parts[1]);
+                    $text = trim($parts[2]);
+                    $parent_idx = $parts[3] ?? '';
+
+                    $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time) VALUES (?, NULL, ?, ?, ?)")
+                       ->execute([$video_id, $u, $text, $t ?: $now]);
+
+                    $cid = (int)$db->lastInsertId();
+                    $map[(string)$idx] = $cid;
+
+                    if ($parent_idx !== '') {
+                        $pending[(string)$idx] = (string)$parent_idx;
+                    }
+                }
+
+                foreach ($pending as $child_idx => $parent_idx) {
+                    if (!isset($map[$child_idx])) continue;
+                    $child_id = $map[$child_idx];
+                    $parent_id = $map[$parent_idx] ?? null;
+
+                    if ($parent_id) {
+                        $db->prepare("UPDATE comments SET parent_id = ? WHERE id = ?")
+                           ->execute([$parent_id, $child_id]);
+                    }
                 }
             }
 
-            foreach ($pending as $child_idx => $parent_idx) {
-                if (!isset($map[$child_idx])) continue;
-                $child_id = $map[$child_idx];
-                $parent_id = $map[$parent_idx] ?? null;
-                if ($parent_id) {
-                    $db->prepare("UPDATE comments SET parent_id = ? WHERE id = ?")->execute([$parent_id, $child_id]);
+            foreach (glob($comments_dir . '/profile_*.txt') as $file) {
+                $base = basename($file, '.txt');
+                $profile_user = urldecode(substr($base, strlen('profile_')));
+
+                $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+
+                $stmtHas = $db->prepare("SELECT COUNT(*) FROM profile_comments WHERE profile_user = ?");
+                $stmtHas->execute([$profile_user]);
+                if ((int)$stmtHas->fetchColumn() > 0) continue;
+
+                $db->prepare("DELETE FROM profile_comments WHERE profile_user = ?")->execute([$profile_user]);
+
+                foreach ($lines as $line) {
+                    $parts = explode('|', $line, 3);
+                    if (count($parts) < 3) continue;
+
+                    $t = intval($parts[0]);
+                    $u = trim($parts[1]);
+                    $text = trim($parts[2]);
+
+                    if ($u === '' || $text === '') continue;
+
+                    $db->prepare("INSERT INTO profile_comments (profile_user, user, text, time) VALUES (?, ?, ?, ?)")
+                       ->execute([$profile_user, $u, $text, $t ?: $now]);
                 }
             }
         }
 
-        foreach (glob($comments_dir . '/profile_*.txt') as $file) {
-            $base = basename($file, '.txt');
-            $profile_user = urldecode(substr($base, strlen('profile_')));
+        $db->prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('migrated_file_storage_to_db', '1')")
+           ->execute();
 
-            $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
-
-            $stmtHas = $db->prepare("SELECT COUNT(*) FROM profile_comments WHERE profile_user = ?");
-            $stmtHas->execute([$profile_user]);
-            $countExisting = (int)$stmtHas->fetchColumn();
-            if ($countExisting > 0) continue;
-
-            $db->prepare("DELETE FROM profile_comments WHERE profile_user = ?")->execute([$profile_user]);
-
-            foreach ($lines as $line) {
-                $parts = explode('|', $line, 3);
-                if (count($parts) < 3) continue;
-                $t = intval($parts[0]);
-                $u = trim($parts[1]);
-                $text = trim($parts[2]);
-                if ($u === '' || $text === '') continue;
-                $db->prepare("INSERT INTO profile_comments (profile_user, user, text, time) VALUES (?, ?, ?, ?)")
-                   ->execute([$profile_user, $u, $text, $t ?: $now]);
-            }
-        }
+        deleteDir(__DIR__ . '/friends');
+        deleteDir(__DIR__ . '/favourites');
+        deleteDir(__DIR__ . '/comments');
     }
 
-    $db->prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('migrated_file_storage_to_db', '1')")->execute();
 } catch (Exception $e) {
-  
+    
 }
 
 // -------------------------------------------------------------------------------------------------
