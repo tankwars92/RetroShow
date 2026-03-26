@@ -748,11 +748,17 @@ toggleVisibility('myAccountDropdown',0);
     <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;"><?=htmlspecialchars($video['title'])?></div>
     <link rel="stylesheet" href="viewfinder/player.css">
     <div style="text-align: center; margin-bottom: 8px;">
+        <div id="noJsFlashFallback" style="border: 1px solid gray; width: 425px; height: 350px; background: #fff; text-align: center;">
+            <div style="padding: 20px; font-size:14px; font-weight: bold;">
+            Кажется, у вас либо отключён JavaScript, либо установлена ​​старая версия Flash Player. <a href="http://www.macromedia.com/go/getflashplayer/">Нажмите здесь</a>, чтобы загрузить последнюю версию Flash Player.
+            </div>
+        </div>
+
         <div id="flashPlayerBox" style="display:none; font-size:14px; font-weight: bold;">
             <embed src="player.swf?video_id=<?=$id?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">
         </div>
 
-        <div class="player" id="playerBox" style="margin: 0 0 0 0">
+        <div class="player" id="playerBox" style="margin: 0 0 0 0; display:none;">
         <div class="mainContainer">
             <div class="playerScreen">
                 <div class="playbackArea">
@@ -846,6 +852,8 @@ toggleVisibility('myAccountDropdown',0);
         var flashOk = hasFlash();
         var flashBox = document.getElementById('flashPlayerBox');
         var html5Box = document.getElementById('playerBox');
+        var fallback = document.getElementById('noJsFlashFallback');
+        if (fallback) fallback.style.display = 'none';
         
         if (userPlayerType === 'flash') {
             if (html5Box) html5Box.style.display = 'none';
