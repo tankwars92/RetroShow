@@ -18,25 +18,26 @@ if (isset($_SESSION['user'])) {
     $stmt->execute([$current_user]);
     $channel_views = $stmt->fetchColumn() ?: 0;
 
-    $friends_dir = __DIR__ . '/friends';
-    $my_friends_file = $friends_dir . '/' . urlencode($current_user) . '.txt';
-    $my_friends = file_exists($my_friends_file)
-        ? file($my_friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
-        : [];
-    $friends_count = count($my_friends);
-
+    $friends_count = 0;
     $subscribers_count = 0;
-    if (is_dir($friends_dir)) {
-        foreach (glob($friends_dir . '/*.txt') as $file) {
-            $other_user = urldecode(basename($file, '.txt'));
-            if ($other_user === $current_user) {
-                continue;
-            }
-            $list = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if (in_array($current_user, $list, true) && !in_array($other_user, $my_friends, true)) {
-                $subscribers_count++;
-            }
-        }
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+        $stmt->execute([$current_user]);
+        $friends_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $friends_count = 0;
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM user_friends uf
+            WHERE uf.friend = ?
+              AND uf.user NOT IN (SELECT friend FROM user_friends WHERE user = ?)
+        ");
+        $stmt->execute([$current_user, $current_user]);
+        $subscribers_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $subscribers_count = 0;
     }
 
     $userStats = [
@@ -155,10 +156,14 @@ foreach ($all_videos as $video) {
 
     if ($age_hours > 168) continue;
 
-    $comments_file = __DIR__ . '/comments/' . $video['id'] . '.txt';
-    $comments_count = file_exists($comments_file)
-        ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES))
-        : 0;
+    $comments_count = 0;
+    try {
+        $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+        $stmtCc->execute([$video['id']]);
+        $comments_count = (int)$stmtCc->fetchColumn();
+    } catch (Exception $e) {
+        $comments_count = 0;
+    }
 
     list($rc, $ra) = get_home_rating_stats($db, $video['id']);
 
@@ -348,8 +353,14 @@ showHeader("Главная");
                     $video = $item['video'];
                     $desc = htmlspecialchars($video['description']);
                     $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
-                    $comments_file = __DIR__ . '/comments/' . $video['id'] . '.txt';
-                    $comments_count = (file_exists($comments_file)) ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+                    $comments_count = 0;
+                    try {
+                        $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+                        $stmtCc->execute([$video['id']]);
+                        $comments_count = (int)$stmtCc->fetchColumn();
+                    } catch (Exception $e) {
+                        $comments_count = 0;
+                    }
 					list($rc, $ra) = get_home_rating_stats($db, $video['id']);
                 ?>
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
@@ -629,17 +640,15 @@ showHeader("Главная");
             $q->execute([$u]);
             return (int)$q->fetchColumn();
         };
-        $count_user_favorites = function($u) {
-            $fav_file = __DIR__ . '/favourites/' . urlencode($u) . '.txt';
-            if (!file_exists($fav_file)) return 0;
-            $lines = file($fav_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            return $lines ? count($lines) : 0;
+        $count_user_favorites = function($u) use ($db) {
+            $q = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE user = ?");
+            $q->execute([$u]);
+            return (int)$q->fetchColumn();
         };
-        $count_user_friends = function($u) {
-            $friends_file = __DIR__ . '/friends/' . urlencode($u) . '.txt';
-            if (!file_exists($friends_file)) return 0;
-            $lines = file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            return $lines ? count($lines) : 0;
+        $count_user_friends = function($u) use ($db) {
+            $q = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+            $q->execute([$u]);
+            return (int)$q->fetchColumn();
         };
         ?>
         <div style="margin-top:20px;">

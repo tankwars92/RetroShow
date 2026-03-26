@@ -89,14 +89,19 @@ function get_video_duration($file, $id) {
     return $duration;
 }
 $user = isset($_GET['user']) ? $_GET['user'] : (isset($_SESSION['user']) ? $_SESSION['user'] : null);
-$fav_file = $user ? __DIR__ . '/favourites/' . urlencode($user) . '.txt' : null;
-$fav_list = ($fav_file && file_exists($fav_file)) ? file($fav_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
 
 if (isset($_SESSION['user']) && $user === $_SESSION['user'] && isset($_POST['remove_fav']) && isset($_POST['video_id'])) {
-    $fav_list = array_diff($fav_list, [$_POST['video_id']]);
-    file_put_contents($fav_file, implode("\n", $fav_list));
-    header('Location: favourites.php');
+    $db->prepare("DELETE FROM user_favourites WHERE user = ? AND video_id = ?")
+       ->execute([$user, intval($_POST['video_id'])]);
+    header('Location: favourites.php?user=' . urlencode($user));
     exit;
+}
+
+$fav_list = [];
+if ($user) {
+    $stmtFav = $db->prepare("SELECT video_id FROM user_favourites WHERE user = ? ORDER BY created_at DESC");
+    $stmtFav->execute([$user]);
+    $fav_list = $stmtFav->fetchAll(PDO::FETCH_COLUMN, 0) ?: [];
 }
 
 $videos = array();
@@ -146,18 +151,23 @@ $stmt_total->execute([$user]);
 $total = $stmt_total->fetchColumn();
 
 $comments_count = 0;
-$profile_comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
-
-if (file_exists($profile_comments_file)) {
-    $comments_count = count(file($profile_comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
-}
+$comments_count = 0;
+try {
+    $stmtPc = $db->prepare("SELECT COUNT(*) FROM profile_comments WHERE profile_user = ?");
+    $stmtPc->execute([$user]);
+    $comments_count = (int)$stmtPc->fetchColumn();
+} catch (Exception $e) {}
 
 echo '<div style="padding:8px 0 12px 0; text-align:center; font-size:13px;">';
 echo '<a href="channel.php?user='.urlencode($user).'">Профиль</a> | ';
 echo '<a href="channel.php?user='.urlencode($user).'&tab=videos">Видео ('.$total.')</a> | ';
 echo '<b>Избранное ('.count($fav_list).')</b> | ';
-$fr_file = __DIR__ . '/friends/' . urlencode($user) . '.txt';
-$fr_count = (file_exists($fr_file)) ? count(file($fr_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+$fr_count = 0;
+try {
+    $stmtFr = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+    $stmtFr->execute([$user]);
+    $fr_count = (int)$stmtFr->fetchColumn();
+} catch (Exception $e) {}
 echo '<a href="friends.php?user='.urlencode($user).'">Друзья ('.$fr_count.')</a> | ';
 echo '<a href="channel.php?user='.urlencode($user).'&tab=comments">Комментарии ('.$comments_count.')</a>';
 echo '</div>';

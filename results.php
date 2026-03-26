@@ -233,8 +233,14 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                     $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
                     $desc_id = 'desc_' . $video['id'];
                     $desc_full = nl2br($desc);
-                    $comments_file = __DIR__ . '/comments/' . $video['id'] . '.txt';
-                    $comments_count = (file_exists($comments_file)) ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+                    $comments_count = 0;
+                    try {
+                        $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+                        $stmtCc->execute([$video['id']]);
+                        $comments_count = (int)$stmtCc->fetchColumn();
+                    } catch (Exception $e) {
+                        $comments_count = 0;
+                    }
                     list($rc, $ra) = get_results_rating_stats($db, $video['id']);
               ?>
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">

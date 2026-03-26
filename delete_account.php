@@ -30,11 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->prepare('DELETE FROM video_views WHERE user = ?')->execute([$user]);
         $db->prepare('DELETE FROM videos WHERE user = ?')->execute([$user]);
 		
-        $fav_file = __DIR__ . '/favourites/' . urlencode($user) . '.txt';
-        if (file_exists($fav_file)) unlink($fav_file);
-		
-        $friends_file = __DIR__ . '/friends/' . urlencode($user) . '.txt';
-        if (file_exists($friends_file)) unlink($friends_file);
+        try { $db->prepare('DELETE FROM user_favourites WHERE user = ?')->execute([$user]); } catch (Exception $e) {}
+        try { $db->prepare('DELETE FROM user_friends WHERE user = ? OR friend = ?')->execute([$user, $user]); } catch (Exception $e) {}
 		
         $messages_file = __DIR__ . '/messages/' . urlencode($user) . '.txt';
         if (file_exists($messages_file)) unlink($messages_file);
@@ -42,18 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $playlists_file = __DIR__ . '/playlists/' . urlencode($user) . '.txt';
         if (file_exists($playlists_file)) unlink($playlists_file);
 		
-        $profile_comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
-        if (file_exists($profile_comments_file)) unlink($profile_comments_file);
-		
-        $comments_dir = __DIR__ . '/comments/';
-        foreach (glob($comments_dir . '*.txt') as $cfile) {
-            $lines = file($cfile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            $lines = array_filter($lines, function($l) use ($user) {
-                $parts = explode('|', $l, 3);
-                return !(isset($parts[1]) && $parts[1] === $user);
-            });
-            file_put_contents($cfile, implode("\n", $lines));
-        }
+        try { $db->prepare('DELETE FROM profile_comments WHERE profile_user = ? OR user = ?')->execute([$user, $user]); } catch (Exception $e) {}
+        try { $db->prepare('DELETE FROM comments WHERE user = ?')->execute([$user]); } catch (Exception $e) {}
 		
         foreach ($video_ids as $vid) {
             $mp4 = __DIR__ . "/uploads/{$vid}.mp4";

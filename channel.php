@@ -145,31 +145,36 @@ if ($user_data && isset($user_data['about_me'])) {
   $about_me = trim($user_data['about_me']);
 }
 
-$fav_file = __DIR__ . '/favourites/' . urlencode($user) . '.txt';
-$fav_count = (file_exists($fav_file)) ? count(file($fav_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
-
-$profile_comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
-$comments_count = (file_exists($profile_comments_file)) ? count(file($profile_comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+$fav_count = 0;
+$comments_count = 0;
+try {
+    $stmtFav = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE user = ?");
+    $stmtFav->execute([$user]);
+    $fav_count = (int)$stmtFav->fetchColumn();
+} catch (Exception $e) {}
+try {
+    $stmtPc = $db->prepare("SELECT COUNT(*) FROM profile_comments WHERE profile_user = ?");
+    $stmtPc->execute([$user]);
+    $comments_count = (int)$stmtPc->fetchColumn();
+} catch (Exception $e) {}
 
 $subscribers_count = 0;
-$friends_dir = __DIR__ . '/friends';
-$my_friends_file = $friends_dir . '/' . urlencode($user) . '.txt';
-$my_friends = file_exists($my_friends_file)
-    ? file($my_friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
-    : [];
-
-if (is_dir($friends_dir)) {
-    foreach (glob($friends_dir . '/*.txt') as $file) {
-        $other_user = urldecode(basename($file, '.txt'));
-        if ($other_user === $user) {
-            continue;
-        }
-        $list = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if (in_array($user, $list, true) && !in_array($other_user, $my_friends, true)) {
-            $subscribers_count++;
-        }
-    }
-}
+$my_friends = [];
+try {
+    $stmtMy = $db->prepare("SELECT friend FROM user_friends WHERE user = ?");
+    $stmtMy->execute([$user]);
+    $my_friends = $stmtMy->fetchAll(PDO::FETCH_COLUMN, 0) ?: [];
+} catch (Exception $e) {}
+try {
+    $stmtSub = $db->prepare("
+        SELECT COUNT(*) 
+        FROM user_friends uf
+        WHERE uf.friend = ?
+          AND uf.user NOT IN (SELECT friend FROM user_friends WHERE user = ?)
+    ");
+    $stmtSub->execute([$user, $user]);
+    $subscribers_count = (int)$stmtSub->fetchColumn();
+} catch (Exception $e) {}
 
 $stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
 $stmt_total->execute([$user]);
@@ -254,8 +259,12 @@ echo (isset($_GET['tab']) && $_GET['tab'] === 'videos')
     ? '<b>Видео ('.$total.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=videos">Видео ('.$total.')</a>';
 echo ' | ';
 echo '<a href="favourites.php?user='.urlencode($user).'">Избранное ('.$fav_count.')</a> | ';
-$fr_file = __DIR__ . '/friends/' . urlencode($user) . '.txt';
-$fr_count = (file_exists($fr_file)) ? count(file($fr_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+$fr_count = 0;
+try {
+    $stmtFr = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+    $stmtFr->execute([$user]);
+    $fr_count = (int)$stmtFr->fetchColumn();
+} catch (Exception $e) {}
 echo '<a href="friends.php?user='.urlencode($user).'">Друзья ('.$fr_count.')</a> | ';
 echo '<a href="channel.php?user='.urlencode($user).'&tab=comments">Комментарии ('.$comments_count.')</a>';
 echo '</div>';
@@ -420,8 +429,14 @@ echo '</div>';
 }
 
 if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
-  $fr_file = __DIR__ . '/friends/' . urlencode($user) . '.txt';
-  $fr_count = (file_exists($fr_file)) ? count(file($fr_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+  $fr_count = 0;
+  try {
+    $stmtFr = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+    $stmtFr->execute([$user]);
+    $fr_count = (int)$stmtFr->fetchColumn();
+  } catch (Exception $e) {
+    $fr_count = 0;
+  }
   $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
   $per_page = 5;
   $offset = ($page - 1) * $per_page;
@@ -741,71 +756,41 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             break;
 
         case 'discussed':
-            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0");
+            $stmt = $db->prepare("
+                SELECT v.id, v.public_id, v.title, v.preview, v.description, v.time, v.views, v.user, v.file,
+                       COALESCE(cc.cnt, 0) AS comments_count
+                FROM videos v
+                LEFT JOIN (
+                    SELECT video_id, COUNT(*) AS cnt
+                    FROM comments
+                    GROUP BY video_id
+                ) cc ON cc.video_id = v.id
+                WHERE v.private = 0
+                ORDER BY comments_count DESC, v.views DESC, v.id DESC
+            ");
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $comments_cache = [];
-            $comments_dir = __DIR__ . '/comments/';
-            
-            foreach ($all_videos as $video) {
-                $comments_file = $comments_dir . $video['id'] . '.txt';
-                if (file_exists($comments_file)) {
-                    $line_count = 0;
-                    $handle = fopen($comments_file, 'r');
-                    while (!feof($handle)) {
-                        $line = fgets($handle);
-                        if (trim($line) !== '') {
-                            $line_count++;
-                        }
-                    }
-                    fclose($handle);
-                    $comments_cache[$video['id']] = $line_count;
-                } else {
-                    $comments_cache[$video['id']] = 0;
-                }
-            }
-            
-            usort($all_videos, function($a, $b) use ($comments_cache) {
-                $a_comments = $comments_cache[$a['id']] ?? 0;
-                $b_comments = $comments_cache[$b['id']] ?? 0;
-                if ($a_comments != $b_comments) {
-                    return $b_comments - $a_comments;
-                }
-                return $b['views'] - $a['views'];
-            });
-            
+
             $total = count($all_videos);
             $total_pages = ceil($total / $per_page);
             $videos = array_slice($all_videos, $offset, $per_page);
             break;
         case 'favorites':
-            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0");
+            $stmt = $db->prepare("
+                SELECT v.id, v.public_id, v.title, v.preview, v.description, v.time, v.views, v.user, v.file,
+                       COALESCE(fv.cnt, 0) AS favorites_count
+                FROM videos v
+                LEFT JOIN (
+                    SELECT video_id, COUNT(*) AS cnt
+                    FROM user_favourites
+                    GROUP BY video_id
+                ) fv ON fv.video_id = v.id
+                WHERE v.private = 0
+                ORDER BY favorites_count DESC, v.views DESC, v.id DESC
+            ");
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $favorites_cache = [];
-            $favourites_dir = __DIR__ . '/favourites';
-            
-            foreach (glob("$favourites_dir/*.txt") as $file) {
-                $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                foreach ($lines as $video_id) {
-                    if (!isset($favorites_cache[$video_id])) {
-                        $favorites_cache[$video_id] = 0;
-                    }
-                    $favorites_cache[$video_id]++;
-                }
-            }
-            
-            usort($all_videos, function($a, $b) use ($favorites_cache) {
-                $a_favorites = $favorites_cache[$a['id']] ?? 0;
-                $b_favorites = $favorites_cache[$b['id']] ?? 0;
-                if ($a_favorites != $b_favorites) {
-                    return $b_favorites - $a_favorites;
-                }
-                return $b['views'] - $a['views'];
-            });
-            
+
             $total = count($all_videos);
             $total_pages = ceil($total / $per_page);
             $videos = array_slice($all_videos, $offset, $per_page);
@@ -1162,13 +1147,9 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
         if ($comment === '') {
             $comment_error = 'Комментарий не может быть пустым!';
         } else {
-            $comments_dir = __DIR__ . '/comments';
-            if (!is_dir($comments_dir)) {
-                mkdir($comments_dir, 0755, true);
-            }
-            $comments_file = $comments_dir . '/profile_' . urlencode($user) . '.txt';
-            $line = time() . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $_SESSION['user']) . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $comment) . "\n";
-            file_put_contents($comments_file, $line, FILE_APPEND | LOCK_EX);
+            $comment_clean = str_replace(["|", "\n", "\r"], [' ', ' ', ' '], $comment);
+            $db->prepare("INSERT INTO profile_comments (profile_user, user, text, time) VALUES (?, ?, ?, ?)")
+               ->execute([$user, $_SESSION['user'], $comment_clean, time()]);
             header('Location: channel.php?user='.urlencode($user).'&tab=comments');
             exit;
         }
@@ -1222,27 +1203,27 @@ exit;
 
 if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET['action'])) {
     showHeader('Комментарии о пользователе');
-    $comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
     $comments = [];
-    if (file_exists($comments_file)) {
-        $lines = file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $l) {
-            $parts = explode('|', $l, 3);
-            if (count($parts) >= 3) {
-                $comments[] = [
-                    'time' => intval($parts[0]),
-                    'user' => $parts[1],
-                    'text' => $parts[2]
-                ];
-            }
-        }
+    try {
+        $stmtPc = $db->prepare("SELECT time, user, text FROM profile_comments WHERE profile_user = ? ORDER BY time ASC, id ASC");
+        $stmtPc->execute([$user]);
+        $comments = $stmtPc->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $comments = [];
     }
 
-	$fav_file = __DIR__ . '/favourites/' . urlencode($user) . '.txt';
-	$fav_count = (file_exists($fav_file)) ? count(file($fav_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
-
-	$profile_comments_file = __DIR__ . '/comments/profile_' . urlencode($user) . '.txt';
-	$comments_count = (file_exists($profile_comments_file)) ? count(file($profile_comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+	$fav_count = 0;
+	$comments_count = 0;
+	try {
+		$stmtFav = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE user = ?");
+		$stmtFav->execute([$user]);
+		$fav_count = (int)$stmtFav->fetchColumn();
+	} catch (Exception $e) {}
+	try {
+		$stmtPc2 = $db->prepare("SELECT COUNT(*) FROM profile_comments WHERE profile_user = ?");
+		$stmtPc2->execute([$user]);
+		$comments_count = (int)$stmtPc2->fetchColumn();
+	} catch (Exception $e) {}
 	
 	$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
 	$stmt_total->execute([$user]);
@@ -1256,8 +1237,12 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 		? '<b>Видео ('.$total.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=videos">Видео ('.$total.')</a>';
 	echo ' | ';
 	echo '<a href="favourites.php?user='.urlencode($user).'">Избранное ('.$fav_count.')</a> | ';
-	$fr_file = __DIR__ . '/friends/' . urlencode($user) . '.txt';
-	$fr_count = (file_exists($fr_file)) ? count(file($fr_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+	$fr_count = 0;
+	try {
+		$stmtFr = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+		$stmtFr->execute([$user]);
+		$fr_count = (int)$stmtFr->fetchColumn();
+	} catch (Exception $e) {}
 	echo '<a href="friends.php?user='.urlencode($user).'">Друзья ('.$fr_count.')</a> | ';
 	echo (isset($_GET['tab']) && $_GET['tab'] === 'comments')
 		? '<b>Комментарии ('.$comments_count.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=comments">Комментарии ('.$comments_count.')</a>';
@@ -1457,7 +1442,15 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
                   <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
                 </span>
                 <div class="moduleEntryDetails">Добавлено: <?=time_ago(strtotime($row['time']))?> пользователем <a href="channel.php?user=<?=urlencode($row['user'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['user'])?></a></div>
-                <div class="moduleEntryDetails">Просмотров: <?=intval($row['views'])?> | Комментариев: <?php $cf = __DIR__.'/comments/'.intval($row['id']).'.txt'; echo file_exists($cf)?count(file($cf, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)):0; ?></div>
+                <div class="moduleEntryDetails">Просмотров: <?=intval($row['views'])?> | Комментариев: <?php
+                  try {
+                      $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+                      $stmtCc->execute([intval($row['id'])]);
+                      echo intval($stmtCc->fetchColumn());
+                  } catch (Exception $e) {
+                      echo 0;
+                  }
+                ?></div>
                 <?php list($rc,$ra)=channel_get_rating_stats($db,$row['id']); echo channel_render_avg_stars_html($ra,$rc); ?>
               </td>
             </tr>

@@ -284,24 +284,23 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'rating' && isset($_POST['action_a
     exit;
 }
 
-$friends_dir = __DIR__ . '/friends';
-if (!is_dir($friends_dir)) mkdir($friends_dir);
+$is_friend = false;
 if ($user && $video['user'] && $user !== $video['user']) {
-    $friends_file = $friends_dir . '/' . urlencode($user) . '.txt';
-    $friends_list = file_exists($friends_file) ? file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
-    $is_friend = in_array($video['user'], $friends_list);
+    $qf = $db->prepare("SELECT 1 FROM user_friends WHERE user = ? AND friend = ? LIMIT 1");
+    $qf->execute([$user, $video['user']]);
+    $is_friend = (bool)$qf->fetchColumn();
+
     if (isset($_GET['friend_add']) && $_GET['friend_add'] === $video['user']) {
         if (!$is_friend) {
-            $friends_list[] = $video['user'];
-            file_put_contents($friends_file, implode("\n", $friends_list));
+            $db->prepare("INSERT OR IGNORE INTO user_friends (user, friend, created_at) VALUES (?, ?, ?)")
+               ->execute([$user, $video['user'], time()]);
         }
         header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
         exit;
     }
     if (isset($_GET['friend_del']) && $_GET['friend_del'] === $video['user']) {
         if ($is_friend) {
-            $friends_list = array_diff($friends_list, [$video['user']]);
-            file_put_contents($friends_file, implode("\n", $friends_list));
+            $db->prepare("DELETE FROM user_friends WHERE user = ? AND friend = ?")->execute([$user, $video['user']]);
         }
         header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
         exit;
@@ -354,7 +353,7 @@ try {
                 $clauses[] = 'tags LIKE ?';
                 $params[] = '%' . $t . '%';
             }
-            $sql = 'SELECT * FROM videos WHERE id != ? AND private = 0 AND (' . implode(' OR ', $clauses) . ') ORDER BY id DESC LIMIT 5';
+            $sql = 'SELECT * FROM videos WHERE id != ? AND private = 0 AND (' . implode(' OR ', $clauses) . ') ORDER BY id DESC LIMIT 5 ';
             $stmtSim = $db->prepare($sql);
             $stmtSim->execute($params);
             $byTags = $stmtSim->fetchAll();
@@ -381,82 +380,91 @@ try {
 }
 
 $comment_error = '';
-$comments_file = __DIR__ . '/comments/' . $id . '.txt';
-$comments_count = (file_exists($comments_file)) ? count(file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : 0;
+$comments_count = 0;
+try {
+    $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+    $stmtCc->execute([$id]);
+    $comments_count = (int)$stmtCc->fetchColumn();
+} catch (Exception $e) {
+    $comments_count = 0;
+}
+
 if (isset($_GET['del_comment']) && $user) {
-    $del_id = $_GET['del_comment'];
-    if (file_exists($comments_file)) {
-        $lines = file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        $comments_check = [];
-        foreach ($lines as $k => $l) {
-            $parts = explode('|', $l, 4);
-            if (count($parts) >= 3 && ($parts[0] ?? '') !== 'REMOVED') {
-                $comments_check[$k] = ['id' => $k, 'user' => $parts[1], 'parent_id' => $parts[3] ?? ''];
+    $del_id = intval($_GET['del_comment']);
+    if ($del_id > 0) {
+        $owner = $db->prepare("SELECT user FROM comments WHERE id = ? AND video_id = ?");
+        $owner->execute([$del_id, $id]);
+        $owner_user = $owner->fetchColumn();
+        if ($owner_user === $user) {
+            $stmtAll = $db->prepare("SELECT id, parent_id FROM comments WHERE video_id = ?");
+            $stmtAll->execute([$id]);
+            $rows = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+            $children = [];
+            foreach ($rows as $r) {
+                $pid = (int)($r['parent_id'] ?? 0);
+                $cid = (int)$r['id'];
+                if (!isset($children[$pid])) $children[$pid] = [];
+                $children[$pid][] = $cid;
             }
-        }
-        $get_descendants = function($pid) use ($comments_check, &$get_descendants) {
-            $ids = [ $pid ];
-            foreach ($comments_check as $c) {
-                if ((string)$c['parent_id'] === (string)$pid) {
-                    $ids = array_merge($ids, $get_descendants($c['id']));
-                }
+            $to_delete = [];
+            $stack = [$del_id];
+            while ($stack) {
+                $cur = array_pop($stack);
+                if (isset($to_delete[$cur])) continue;
+                $to_delete[$cur] = true;
+                foreach (($children[$cur] ?? []) as $ch) $stack[] = $ch;
             }
-            return $ids;
-        };
-        if (isset($comments_check[$del_id]) && $comments_check[$del_id]['user'] === $user) {
-            $to_delete = $get_descendants($del_id);
-            $new_lines = [];
-            foreach ($lines as $idx => $l) {
-                $parts = explode('|', $l, 4);
-                if (count($parts) < 3 || ($parts[0] ?? '') === 'REMOVED') continue;
-                if (in_array($idx, $to_delete)) continue;
-                if (isset($parts[3]) && in_array($parts[3], $to_delete)) $parts[3] = '';
-                $new_lines[] = implode('|', $parts);
+            $ids = array_keys($to_delete);
+            if ($ids) {
+                $ph = implode(',', array_fill(0, count($ids), '?'));
+                $params = $ids;
+                $db->prepare("DELETE FROM comments WHERE video_id = ? AND id IN ($ph)")
+                   ->execute(array_merge([$id], $params));
             }
-            file_put_contents($comments_file, implode("\n", $new_lines) . (count($new_lines) ? "\n" : ""), LOCK_EX);
         }
     }
     header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id) . "#comments");
     exit;
 }
+
 if (isset($_POST['add_comment'])) {
     if (!$user) {
         $comment_error = 'Только для зарегистрированных пользователей!';
     } else {
         $comment_text = trim($_POST['comment_text'] ?? '');
-        $parent_id = isset($_POST['reply_parent_id']) ? $_POST['reply_parent_id'] : '';
+        $parent_id = isset($_POST['reply_parent_id']) ? intval($_POST['reply_parent_id']) : 0;
         if ($comment_text == '') {
             $comment_error = 'Комментарий не может быть пустым!';
         } elseif (mb_strlen($comment_text) > 500) {
             $comment_error = 'Комментарий слишком длинный (макс. 500 символов)!';
         } else {
-            $comments_dir = __DIR__ . '/comments';
-            if (!is_dir($comments_dir)) {
-                mkdir($comments_dir, 0755, true);
-            }
-            $line = time() . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $user) . '|' . str_replace(['|', "\n", "\r"], [' ', ' ', ' '], $comment_text) . '|' . $parent_id . "\n";
-            file_put_contents($comments_file, $line, FILE_APPEND | LOCK_EX);
+            $comment_text = str_replace(["\r"], [' '], $comment_text);
+            $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time) VALUES (?, ?, ?, ?, ?)")
+               ->execute([$id, $parent_id > 0 ? $parent_id : null, $user, $comment_text, time()]);
             header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
             exit;
         }
     }
 }
+
 $comments = [];
-if (file_exists($comments_file)) {
-    $lines = file($comments_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $k => $l) {
-        $parts = explode('|', $l, 4);
-        if (count($parts) >= 3) {
-            $comments[$k] = [
-                'id' => $k,
-                'time' => intval($parts[0]),
-                'user' => $parts[1],
-                'text' => $parts[2],
-                'parent_id' => isset($parts[3]) ? $parts[3] : ''
-            ];
-        }
+try {
+    $stmtC = $db->prepare("SELECT id, time, user, text, parent_id FROM comments WHERE video_id = ?");
+    $stmtC->execute([$id]);
+    $rows = $stmtC->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        $cid = (int)$r['id'];
+        $comments[$cid] = [
+            'id' => $cid,
+            'time' => (int)$r['time'],
+            'user' => (string)$r['user'],
+            'text' => (string)$r['text'],
+            'parent_id' => ($r['parent_id'] === null ? '' : (string)(int)$r['parent_id']),
+        ];
     }
+} catch (Exception $e) {
 }
+
 $comment_tree = build_comment_tree($comments);
 function build_comment_tree($comments, $parent_id = '', &$max_child_time = null) {
     $tree = [];
@@ -514,33 +522,36 @@ function render_comments($tree, $level = 0) {
     }
 }
 
-$favourites_dir = __DIR__ . '/favourites';
-if (!is_dir($favourites_dir)) mkdir($favourites_dir);
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
-$fav_file = $user ? "$favourites_dir/" . urlencode($user) . ".txt" : null;
-$fav_list = ($fav_file && file_exists($fav_file)) ? file($fav_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
-$is_fav = $user && in_array($id, $fav_list);
+$is_fav = false;
+if ($user) {
+    $qFav = $db->prepare("SELECT 1 FROM user_favourites WHERE user = ? AND video_id = ? LIMIT 1");
+    $qFav->execute([$user, $id]);
+    $is_fav = (bool)$qFav->fetchColumn();
+}
 
 if ($user && isset($_GET['fav_add']) && $_GET['fav_add'] == 1) {
     if (!$is_fav) {
-        $fav_list[] = $id;
-        file_put_contents($fav_file, implode("\n", $fav_list));
+        $db->prepare("INSERT OR IGNORE INTO user_favourites (user, video_id, created_at) VALUES (?, ?, ?)")
+           ->execute([$user, $id, time()]);
     }
     header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
     exit;
 }
 if ($user && isset($_GET['fav_del']) && $_GET['fav_del'] == 1) {
     if ($is_fav) {
-        $fav_list = array_diff($fav_list, [$id]);
-        file_put_contents($fav_file, implode("\n", $fav_list));
+        $db->prepare("DELETE FROM user_favourites WHERE user = ? AND video_id = ?")->execute([$user, $id]);
     }
     header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
     exit;
 }
 $fav_count = 0;
-foreach (glob("$favourites_dir/*.txt") as $file) {
-    $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if (in_array($id, $lines)) $fav_count++;
+try {
+    $stmtFavCount = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE video_id = ?");
+    $stmtFavCount->execute([$id]);
+    $fav_count = (int)$stmtFavCount->fetchColumn();
+} catch (Exception $e) {
+    $fav_count = 0;
 }
 
 list($ratings_count, $avg_rating) = get_video_rating_stats($db, $id);
@@ -735,7 +746,6 @@ toggleVisibility('myAccountDropdown',0);
 <tr valign="top">
   <td width="435">
     <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;"><?=htmlspecialchars($video['title'])?></div>
-    
     <link rel="stylesheet" href="viewfinder/player.css">
     <div style="text-align: center; margin-bottom: 8px;">
         <div id="flashPlayerBox" style="display:none; font-size:14px; font-weight: bold;">
@@ -749,7 +759,7 @@ toggleVisibility('myAccountDropdown',0);
                     <div class="videoContainer">
                         <video class="videoObject" id="video" autoplay muted>
                             <source src="<?=htmlspecialchars($video['file'])?>">
-                         </video>
+                        </video>
                     </div>
                 </div>
             </div>
@@ -1037,13 +1047,11 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
       <?php
       if ($video['user']) {
         if (!isset($is_friend)) {
-          $friends_dir = __DIR__ . '/friends';
-          if (!is_dir($friends_dir)) mkdir($friends_dir);
           $is_friend = false;
           if ($user) {
-            $friends_file = $friends_dir . '/' . urlencode($user) . '.txt';
-            $friends_list = file_exists($friends_file) ? file($friends_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
-            $is_friend = in_array($video['user'], $friends_list);
+            $qf = $db->prepare("SELECT 1 FROM user_friends WHERE user = ? AND friend = ? LIMIT 1");
+            $qf->execute([$user, $video['user']]);
+            $is_friend = (bool)$qf->fetchColumn();
           }
         }
         echo '<div id="subscribeDiv" style="float:right; text-align:center; margin:2px 8px 4px 8px;">';

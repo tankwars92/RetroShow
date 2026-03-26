@@ -58,11 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm']) && $_POST[
 
         $db->commit();
 
-        $comments_file = __DIR__ . '/comments/' . $video_id . '.txt';
-        if (file_exists($comments_file)) {
-            @unlink($comments_file);
-        }
-
         $duration_cache = __DIR__ . '/uploads/' . $video_id . '_duration.txt';
         if (file_exists($duration_cache)) {
             @unlink($duration_cache);
@@ -86,17 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm']) && $_POST[
             }
         }
 
-        $fav_dir = __DIR__ . '/favourites';
-        if (is_dir($fav_dir)) {
-            foreach (glob($fav_dir . '/*.txt') as $fav_file) {
-                $lines = file($fav_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                $new_lines = array_filter($lines, function($line) use ($video_id) {
-                    return trim($line) !== (string)$video_id;
-                });
-                if (count($new_lines) !== count($lines)) {
-                    file_put_contents($fav_file, implode("\n", $new_lines));
-                }
-            }
+        try {
+            $db->prepare('DELETE FROM user_favourites WHERE video_id = ?')->execute([$video_id]);
+        } catch (Exception $e) {
         }
 
         header('Location: channel.php?user='.urlencode($current_user).'&tab=videos');
