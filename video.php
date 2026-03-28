@@ -441,6 +441,27 @@ if (isset($_POST['add_comment'])) {
             $comment_text = str_replace(["\r"], [' '], $comment_text);
             $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time) VALUES (?, ?, ?, ?, ?)")
                ->execute([$id, $parent_id > 0 ? $parent_id : null, $user, $comment_text, time()]);
+            $new_comment_id = (int) $db->lastInsertId();
+            $vid_owner = (string) ($video['user'] ?? '');
+            $public_id_ref = (string) ($video['public_id'] ?? $id);
+            $vid_title = (string) ($video['title'] ?? '');
+            $snippet = function_exists('mb_strlen') && function_exists('mb_substr')
+                ? (mb_strlen($comment_text, 'UTF-8') > 120 ? mb_substr($comment_text, 0, 120, 'UTF-8') . '...' : $comment_text)
+                : (strlen($comment_text) > 120 ? substr($comment_text, 0, 120) . '...' : $comment_text);
+            if ($parent_id > 0) {
+                $pu = $db->prepare('SELECT user FROM comments WHERE id = ? AND video_id = ?');
+                $pu->execute([$parent_id, $id]);
+                $parent_author = $pu->fetchColumn();
+                if ($parent_author && (string) $parent_author !== $user) {
+                    $topic = 'Пользователь «' . $user . '» ответил в ветке под вашим комментарием к видео «' . $vid_title . '».';
+                    $body = $topic . "\n\n" . 'Текст ответа:' . "\n" . $snippet;
+                    add_mail($db, (string) $parent_author, $user, $topic, $body, 'video_reply', $new_comment_id, $id, $public_id_ref, null);
+                }
+            } elseif ($vid_owner !== '' && $vid_owner !== $user) {
+                $topic = 'Пользователь «' . $user . '» прокомментировал ваше видео «' . $vid_title . '».';
+                $body = $topic . "\n\n" . 'Текст комментария:' . "\n" . $snippet;
+                add_mail($db, $vid_owner, $user, $topic, $body, 'video_comment', $new_comment_id, $id, $public_id_ref, null);
+            }
             header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
             exit;
         }
@@ -634,7 +655,8 @@ function performOnLoadFunctions() {
 							<td style="padding: 0px 5px 0px 5px;">|</td>
 							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
               <?php else: ?>
-							<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong></td>
+							<?php $rs_mail_unread = count_unread_mail($db, $_SESSION['user']); $rs_mail_icon = $rs_mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
+							<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($rs_mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $rs_mail_unread ?></a>)</td>
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|<span style="white-space: nowrap;">
 <a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
 

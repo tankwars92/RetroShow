@@ -362,3 +362,108 @@ try {
 }
 
 // -------------------------------------------------------------------------------------------------
+// Почта.
+
+$db->exec("CREATE TABLE IF NOT EXISTS mail_inbox (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    to_user TEXT NOT NULL,
+    from_user TEXT NOT NULL,
+    topic TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL,
+    sent_at INTEGER NOT NULL,
+    seen_at INTEGER,
+    kind TEXT NOT NULL,
+    comment_id INTEGER,
+    video_id INTEGER,
+    video_public_id TEXT,
+    channel_login TEXT
+)");
+try {
+    $cols = $db->query('PRAGMA table_info(mail_inbox)')->fetchAll(PDO::FETCH_ASSOC);
+    $names = array_column($cols, 'name');
+    if (!in_array('topic', $names, true)) {
+        $db->exec("ALTER TABLE mail_inbox ADD COLUMN topic TEXT NOT NULL DEFAULT ''");
+    }
+} catch (Exception $e) {
+}
+$db->exec("CREATE INDEX IF NOT EXISTS idx_mail_inbox_user ON mail_inbox (to_user)");
+$db->exec("CREATE INDEX IF NOT EXISTS idx_mail_inbox_unread ON mail_inbox (to_user, seen_at)");
+
+/** То же превью, что в списке входящих (25 символов). */
+function mail_list_preview(string $s): string {
+    if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+        if (mb_strlen($s, 'UTF-8') <= 25) {
+            return $s;
+        }
+        return mb_substr($s, 0, 25, 'UTF-8') . '...';
+    }
+    if (strlen($s) <= 25) {
+        return $s;
+    }
+    return substr($s, 0, 25) . '...';
+}
+
+function count_unread_mail(PDO $db, string $user): int {
+    if ($user === '') {
+        return 0;
+    }
+    try {
+        $st = $db->prepare('SELECT COUNT(*) FROM mail_inbox WHERE to_user = ? AND seen_at IS NULL');
+        $st->execute([$user]);
+        return (int) $st->fetchColumn();
+    } catch (Exception $e) {
+        return 0;
+    }
+}
+
+function mark_mail_seen(PDO $db, int $id, string $user): void {
+    try {
+        $st = $db->prepare('UPDATE mail_inbox SET seen_at = ? WHERE id = ? AND to_user = ? AND seen_at IS NULL');
+        $st->execute([time(), $id, $user]);
+    } catch (Exception $e) {
+    }
+}
+
+function add_mail(
+    PDO $db,
+    string $to_user,
+    string $from_user,
+    string $topic,
+    string $content,
+    string $kind,
+    ?int $comment_id = null,
+    ?int $video_id = null,
+    ?string $video_public_id = null,
+    ?string $channel_login = null
+): void {
+    if ($to_user === '' || $from_user === '' || $to_user === $from_user) {
+        return;
+    }
+    try {
+        $st = $db->prepare('INSERT INTO mail_inbox (to_user, from_user, topic, content, sent_at, seen_at, kind, comment_id, video_id, video_public_id, channel_login) VALUES (?,?,?,?,?,NULL,?,?,?,?,?)');
+        $st->execute([$to_user, $from_user, $topic, $content, time(), $kind, $comment_id, $video_id, $video_public_id, $channel_login]);
+    } catch (Exception $e) {
+    }
+}
+
+/**
+ * @return array{prev: ?int, next: ?int}
+ */
+function mail_prev_next(PDO $db, string $user, int $id): array {
+    try {
+        $st = $db->prepare('SELECT id FROM mail_inbox WHERE to_user = ? ORDER BY sent_at DESC, id DESC');
+        $st->execute([$user]);
+        $ids = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN, 0));
+    } catch (Exception $e) {
+        return ['prev' => null, 'next' => null];
+    }
+    $idx = array_search($id, $ids, true);
+    if ($idx === false) {
+        return ['prev' => null, 'next' => null];
+    }
+    $prev = $idx > 0 ? $ids[$idx - 1] : null;
+    $next = $idx < count($ids) - 1 ? $ids[$idx + 1] : null;
+    return ['prev' => $prev, 'next' => $next];
+}
+
+// -------------------------------------------------------------------------------------------------
