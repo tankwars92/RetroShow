@@ -158,6 +158,14 @@ try {
     $comments_count = (int)$stmtPc->fetchColumn();
 } catch (Exception $e) {}
 
+$profile_comments_preview = [];
+try {
+    $stmtPcPrev = $db->prepare('SELECT time, user, text FROM profile_comments WHERE profile_user = ? ORDER BY time ASC, id ASC LIMIT 3');
+    $stmtPcPrev->execute([$user]);
+    $profile_comments_preview = $stmtPcPrev->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Exception $e) {
+}
+
 $subscribers_count = 0;
 $my_friends = [];
 try {
@@ -866,15 +874,21 @@ function performOnLoadFunctions() {
 
 <div id="myAccountDropdown" class="myAccountMenu" onmouseover="showDropdown();" onmouseout="hideDropwdown();" style="display: none; position: absolute;">
 	<div id="menuContainer" class="menuBox">
+		<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
+			<div class="menuBoxItem" id="MyAccountStaff" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+				<a href="admin.php" class="dropdownLinks"><span class="smallText">Админ-панель</span></a>
+			</div>
+		<?php } ?>
 		<div class="menuBoxItem" id="MyAccountMyVideo" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
 			<a href="<?php echo isset($_SESSION['user']) ? 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos' : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои видео</span></a>
 		</div>
 		<div class="menuBoxItem <?php echo ($currentPage == 'favourites.php') ? 'active' : ''; ?>" id="MyAccountMyFavorites" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
-				<a href="<?php echo isset($_SESSION['user']) ? 'favourites.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Избранное</span></a>
-			</div>
-			<div class="menuBoxItem <?php echo ($currentPage == 'friends.php') ? 'active' : ''; ?>" id="MyAccountSubscription" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
-				<a href="<?php echo isset($_SESSION['user']) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои друзья</span></a>
-			</div>
+			<a href="<?php echo (isset($_SESSION['user'])) ? 'favourites.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Избранное</span></a>
+		</div>
+		<div class="menuBoxItem <?php echo ($currentPage == 'friends.php') ? 'active' : ''; ?>" id="MyAccountSubscription" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+			<a href="<?php echo (isset($_SESSION['user'])) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои друзья</span></a>
+		</div>
+
 	</div>
 </div>
 <script>
@@ -1095,6 +1109,7 @@ foreach ($filters as $filter_key => $filter_label) {
                 <table cellpadding="0" cellspacing="0" border="0" width="400" align="center">
                 <tr>
                     <td align="center">
+                        <a href="about.php?p=whats_new">Что нового?</a> |
                         <a href="about.php">О сайте</a> | 
                         <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | 
                         <a href="http://downgrade-net.ru/">Downgrade Net</a>
@@ -1528,7 +1543,7 @@ function showDescless(id) {
 
 <table cellpadding="10" cellspacing="0" border="0" align="center">
 <tr>
-<td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/retroshow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a>
+<td align="center" valign="center"><span class="footer"><a href="about.php?p=whats_new">Что нового?</a> | <a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/retroshow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a>
 <br><br>Copyright © 2026 RetroShow | <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
 </tr>
 </table>

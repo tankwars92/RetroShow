@@ -146,21 +146,27 @@ function showHeader($title = "RetroShow") {
 							$rs_mail_unread = (isset($db) && $db instanceof PDO) ? count_unread_mail($db, $_SESSION['user']) : 0;
 							$rs_mail_icon = $rs_mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif';
 							?>
-							<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($rs_mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $rs_mail_unread ?></a>)</td>
+							<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($rs_mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $rs_mail_unread ?></a>)</td>					
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|<span style="white-space: nowrap;">
 <a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
 
 <div id="myAccountDropdown" class="myAccountMenu" onmouseover="showDropdown();" onmouseout="hideDropwdown();" style="display: none; position: absolute;">
 	<div id="menuContainer" class="menuBox">
+		<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
+			<div class="menuBoxItem" id="MyAccountStaff" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+				<a href="admin.php" class="dropdownLinks"><span class="smallText">Админ-панель</span></a>
+			</div>
+		<?php } ?>
 		<div class="menuBoxItem" id="MyAccountMyVideo" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
 			<a href="<?php echo isset($_SESSION['user']) ? 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos' : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои видео</span></a>
 		</div>
 		<div class="menuBoxItem <?php echo ($currentPage == 'favourites.php') ? 'active' : ''; ?>" id="MyAccountMyFavorites" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
-				<a href="<?php echo (isset($_SESSION['user'])) ? 'favourites.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Избранное</span></a>
-			</div>
-			<div class="menuBoxItem <?php echo ($currentPage == 'friends.php') ? 'active' : ''; ?>" id="MyAccountSubscription" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
-				<a href="<?php echo (isset($_SESSION['user'])) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои друзья</span></a>
-			</div>
+			<a href="<?php echo (isset($_SESSION['user'])) ? 'favourites.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Избранное</span></a>
+		</div>
+		<div class="menuBoxItem <?php echo ($currentPage == 'friends.php') ? 'active' : ''; ?>" id="MyAccountSubscription" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+			<a href="<?php echo (isset($_SESSION['user'])) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои друзья</span></a>
+		</div>
+
 	</div>
 </div>
 <script>
@@ -318,6 +324,7 @@ function showFooter() {
                 <table cellpadding="0" cellspacing="0" border="0" width="400" align="center">
                 <tr>
                     <td align="center">
+                    	<a href="about.php?p=whats_new">Что нового?</a> |
                         <a href="about.php">О сайте</a> | 
                         <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | 
                         <a href="http://downgrade-net.ru/">Downgrade Net</a>

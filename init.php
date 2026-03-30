@@ -82,6 +82,9 @@ try {
     if (!in_array('parent_id', $existingC, true)) {
         $db->exec("ALTER TABLE comments ADD COLUMN parent_id INTEGER");
     }
+    if (!in_array('reference_video_id', $existingC, true)) {
+        $db->exec("ALTER TABLE comments ADD COLUMN reference_video_id INTEGER");
+    }
 } catch (Exception $e) {
 }
 
@@ -389,7 +392,6 @@ try {
 $db->exec("CREATE INDEX IF NOT EXISTS idx_mail_inbox_user ON mail_inbox (to_user)");
 $db->exec("CREATE INDEX IF NOT EXISTS idx_mail_inbox_unread ON mail_inbox (to_user, seen_at)");
 
-/** То же превью, что в списке входящих (25 символов). */
 function mail_list_preview(string $s): string {
     if (function_exists('mb_strlen') && function_exists('mb_substr')) {
         if (mb_strlen($s, 'UTF-8') <= 25) {
@@ -446,9 +448,6 @@ function add_mail(
     }
 }
 
-/**
- * @return array{prev: ?int, next: ?int}
- */
 function mail_prev_next(PDO $db, string $user, int $id): array {
     try {
         $st = $db->prepare('SELECT id FROM mail_inbox WHERE to_user = ? ORDER BY sent_at DESC, id DESC');

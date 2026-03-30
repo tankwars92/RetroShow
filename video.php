@@ -381,12 +381,44 @@ try {
 
 $comment_error = '';
 $comments_count = 0;
+$selected_reference_video_id = 0;
 try {
     $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
     $stmtCc->execute([$id]);
     $comments_count = (int)$stmtCc->fetchColumn();
 } catch (Exception $e) {
     $comments_count = 0;
+}
+
+$attach_my_videos = [];
+$attach_fav_videos = [];
+$attach_allowed_ids = [];
+if ($user) {
+    try {
+        $stmtMyAttach = $db->prepare("SELECT id, public_id, title, preview FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT 200");
+        $stmtMyAttach->execute([$user]);
+        $attach_my_videos = $stmtMyAttach->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $attach_my_videos = [];
+    }
+    try {
+        $stmtFavAttach = $db->prepare("SELECT v.id, v.public_id, v.title, v.preview
+                                       FROM user_favourites uf
+                                       JOIN videos v ON v.id = uf.video_id
+                                       WHERE uf.user = ? AND v.private = 0
+                                       ORDER BY uf.created_at DESC
+                                       LIMIT 200");
+        $stmtFavAttach->execute([$user]);
+        $attach_fav_videos = $stmtFavAttach->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $attach_fav_videos = [];
+    }
+    foreach ($attach_my_videos as $vopt) {
+        $attach_allowed_ids[(int)$vopt['id']] = true;
+    }
+    foreach ($attach_fav_videos as $vopt) {
+        $attach_allowed_ids[(int)$vopt['id']] = true;
+    }
 }
 
 if (isset($_GET['del_comment']) && $user) {
@@ -423,7 +455,7 @@ if (isset($_GET['del_comment']) && $user) {
             }
         }
     }
-    header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id) . "#comments");
+    header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
     exit;
 }
 
@@ -433,14 +465,22 @@ if (isset($_POST['add_comment'])) {
     } else {
         $comment_text = trim($_POST['comment_text'] ?? '');
         $parent_id = isset($_POST['reply_parent_id']) ? intval($_POST['reply_parent_id']) : 0;
+        $selected_reference_video_id = isset($_POST['reference_video_id']) ? intval($_POST['reference_video_id']) : 0;
+        $reference_video_id = $selected_reference_video_id > 0 ? $selected_reference_video_id : null;
+        if ($parent_id > 0) {
+            $reference_video_id = null;
+            $selected_reference_video_id = 0;
+        }
         if ($comment_text == '') {
             $comment_error = 'Комментарий не может быть пустым!';
         } elseif (mb_strlen($comment_text) > 500) {
             $comment_error = 'Комментарий слишком длинный (макс. 500 символов)!';
+        } elseif ($reference_video_id !== null && !isset($attach_allowed_ids[(int)$reference_video_id])) {
+            $comment_error = 'Нельзя прикрепить это видео.';
         } else {
             $comment_text = str_replace(["\r"], [' '], $comment_text);
-            $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time) VALUES (?, ?, ?, ?, ?)")
-               ->execute([$id, $parent_id > 0 ? $parent_id : null, $user, $comment_text, time()]);
+            $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time, reference_video_id) VALUES (?, ?, ?, ?, ?, ?)")
+               ->execute([$id, $parent_id > 0 ? $parent_id : null, $user, $comment_text, time(), $reference_video_id]);
             $new_comment_id = (int) $db->lastInsertId();
             $vid_owner = (string) ($video['user'] ?? '');
             $public_id_ref = (string) ($video['public_id'] ?? $id);
@@ -470,7 +510,11 @@ if (isset($_POST['add_comment'])) {
 
 $comments = [];
 try {
-    $stmtC = $db->prepare("SELECT id, time, user, text, parent_id FROM comments WHERE video_id = ?");
+    $stmtC = $db->prepare("SELECT c.id, c.time, c.user, c.text, c.parent_id,
+                                  rv.public_id AS ref_public_id, rv.preview AS ref_preview, rv.title AS ref_title
+                           FROM comments c
+                           LEFT JOIN videos rv ON rv.id = c.reference_video_id
+                           WHERE c.video_id = ?");
     $stmtC->execute([$id]);
     $rows = $stmtC->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $r) {
@@ -481,6 +525,9 @@ try {
             'user' => (string)$r['user'],
             'text' => (string)$r['text'],
             'parent_id' => ($r['parent_id'] === null ? '' : (string)(int)$r['parent_id']),
+            'ref_public_id' => (string)($r['ref_public_id'] ?? ''),
+            'ref_preview' => (string)($r['ref_preview'] ?? ''),
+            'ref_title' => (string)($r['ref_title'] ?? ''),
         ];
     }
 } catch (Exception $e) {
@@ -525,13 +572,24 @@ function render_comments($tree, $level = 0) {
         echo '<a href="channel.php?user='.urlencode($c['user']).'" style="color:#0033cc;text-decoration:underline;font-size:13px;"><b>'.htmlspecialchars($c['user']).'</b></a> ';
         echo '<span style="color:#888;font-size:11px;">('.time_ago($c['time']).')</span>';
         echo '</div>';
-        echo '<div style="font-size:13px;color:#222;padding:4px 6px 0 6px;'.$ml.' word-break:break-all;">'.nl2br(htmlspecialchars($c['text'])).'</div>';
+        if ($c['ref_public_id'] !== '' && $c['ref_preview'] !== '') {
+            $ref_link = 'video.php?id=' . urlencode($c['ref_public_id']);
+            echo '<table cellpadding="0" cellspacing="0" border="0" style="width:100%;'.$ml.'"><tr>';
+            echo '<td style="vertical-align:top; width:80px; padding:4px 4px 0 6px;">';
+            echo '<a href="'.$ref_link.'"><img src="'.htmlspecialchars($c['ref_preview']).'" class="commentsThumb" width="60" height="45" alt=""></a>';
+            echo '<div class="commentSpecifics">&nbsp;&nbsp;<a href="'.$ref_link.'" style="color:#0033cc;text-decoration:underline;">Видео</a></div>';
+            echo '</td>';
+            echo '<td style="font-size:13px;color:#222;padding:4px 6px 0 0;word-break:break-all;">'.nl2br(htmlspecialchars($c['text'])).'</td>';
+            echo '</tr></table>';
+        } else {
+            echo '<div style="font-size:13px;color:#222;padding:4px 6px 0 6px;'.$ml.' word-break:break-all;">'.nl2br(htmlspecialchars($c['text'])).'</div>';
+        }
         echo '<div style="text-align:right;font-size:11px;color:#0033cc;padding:0 6px 2px 0;'.$ml.'">';
         if ($user) {
-            echo '<a href="#" class="reply-link" data-id="'.$c['id'].'" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
+            echo '<a href="#" class="reply-link" data-id="'.$c['id'].'" onclick="return showReplyForm('.(int)$c['id'].');" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
             if ($user === $c['user']) {
                 $vid = urlencode($video['public_id'] ?? $id);
-                echo ' <a href="video.php?id='.$vid.'&del_comment='.$c['id'].'#comments" onclick="return confirm(\'Удалить комментарий?\');" style="color:#0033cc;text-decoration:underline;font-size:11px;">(удалить)</a>';
+                echo ' <a href="video.php?id='.$vid.'&del_comment='.$c['id'].'"onclick="return confirm(\'Удалить комментарий?\');" style="color:#0033cc;text-decoration:underline;font-size:11px;">(удалить)</a>';
             }
         } else {
           echo '<a href="#" onclick="alert(\'Только для зарегистрированных пользователей!\'); return false;" data-id="'.$c['id'].'" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
@@ -662,15 +720,21 @@ function performOnLoadFunctions() {
 
 <div id="myAccountDropdown" class="myAccountMenu" onmouseover="showDropdown();" onmouseout="hideDropwdown();" style="display: none; position: absolute;">
 	<div id="menuContainer" class="menuBox">
+		<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
+			<div class="menuBoxItem" id="MyAccountStaff" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+				<a href="admin.php" class="dropdownLinks"><span class="smallText">Админ-панель</span></a>
+			</div>
+		<?php } ?>
 		<div class="menuBoxItem" id="MyAccountMyVideo" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
 			<a href="<?php echo isset($_SESSION['user']) ? 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos' : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои видео</span></a>
-			</div>
-			<div class="menuBoxItem <?php echo ($currentPage == 'favourites.php') ? 'active' : ''; ?>" id="MyAccountMyFavorites" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
-				<a href="<?php echo (isset($_SESSION['user'])) ? 'favourites.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Избранное</span></a>
-			</div>
-			<div class="menuBoxItem <?php echo ($currentPage == 'friends.php') ? 'active' : ''; ?>" id="MyAccountSubscription" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
-				<a href="<?php echo (isset($_SESSION['user'])) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои друзья</span></a>
-			</div>
+		</div>
+		<div class="menuBoxItem <?php echo ($currentPage == 'favourites.php') ? 'active' : ''; ?>" id="MyAccountMyFavorites" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+			<a href="<?php echo (isset($_SESSION['user'])) ? 'favourites.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Избранное</span></a>
+		</div>
+		<div class="menuBoxItem <?php echo ($currentPage == 'friends.php') ? 'active' : ''; ?>" id="MyAccountSubscription" onmouseover="showDropdown();changeBGcolor(this,1);" onmouseout="changeBGcolor(this,0);">
+			<a href="<?php echo (isset($_SESSION['user'])) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php'; ?>" class="dropdownLinks"><span class="smallText">Мои друзья</span></a>
+		</div>
+
 	</div>
 </div>
 <script>
@@ -986,8 +1050,23 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
       <input type="hidden" name="reply_parent_id" value="">
       <input type="hidden" name="comment_type" value="V">
       <textarea tabindex="2" name="comment_text" cols="55" rows="3" style="font-size: 13px; width: 98%;"></textarea><br>
-      <input type="submit" name="add_comment_button" value="Добавить">
-      <input type="button" name="discard_comment_button" value="Отмена" onclick="this.parentNode.parentNode.style.display='none';">
+      <div class="attach-video-row" style="margin-top:3px; white-space:nowrap;">
+      <span style="font-size:12px;">Прикрепить видео:</span>
+      <select name="reference_video_id" style="font-size:12px; width:180px;">
+        <option value="">- Ваши видео -</option>
+        <?php foreach ($attach_my_videos as $vopt): ?>
+          <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
+          <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
+        <?php endforeach; ?>
+        <option value="">- Избранные видео -</option>
+        <?php foreach ($attach_fav_videos as $vopt): ?>
+          <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
+          <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <input type="submit" name="add_comment_button" value="Добавить" style="width: 70px;">
+      <input type="button" name="discard_comment_button" value="Отмена" style="width: 60px;" onclick="return cancelCommentForm(this);">
+      </div>
       <?php if ($comment_error): ?>
       <div style="color: #c00; font-size: 12px; padding: 3px 0; margin-top: 5px;"><?=htmlspecialchars($comment_error)?></div>
       <?php endif; ?>
@@ -1013,9 +1092,31 @@ function hideInline(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
 }
+function cancelCommentForm(btn) {
+    var p = btn;
+    while (p && p.nodeType === 1) {
+        if (p.className && ('' + p.className).indexOf('reply-form') !== -1) {
+            p.style.display = 'none';
+            p.innerHTML = '';
+            return false;
+        }
+        if (p.id && p.id === 'commentFormBlock') {
+            p.style.display = 'none';
+            return false;
+        }
+        p = p.parentNode;
+    }
+    var main = document.getElementById ? document.getElementById('commentFormBlock') : document.all['commentFormBlock'];
+    if (main) main.style.display = 'none';
+    return false;
+}
 function showReplyForm(id) {
-    var forms = document.getElementsByClassName('reply-form');
-    for (var i=0; i<forms.length; i++) forms[i].style.display = 'none';
+    var divs = document.getElementsByTagName('div');
+    for (var i=0; i<divs.length; i++) {
+        if (divs[i].className && ('' + divs[i].className).indexOf('reply-form') !== -1) {
+            divs[i].style.display = 'none';
+        }
+    }
     var f = document.getElementById('replyform-'+id);
     if (f) {
         var orig = document.getElementById('commentFormBlock');
@@ -1025,6 +1126,43 @@ function showReplyForm(id) {
             .replace(/id=\"comment_formmain_comment2\"/g, 'id="reply_form_'+id+'"')
             .replace(/name=\"reply_parent_id\" value=\"\"/g, 'name="reply_parent_id" value="'+id+'"');
         f.innerHTML = html;
+        var sel = null;
+        if (f.getElementsByTagName) {
+            var s = f.getElementsByTagName('select');
+            for (var j = 0; j < s.length; j++) {
+                if (s[j].name === 'reference_video_id') { sel = s[j]; break; }
+            }
+        }
+        if (sel && sel.parentNode) {
+            var row = sel.parentNode;
+            if (row.getElementsByTagName) {
+                var spans = row.getElementsByTagName('span');
+                for (var z = spans.length - 1; z >= 0; z--) {
+                    if (spans[z].innerHTML && spans[z].innerHTML.indexOf('Прикрепить видео') !== -1) {
+                        row.removeChild(spans[z]);
+                    }
+                }
+            }
+            row.removeChild(sel);
+        }
+        var foundReplyField = false;
+        var replyField = f.getElementsByTagName('input');
+        for (var k = 0; k < replyField.length; k++) {
+            if (replyField[k].name == 'reply_parent_id') {
+                replyField[k].value = id;
+                foundReplyField = true;
+            }
+        }
+        if (!foundReplyField) {
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'reply_parent_id';
+            hidden.value = id;
+            var formsInside = f.getElementsByTagName('form');
+            if (formsInside && formsInside.length > 0) {
+                formsInside[0].appendChild(hidden);
+            }
+        }
         f.style.display = '';
     }
     return false;
@@ -1047,7 +1185,14 @@ window.onload = function() {
     var links = document.getElementsByTagName('a');
     for (var i=0; i<links.length; i++) {
         if (links[i].className && links[i].className.indexOf('reply-link') !== -1) {
-            links[i].onclick = function() { return showReplyForm(this.getAttribute('data-id')); }
+            links[i].onclick = function() {
+                var id = '';
+                if (this.getAttribute) {
+                    id = this.getAttribute('data-id') || this.getAttribute('data-id', 2) || '';
+                }
+                if (!id) id = this['data-id'] || '';
+                return showReplyForm(id);
+            }
         }
     }
 };
@@ -1227,7 +1372,7 @@ if (window.attachEvent) {
         </td></tr></table>
         <table cellpadding="10" cellspacing="0" border="0" align="center">
     <tbody><tr>
-        <td align="center" valign="center"><span class="footer"><a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
+        <td align="center" valign="center"><span class="footer"><a href="about.php?p=whats_new">Что нового?</a> | <a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
         <br><br>Copyright © 2026 RetroShow | <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
         <br>
         <br>
@@ -1276,30 +1421,7 @@ function retroShowReplyLinks() {
         if (links[i].className && links[i].className.indexOf('reply-link') !== -1) {
             links[i].onclick = function() {
                 var id = this.getAttribute ? this.getAttribute('data-id') : this['data-id'];
-                for (var j=0; j<links.length; j++) {
-                    if (links[j].className && links[j].className.indexOf('reply-link') !== -1) {
-                        var rid = links[j].getAttribute ? links[j].getAttribute('data-id') : links[j]['data-id'];
-                        var rf = document.getElementById ? document.getElementById('replyform-' + rid) : document.all['replyform-' + rid];
-                        if (rf) rf.style.display = 'none';
-                    }
-                }
-                var f = document.getElementById ? document.getElementById('replyform-' + id) : document.all['replyform-' + id];
-                var orig = document.getElementById ? document.getElementById('commentFormBlock') : document.all['commentFormBlock'];
-                if (f && orig) {
-                    var html = orig.innerHTML
-                        .replace(/name="comment_formmain_comment2"/g, 'name="reply_form_'+id+'"')
-                        .replace(/id="comment_formmain_comment2"/g, 'id="reply_form_'+id+'"');
-                    f.innerHTML = html;
-                    f.style.display = 'block';
-					
-                    var replyField = f.getElementsByTagName('input');
-                    for (var k=0; k<replyField.length; k++) {
-                        if (replyField[k].name == 'reply_parent_id') {
-                            replyField[k].value = id;
-                        }
-                    }
-                }
-                return false;
+                return showReplyForm(id);
             };
         }
     }
