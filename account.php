@@ -215,7 +215,7 @@ showHeader('Настройки аккаунта');
     </select>
     <select name="birthday_yr">
       <option value="---">---</option>
-      <?php for ($i = 2024; $i >= 1900; $i--): ?>
+      <?php for ($i = 2025; $i >= 1900; $i--): ?>
         <option value="<?=$i?>" <?= ($user_data['birthday_yr'] ?? '') == $i ? 'selected' : '' ?>><?=$i?></option>
       <?php endfor; ?>
     </select>
