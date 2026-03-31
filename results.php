@@ -140,7 +140,9 @@ if ($search_query) {
         $all_public = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $needle = mb_strtolower($search_query, 'UTF-8');
+        $needle_words = preg_split('/\s+/', $needle, -1, PREG_SPLIT_NO_EMPTY);
         $videos = [];
+        $video_scores = [];
         foreach ($all_public as $row) {
             $title = isset($row['title']) ? $row['title'] : '';
             $desc  = isset($row['description']) ? $row['description'] : '';
@@ -148,8 +150,19 @@ if ($search_query) {
             $tags  = isset($row['tags']) ? $row['tags'] : '';
 
             if ($search_type === 'tag') {
-                if ($tags !== '' && mb_stripos($tags, $needle, 0, 'UTF-8') !== false) {
-                    $videos[] = $row;
+                if ($tags !== '' && !empty($needle_words)) {
+                    $tags_lc = mb_strtolower($tags, 'UTF-8');
+                    $score = 0;
+                    foreach ($needle_words as $w) {
+                        if ($w === '') continue;
+                        if (mb_stripos($tags_lc, $w, 0, 'UTF-8') !== false) {
+                            $score++;
+                        }
+                    }
+                    if ($score > 0) {
+                        $videos[] = $row;
+                        $video_scores[] = $score;
+                    }
                 }
             } else {
                 if (
@@ -163,7 +176,26 @@ if ($search_query) {
             }
         }
 
-        
+        if ($search_type === 'tag' && !empty($videos) && !empty($video_scores)) {
+            $combined = [];
+            foreach ($videos as $idx => $row) {
+                $combined[] = [
+                    'row' => $row,
+                    'score' => (int)($video_scores[$idx] ?? 0),
+                    'id' => (int)($row['id'] ?? 0),
+                ];
+            }
+            usort($combined, function($a, $b) {
+                if ($a['score'] !== $b['score']) {
+                    return $b['score'] - $a['score'];
+                }
+                return $b['id'] - $a['id'];
+            });
+            $videos = [];
+            foreach ($combined as $item) {
+                $videos[] = $item['row'];
+            }
+        }
     } catch (PDOException $e) {
         echo "<div class='errorBox'>Ошибка базы данных: " . htmlspecialchars($e->getMessage()) . ".</div>";
     }

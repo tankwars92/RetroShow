@@ -308,75 +308,126 @@ if ($user && $video['user'] && $user !== $video['user']) {
 }
 
 $is_private = !empty($video['private']);
-if ($is_private) {
-    $rec_stmt = $db->prepare("SELECT * FROM videos WHERE id != ? AND private = 0 ORDER BY id DESC LIMIT 5");
-    $rec_stmt->execute([$id]);
-    $recommended = $rec_stmt->fetchAll();
-} else {
-    $rec_stmt = $db->prepare("SELECT * FROM videos WHERE id != ? AND private = 0 ORDER BY id DESC LIMIT 5");
-    $rec_stmt->execute([$id]);
-    $recommended = $rec_stmt->fetchAll();
+$recommended = [];
 
-    $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
-    $ip = $_SERVER['REMOTE_ADDR'];
-    $now = time();
-    $timeout = 6 * 3600;
+// учёт просмотров
+$user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
+$ip = $_SERVER['REMOTE_ADDR'];
+$now = time();
+$timeout = 6 * 3600;
 
-    if ($user) {
-        $check_stmt = $db->prepare("SELECT viewed_at FROM video_views WHERE video_id = ? AND user = ? ORDER BY viewed_at DESC LIMIT 1");
-        $check_stmt->execute([$id, $user]);
-        $last = $check_stmt->fetchColumn();
-    } else {
-        $check_stmt = $db->prepare("SELECT viewed_at FROM video_views WHERE video_id = ? AND ip = ? ORDER BY viewed_at DESC LIMIT 1");
-        $check_stmt->execute([$id, $ip]);
-        $last = $check_stmt->fetchColumn();
+if (!$is_private) {
+    $last = null;
+    try {
+        if ($user) {
+            $check_stmt = $db->prepare("SELECT viewed_at FROM video_views WHERE video_id = ? AND user = ? ORDER BY viewed_at DESC LIMIT 1");
+            $check_stmt->execute([$id, $user]);
+            $last = $check_stmt->fetchColumn();
+        } else {
+            $check_stmt = $db->prepare("SELECT viewed_at FROM video_views WHERE video_id = ? AND ip = ? ORDER BY viewed_at DESC LIMIT 1");
+            $check_stmt->execute([$id, $ip]);
+            $last = $check_stmt->fetchColumn();
+        }
+    } catch (Exception $e) {
+        $last = null;
     }
     if (!$last || $now - $last > $timeout) {
-        $db->prepare("UPDATE videos SET views = views + 1 WHERE id = ?")->execute([$id]);
-        $db->prepare("INSERT INTO video_views (video_id, user, ip, viewed_at) VALUES (?, ?, ?, ?)")
-            ->execute([$id, $user, $ip, $now]);
-        $video['views'] = ($video['views'] ?? 0) + 1;
+        try {
+            $db->prepare("UPDATE videos SET views = views + 1 WHERE id = ?")->execute([$id]);
+            $db->prepare("INSERT INTO video_views (video_id, user, ip, viewed_at) VALUES (?, ?, ?, ?)")
+                ->execute([$id, $user, $ip, $now]);
+            $video['views'] = ($video['views'] ?? 0) + 1;
+        } catch (Exception $e) {}
     }
 }
 
+// блок рекомендаций: максимум 5, сначала максимально похожие
 try {
-    $tags_str = isset($video['tags']) ? trim($video['tags']) : '';
-    if ($tags_str !== '') {
-        $tags_arr = preg_split('/\s+/', $tags_str);
-        $tags_arr = array_filter(array_map('trim', $tags_arr));
-        $tags_arr = array_values(array_unique($tags_arr));
-        if (count($tags_arr) > 0) {
-            $tags_arr = array_slice($tags_arr, 0, 5);
-            $clauses = [];
-            $params = [$id];
-            foreach ($tags_arr as $t) {
-                $clauses[] = 'tags LIKE ?';
-                $params[] = '%' . $t . '%';
-            }
-            $sql = 'SELECT * FROM videos WHERE id != ? AND private = 0 AND (' . implode(' OR ', $clauses) . ') ORDER BY id DESC LIMIT 5 ';
-            $stmtSim = $db->prepare($sql);
-            $stmtSim->execute($params);
-            $byTags = $stmtSim->fetchAll();
-            if (!empty($byTags)) {
-                $chosen = $byTags;
-                $need = 5 - count($chosen);
-                if ($need > 0) {
-                    $excludeIds = array_map(function($v){ return intval($v['id']); }, $chosen);
-                    $excludeIds[] = intval($id);
-                    $ph = implode(',', array_fill(0, count($excludeIds), '?'));
-                    $sqlMore = 'SELECT * FROM videos WHERE private = 0 AND id NOT IN (' . $ph . ') ORDER BY id DESC LIMIT ' . intval($need);
-                    $stmtMore = $db->prepare($sqlMore);
-                    $stmtMore->execute($excludeIds);
-                    $more = $stmtMore->fetchAll();
-                    if (!empty($more)) {
-                        $chosen = array_merge($chosen, $more);
-                    }
+    $current_tags = isset($video['tags']) ? trim((string)$video['tags']) : '';
+    $tag_words = [];
+    if ($current_tags !== '') {
+        $tag_words = preg_split('/\s+/', mb_strtolower($current_tags, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY);
+        $tag_words = array_values(array_unique($tag_words));
+    }
+
+    $stmtRec = $db->prepare("SELECT id, public_id, title, description, file, preview, user, tags, views
+                             FROM videos
+                             WHERE id != ? AND (private = 0 OR private IS NULL)");
+    $stmtRec->execute([$id]);
+    $candidates = $stmtRec->fetchAll(PDO::FETCH_ASSOC);
+
+    $scored = [];
+    $fallback = [];
+    foreach ($candidates as $row) {
+        $score = 0;
+        if (!$is_private && isset($row['user']) && isset($video['user']) && $row['user'] === $video['user']) {
+            $score += 5;
+        }
+        $row_tags = isset($row['tags']) ? trim((string)$row['tags']) : '';
+        if (!empty($tag_words) && $row_tags !== '') {
+            $ltags = mb_strtolower($row_tags, 'UTF-8');
+            foreach ($tag_words as $w) {
+                if ($w === '') continue;
+                if (mb_stripos($ltags, $w, 0, 'UTF-8') !== false) {
+                    $score++;
                 }
-                $recommended = $chosen;
             }
+        }
+        if ($score > 0) {
+            $score_with_jitter = $score + (mt_rand(0, 10) / 100.0);
+            $row['_score'] = $score_with_jitter;
+            $scored[] = $row;
+        } else {
+            $fallback[] = $row;
+        }
+    }
+
+    $max_per_author = 3;
+    $author_counts = [];
+
+    if (!empty($scored)) {
+        usort($scored, function($a, $b) {
+            if ($a['_score'] == $b['_score']) {
+                return ($b['id'] ?? 0) - ($a['id'] ?? 0);
+            }
+            return ($a['_score'] < $b['_score']) ? 1 : -1;
+        });
+        foreach ($scored as $row) {
+            $author = isset($row['user']) ? (string)$row['user'] : '';
+            if ($author !== '') {
+                if (!isset($author_counts[$author])) $author_counts[$author] = 0;
+                if ($author_counts[$author] >= $max_per_author) {
+                    continue;
+                }
+            }
+            unset($row['_score']);
+            $recommended[] = $row;
+            if ($author !== '') $author_counts[$author]++;
+            if (count($recommended) >= 5) break;
+        }
+    }
+
+    if (count($recommended) < 5 && !empty($fallback)) {
+        shuffle($fallback);
+        foreach ($fallback as $row) {
+            $author = isset($row['user']) ? (string)$row['user'] : '';
+            if ($author !== '') {
+                if (!isset($author_counts[$author])) $author_counts[$author] = 0;
+                if ($author_counts[$author] >= $max_per_author) {
+                    continue;
+                }
+            }
+            $recommended[] = $row;
+            if ($author !== '') $author_counts[$author]++;
+            if (count($recommended) >= 5) break;
         }
     }
 } catch (Exception $e) {
+    try {
+        $rec_stmt = $db->prepare("SELECT * FROM videos WHERE id != ? AND private = 0 ORDER BY id DESC LIMIT 5");
+        $rec_stmt->execute([$id]);
+        $recommended = $rec_stmt->fetchAll();
+    } catch (Exception $e2) {}
 }
 
 $comment_error = '';
@@ -1390,8 +1441,17 @@ if (window.attachEvent) {
           <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
           <?php endforeach; ?>
           <tr>
-            <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;"> 
-              <a href="channel.php" style="color:#0033cc;">Посмотрите все видео</a>
+            <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;">
+              <?php
+              $more_href = 'channel.php';
+              if (!empty($video['tags'])) {
+                  $tags_str = trim((string)($video['tags'] ?? ''));
+                  if ($tags_str !== '') {
+                      $more_href = 'results.php?search_query=' . urlencode($tags_str) . '&search_type=tag';
+                  }
+              }
+              ?>
+              <a href="<?=$more_href?>" style="color:#0033cc;">Посмотрите все видео</a>
             </td>
           </tr>
   </table>
