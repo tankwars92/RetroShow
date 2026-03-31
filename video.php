@@ -1574,7 +1574,7 @@ if (window.attachEvent) {
                   }
               }
               ?>
-              <a href="<?=$more_href?>" style="color:#0033cc;">Посмотрите все видео</a>
+              <a href="<?=$more_href?>" style="color:#0033cc;">Ещё видео</a>
             </td>
           </tr>
   </table>
