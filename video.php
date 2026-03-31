@@ -77,13 +77,6 @@ if (preg_match('/^[A-Za-z0-9_-]{6,20}$/', $id_param)) {
     }
 }
 
-if (!$video) {
-    $id = intval($id_param);
-    $stmt = $db->prepare("SELECT * FROM videos WHERE id = ?");
-    $stmt->execute([$id]);
-    $video = $stmt->fetch(PDO::FETCH_ASSOC);
-}
-
 if (!$video || !$id) {
     header('Location: index.php?error=video_not_found');
     exit;
@@ -908,7 +901,7 @@ toggleVisibility('myAccountDropdown',0);
         </div>
 
         <div id="flashPlayerBox" style="display:none; font-size:14px; font-weight: bold;">
-            <embed src="player.swf?video_id=<?=$id?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">
+            <embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">
         </div>
 
         <div class="player" id="playerBox" style="margin: 0 0 0 0; display:none;">
@@ -917,7 +910,7 @@ toggleVisibility('myAccountDropdown',0);
                 <div class="playbackArea">
                     <div class="videoContainer">
                         <video class="videoObject" id="video" autoplay muted>
-                            <source src="<?=htmlspecialchars($video['file'])?>">
+                            <source src="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>">
                         </video>
                     </div>
                 </div>
@@ -1048,7 +1041,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
 <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>
 <br>
 <?php endif; ?>
-<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
+<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
 			</div>
 		</div>
 		<div id="statsDiv" style="float:left; width:28%; padding:4px; font-size:12px; color:#333;">
