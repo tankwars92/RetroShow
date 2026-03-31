@@ -1,0 +1,7 @@
+Options -Indexes
+
+<FilesMatch "\.mp4$">
+    Order allow,deny
+    Deny from all
+    Require all denied
+</FilesMatch>
