@@ -310,7 +310,6 @@ if ($user && $video['user'] && $user !== $video['user']) {
 $is_private = !empty($video['private']);
 $recommended = [];
 
-// учёт просмотров
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 $ip = $_SERVER['REMOTE_ADDR'];
 $now = time();
@@ -341,7 +340,6 @@ if (!$is_private) {
     }
 }
 
-// блок рекомендаций: максимум 5, сначала максимально похожие
 try {
     $current_tags = isset($video['tags']) ? trim((string)$video['tags']) : '';
     $tag_words = [];
