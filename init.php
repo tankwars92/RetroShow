@@ -15,11 +15,130 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+function get_client_ip_info() {
+    $checks = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_REAL_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_CLIENT_IP',
+        'REMOTE_ADDR',
+    ];
+    foreach ($checks as $key) {
+        if (empty($_SERVER[$key])) continue;
+        $raw = trim((string)$_SERVER[$key]);
+        if ($raw === '') continue;
+        if ($key === 'HTTP_X_FORWARDED_FOR') {
+            $parts = explode(',', $raw);
+            foreach ($parts as $p) {
+                $ip = trim($p);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return ['ip' => $ip, 'source' => $key, 'raw' => $raw];
+                }
+            }
+            continue;
+        }
+        if (filter_var($raw, FILTER_VALIDATE_IP)) {
+            return ['ip' => $raw, 'source' => $key, 'raw' => $raw];
+        }
+    }
+    return ['ip' => '0.0.0.0', 'source' => 'unknown', 'raw' => ''];
+}
+function get_client_ip_candidates() {
+    $vals = [];
+    $keys = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'];
+    foreach ($keys as $k) {
+        if (empty($_SERVER[$k])) continue;
+        $raw = trim((string)$_SERVER[$k]);
+        if ($raw === '') continue;
+        if ($k === 'HTTP_X_FORWARDED_FOR') {
+            $parts = explode(',', $raw);
+            foreach ($parts as $p) {
+                $ip = trim($p);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) $vals[$ip] = true;
+            }
+        } else {
+            if (filter_var($raw, FILTER_VALIDATE_IP)) $vals[$raw] = true;
+        }
+    }
+    return array_keys($vals);
+}
+
+function logs_dir() {
+    return __DIR__ . '/logs';
+}
+function get_modlog_path() {
+    return __DIR__ . '/log.txt';
+}
+function log_event($event, array $extra = []) {
+    $ip = get_client_ip_info();
+    $payload = array_merge([
+        'time' => time(),
+        'event' => (string)$event,
+        'user' => isset($_SESSION['user']) ? (string)$_SESSION['user'] : '',
+        'ip' => (string)$ip['ip'],
+        'ip_source' => (string)$ip['source'],
+        'ip_raw' => (string)$ip['raw'],
+        'ua' => (string)($_SERVER['HTTP_USER_AGENT'] ?? ''),
+        'uri' => (string)($_SERVER['REQUEST_URI'] ?? ''),
+        'method' => (string)($_SERVER['REQUEST_METHOD'] ?? ''),
+        'referer' => (string)($_SERVER['HTTP_REFERER'] ?? ''),
+    ], $extra);
+    $line = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!is_string($line)) return;
+    @file_put_contents(get_modlog_path(), $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+}
+
+function is_ip_banned($ip) {
+    global $db;
+    if (!$ip || !isset($db)) return false;
+    try {
+        $st = $db->prepare('SELECT 1 FROM ip_bans WHERE ip = ? LIMIT 1');
+        $st->execute([$ip]);
+        return (bool)$st->fetchColumn();
+    } catch (Exception $e) {
+        return false;
+    }
+}
 try {
     $db = new PDO(RETROSHOW_DB_DSN);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Ошибка подключения к базе данных: " . $e->getMessage());
+}
+
+$db->exec("CREATE TABLE IF NOT EXISTS ip_bans (
+    ip TEXT PRIMARY KEY,
+    created_at INTEGER NOT NULL,
+    created_by TEXT
+)");
+
+$banned_ip = '';
+$candidates = get_client_ip_candidates();
+foreach ($candidates as $cand) {
+    if (is_ip_banned($cand)) {
+        $banned_ip = $cand;
+        break;
+    }
+}
+if ($banned_ip !== '') {
+    log_event('blocked_ip', ['matched_banned_ip' => $banned_ip]);
+    header('HTTP/1.1 403 Forbidden');
+    echo '
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <title>Сайт для вас недоступен.</title>
+    </head>
+    <body>
+    <center>
+    <b><font size="6">Сайт для вас недоступен.</font></b>
+    <br>
+    <p>Ваш IP-адрес находится в черном списке. Пожалуйста, свяжитесь с администрацией сайта.</p>
+    </center>
+    </body>
+    </html>
+    ';
+    exit;
 }
 
 $db->exec("CREATE TABLE IF NOT EXISTS users (

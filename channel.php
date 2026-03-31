@@ -867,8 +867,8 @@ function performOnLoadFunctions() {
 <td style="padding: 0px 5px 0px 5px;">|</td>
 <td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
     <?php else: ?>
-<?php $rs_mail_unread = count_unread_mail($db, $_SESSION['user']); $rs_mail_icon = $rs_mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
-<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($rs_mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $rs_mail_unread ?></a>)</td>
+<?php $mail_unread = count_unread_mail($db, $_SESSION['user']); $mail_icon = $mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
+<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|<span style="white-space: nowrap;">
 <a href="account.php" onmouseover="showDropdownShow();">Мой аккаунт</a><a href="#" onclick="arrowClicked();return false;" onmouseover="document.arrowImg.src='/img/icon_menarrwdrpdwn_mouseover3_14x14.gif'" onmouseout="document.arrowImg.src='/img/icon_menarrwdrpdwn_regular_14x14.gif'"><img name="arrowImg" src="img/icon_menarrwdrpdwn_regular_14x14.gif" align="texttop" border="0" style="margin-left: 2px;"></a>
 
@@ -1167,6 +1167,11 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
             $db->prepare("INSERT INTO profile_comments (profile_user, user, text, time) VALUES (?, ?, ?, ?)")
                ->execute([$user, $_SESSION['user'], $comment_clean, time()]);
             $new_pc_id = (int) $db->lastInsertId();
+            log_event('comment_profile', [
+                'comment_id' => (int)$new_pc_id,
+                'profile_user' => (string)$user,
+                'author' => (string)$_SESSION['user'],
+            ]);
             if ($user !== $_SESSION['user']) {
                 $snippet = function_exists('mb_strlen') && function_exists('mb_substr')
                     ? (mb_strlen($comment_clean, 'UTF-8') > 120 ? mb_substr($comment_clean, 0, 120, 'UTF-8') . '...' : $comment_clean)
@@ -1360,8 +1365,8 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 <td style="padding: 0px 5px 0px 5px;">|</td>
 <td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
     <?php else: ?>
-<?php $rs_mail_unread = count_unread_mail($db, $_SESSION['user']); $rs_mail_icon = $rs_mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
-<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($rs_mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $rs_mail_unread ?></a>)</td>
+<?php $mail_unread = count_unread_mail($db, $_SESSION['user']); $mail_icon = $mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
+<td>Привет, <strong><?=htmlspecialchars($_SESSION['user'])?></strong> <a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>
 <td style="padding: 0px 5px 0px 5px;">|</td>
 <td><a href="help.php">Помощь</a></td>
 <td style="padding: 0px 5px 0px 5px;">|</td>
