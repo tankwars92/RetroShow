@@ -461,7 +461,8 @@ if (isset($_GET['del_comment']) && $user) {
 
 if (isset($_POST['add_comment'])) {
     if (!$user) {
-        $comment_error = 'Только для зарегистрированных пользователей!';
+        header("Location: register.php");
+        exit;
     } else {
         $comment_text = trim($_POST['comment_text'] ?? '');
         $parent_id = isset($_POST['reply_parent_id']) ? intval($_POST['reply_parent_id']) : 0;
@@ -574,13 +575,26 @@ function render_comments($tree, $level = 0) {
         echo '</div>';
         if ($c['ref_public_id'] !== '' && $c['ref_preview'] !== '') {
             $ref_link = 'video.php?id=' . urlencode($c['ref_public_id']);
-            echo '<table cellpadding="0" cellspacing="0" border="0" style="width:100%;'.$ml.'"><tr>';
+            echo '<table cellpadding="0" cellspacing="0" border="0" style="width:100%;'.$ml.'">';
+            echo '<tr>';
+
             echo '<td style="vertical-align:top; width:80px; padding:4px 4px 0 6px;">';
-            echo '<a href="'.$ref_link.'"><img src="'.htmlspecialchars($c['ref_preview']).'" class="commentsThumb" width="60" height="45" alt=""></a>';
-            echo '<div class="commentSpecifics">&nbsp;&nbsp;<a href="'.$ref_link.'" style="color:#0033cc;text-decoration:underline;">Видео</a></div>';
+
+            echo '<div style="width:60px;">';
+            echo '<a href="'.$ref_link.'">';
+            echo '<img src="'.htmlspecialchars($c['ref_preview']).'" width="60" height="45" border="0" alt=""><br>';
+            echo '<span style="font-size:12px;">Видео</span>';
+            echo '</a>';
+            echo '</div>';
+
             echo '</td>';
-            echo '<td style="font-size:13px;color:#222;padding:4px 6px 0 0;word-break:break-all;">'.nl2br(htmlspecialchars($c['text'])).'</td>';
-            echo '</tr></table>';
+
+            echo '<td style="vertical-align:top;font-size:13px;color:#222;padding:4px 6px 0 0;">';
+            echo nl2br(htmlspecialchars($c['text']));
+            echo '</td>';
+
+            echo '</tr>';
+            echo '</table>';
         } else {
             echo '<div style="font-size:13px;color:#222;padding:4px 6px 0 6px;'.$ml.' word-break:break-all;">'.nl2br(htmlspecialchars($c['text'])).'</div>';
         }
@@ -1030,16 +1044,38 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
     <![endif]-->
 	
     <a name="comments"></a>
+    <div style="padding-bottom: 5px; font-weight: bold; color: #444;">Прокомментируйте видео:</div>
+        <div id="commentFormBlock2">
+        <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;">
+        <input type="hidden" name="add_comment" value="1">
+        <input type="hidden" name="form_id" value="comment_formmain_comment2">
+        <input type="hidden" name="reply_parent_id" value="">
+        <input type="hidden" name="comment_type" value="V">
+        <textarea tabindex="2" name="comment_text" cols="55" rows="3" style="font-size: 13px; width: 98%;"></textarea><br>
+        <div class="attach-video-row" style="margin-top:3px; white-space:nowrap;">
+        <span style="font-size:12px;">Прикрепить видео:</span>
+        <select name="reference_video_id" style="font-size:12px; width:180px;">
+            <option value="">- Ваши видео -</option>
+            <?php foreach ($attach_my_videos as $vopt): ?>
+            <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
+            <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
+            <?php endforeach; ?>
+            <option value="">- Избранные видео -</option>
+            <?php foreach ($attach_fav_videos as $vopt): ?>
+            <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
+            <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <input type="submit" name="add_comment_button" value="Добавить" style="width: 70px;">
+        </div>
+        <?php if ($comment_error): ?>
+        <div style="color: #c00; font-size: 12px; padding: 3px 0; margin-top: 5px;"><?=htmlspecialchars($comment_error)?></div>
+        <?php endif; ?>
+        </form>
+    </div>
+    <br>
     <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 5px;"><tr>
-  <td><b><font style="margin: 0px; font-size: 15px;">Комментарии и ответы</font></b></td>
-  <td align="right">
-    <div style="padding-bottom: 2px;">
-      <b><a href="#">Добавить видео-ответ</a></b>
-    </div>
-    <div>
-      <b><a href="#" id="showCommentForm" onclick="return false;">Оставить текстовый комментарий</a></b>
-    </div>
-  </td>
+  <td><b><font style="margin: 0px; font-size: 14px;">Комментарии (всего <?=$comments_count?>):</font></b></td>
 </tr></table>
 <div style="margin-bottom: 10px;">
 <?php if ($user): ?>
@@ -1072,9 +1108,6 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
       <?php endif; ?>
     </form>
   </div>
-<?php else: ?>
-  <br><b><font style="margin: 0px; font-size: 15px;">Хотите оставить комментарий?</font></b><br>
-  <span style="font-size: 12px;">Зарегистрируйтесь на RetroShow или <a href="login.php">войдите</a>, если у вас уже есть аккаунт.</span>
 <?php endif; ?>
 </div>
 <?php if (count($comments) == 0): ?>
