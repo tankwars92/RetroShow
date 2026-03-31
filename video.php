@@ -165,11 +165,11 @@ function get_user_current_rating($db, $video_id, $user, $ip) {
     $r = $st->fetchColumn();
     return $r != false ? intval($r) : 0;
 }
-function render_rating_inner_html($video_id, $ratings_count, $avg_rating, $initial_rating = 0) {
+function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $avg_rating, $initial_rating = 0) {
     ob_start();
     ?>
 						<div id="ratingMessage" class="label" style="white-space:nowrap;">Оцените&nbsp;видео</div>
-		          		<form style="display:none;" name="ratingForm" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video_id)?>&ajax=rating" method="POST">
+		          		<form style="display:none;" name="ratingForm" action="video.php?id=<?=htmlspecialchars($video_public_id)?>&ajax=rating" method="POST">
 	<input type="hidden" name="action_add_rating" value="1">
 	<input type="hidden" name="video_id" value="<?=intval($video_id)?>">
 	<input type="hidden" name="rating" id="rating" value="">
@@ -502,7 +502,13 @@ if (isset($_GET['del_comment']) && $user) {
 }
 
 if (isset($_POST['add_comment'])) {
+    $is_ajax_comment = (isset($_GET['ajax']) && $_GET['ajax'] === 'comment');
     if (!$user) {
+        if ($is_ajax_comment) {
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo "ERROR:Только для зарегистрированных пользователей!";
+            exit;
+        }
         header("Location: register.php");
         exit;
     } else {
@@ -545,9 +551,19 @@ if (isset($_POST['add_comment'])) {
                 $body = $topic . "\n\n" . 'Текст комментария:' . "\n" . $snippet;
                 add_mail($db, $vid_owner, $user, $topic, $body, 'video_comment', $new_comment_id, $id, $public_id_ref, null);
             }
+            if ($is_ajax_comment) {
+                header('Content-Type: text/plain; charset=UTF-8');
+                echo "OK";
+                exit;
+            }
             header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
             exit;
         }
+    }
+    if ($is_ajax_comment) {
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo "ERROR:" . (string)$comment_error;
+        exit;
     }
 }
 
@@ -655,6 +671,27 @@ function render_comments($tree, $level = 0) {
         if (!empty($c['children'])) render_comments($c['children'], $level+1);
         echo '</div>';
     }
+}
+
+function render_comments_block($comments_count, $comment_tree) {
+    ?>
+    <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 5px;"><tr>
+      <td><b><font style="margin: 0px; font-size: 14px;">Комментарии (всего <?=intval($comments_count)?>):</font></b></td>
+    </tr></table>
+    <div id="commentsList">
+    <?php if (count($comment_tree) == 0): ?>
+      Комментариев пока нет.
+    <?php else: ?>
+      <?php render_comments($comment_tree); ?>
+    <?php endif; ?>
+    </div>
+    <?php
+}
+
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'comments') {
+    header('Content-Type: text/html; charset=UTF-8');
+    render_comments_block($comments_count, $comment_tree);
+    exit;
 }
 
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
@@ -1024,7 +1061,7 @@ toggleVisibility('myAccountDropdown',0);
 		<div id="ratingDivWrapper" style="float:left; width:32%; padding:4px;">
 			<div id="ratingDiv">
 <?php
-echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current_rating) : render_rating_inner_html_guest($ratings_count, $avg_rating);
+echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), $ratings_count, $avg_rating, $current_rating) : render_rating_inner_html_guest($ratings_count, $avg_rating);
 ?>
 			</div>
 		</div>
@@ -1060,7 +1097,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
           <td width="33%">
             <div style="font-weight:bold; font-size:12px; color:#333;">Оцените видео</div>
             <div>
-              <?php echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current_rating)
+              <?php echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), $ratings_count, $avg_rating, $current_rating)
                                 : render_rating_inner_html_guest($ratings_count, $avg_rating); ?>
             </div>
           </td>
@@ -1092,7 +1129,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
     <a name="comments"></a>
     <div style="padding-bottom: 5px; font-weight: bold; color: #444;">Прокомментируйте видео:</div>
         <div id="commentFormBlock2">
-        <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;">
+        <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;" onsubmit="return submitCommentAjax(this);">
         <input type="hidden" name="add_comment" value="1">
         <input type="hidden" name="form_id" value="comment_formmain_comment2">
         <input type="hidden" name="reply_parent_id" value="">
@@ -1118,13 +1155,10 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
         </form>
     </div>
     <br>
-    <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 5px;"><tr>
-  <td><b><font style="margin: 0px; font-size: 14px;">Комментарии (всего <?=$comments_count?>):</font></b></td>
-</tr></table>
 <div style="margin-bottom: 10px;">
 <?php if ($user): ?>
   <div id="commentFormBlock" style="display:none;">
-    <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;">
+    <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;" onsubmit="return submitCommentAjax(this);">
       <input type="hidden" name="add_comment" value="1">
       <input type="hidden" name="form_id" value="comment_formmain_comment2">
       <input type="hidden" name="reply_parent_id" value="">
@@ -1154,13 +1188,109 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
   </div>
 <?php endif; ?>
 </div>
-<?php if (count($comments) == 0): ?>
-  Комментариев пока нет.
-<?php else: ?>
-  <?php render_comments($comment_tree); ?>
-<?php endif; ?>
+<div id="commentsList">
+<div id="commentsBlock"><?php render_comments_block($comments_count, $comment_tree); ?></div>
+</div>
 </div>
 <script type="text/javascript">
+function rsEncode(v) {
+    if (typeof encodeURIComponent != 'undefined') return encodeURIComponent(v);
+    return escape(v);
+}
+function rsCreateXHR() {
+    if (typeof XMLHttpRequest != 'undefined') return new XMLHttpRequest();
+    try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch (e1) {}
+    try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch (e2) {}
+    return null;
+}
+function submitCommentAjax(form) {
+    var xhr = rsCreateXHR();
+    if (!xhr) return true;
+    var data = [];
+    var els = form.elements;
+    for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (!el || !el.name || el.disabled) continue;
+        var type = (el.type || '').toLowerCase();
+        if ((type == 'checkbox' || type == 'radio') && !el.checked) continue;
+        data.push(rsEncode(el.name) + '=' + rsEncode(el.value));
+    }
+    var url = form.action;
+    if (url.indexOf('?') >= 0) url += '&ajax=comment';
+    else url += '?ajax=comment';
+
+    var btn = null;
+    for (var j = 0; j < els.length; j++) {
+        if (els[j].name == 'add_comment_button') { btn = els[j]; break; }
+    }
+    if (btn) {
+        btn.disabled = true;
+        btn.value = '...';
+    }
+
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState != 4) return;
+        if (btn) {
+            btn.disabled = false;
+            btn.value = 'Добавить';
+        }
+        if (xhr.status == 200) {
+            var t = xhr.responseText || '';
+            if (t.indexOf('OK') === 0) {
+                showCommentAjaxMessage(form, 'Комментарий успешно опубликован!', true);
+                try {
+                    if (form.comment_text) form.comment_text.value = '';
+                    if (form.reference_video_id) form.reference_video_id.selectedIndex = 0;
+                    if (form.reply_parent_id) form.reply_parent_id.value = '';
+                } catch (eclr) {}
+                return;
+            }
+            var msg = t;
+            if (msg.indexOf('ERROR:') === 0) msg = msg.substring(6);
+            showCommentAjaxMessage(form, msg || 'Ошибка при отправке комментария!', false);
+        } else {
+            showCommentAjaxMessage(form, 'Ошибка связи при отправке комментария!', false);
+        }
+    };
+    xhr.send(data.join('&'));
+    return false;
+}
+function showCommentAjaxMessage(form, text, ok) {
+    var box = null;
+    var nodes = form.getElementsByTagName('div');
+    for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].className == 'commentAjaxNotice') { box = nodes[i]; break; }
+    }
+    if (!box) {
+        box = document.createElement('div');
+        box.className = 'commentAjaxNotice';
+        box.style.fontSize = '12px';
+        box.style.padding = '4px 0 2px 0';
+        box.style.fontWeight = 'bold';
+        form.appendChild(box);
+    }
+    if (typeof box.innerText != 'undefined') box.innerText = text;
+    else box.innerHTML = text;
+}
+function refreshCommentsAjax() {
+    var xhr = rsCreateXHR();
+    if (!xhr) {
+        window.location.href = 'video.php?id=<?=urlencode($video['public_id'] ?? '')?>#comments';
+        return;
+    }
+    var url = 'video.php?id=<?=urlencode($video['public_id'] ?? '')?>&ajax=comments';
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState != 4) return;
+        if (xhr.status == 200) {
+            var box = document.getElementById ? document.getElementById('commentsBlock') : document.all['commentsBlock'];
+            if (box) box.innerHTML = xhr.responseText || '';
+        }
+    };
+    xhr.send(null);
+}
 function showInline(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'inline';
