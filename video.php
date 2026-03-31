@@ -891,6 +891,10 @@ toggleVisibility('myAccountDropdown',0);
 	onLoadFunctionList.push(function () { document.searchForm.search_query.focus(); });
 </script>
 
+<?php if ($comment_error): ?>
+        <div class="errorBox"><?=htmlspecialchars($comment_error)?></div>
+        <?php endif; ?>
+
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
   <td width="435">
@@ -1117,9 +1121,7 @@ echo $user ? render_rating_inner_html($id, $ratings_count, $avg_rating, $current
         </select>
         <input type="submit" name="add_comment_button" value="Добавить" style="width: 70px;">
         </div>
-        <?php if ($comment_error): ?>
-        <div style="color: #c00; font-size: 12px; padding: 3px 0; margin-top: 5px;"><?=htmlspecialchars($comment_error)?></div>
-        <?php endif; ?>
+        
         </form>
     </div>
     <br>
