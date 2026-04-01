@@ -30,6 +30,12 @@
     Require all denied
 </Files>
 
+<Files "log.txt">
+    Order allow,deny
+    Deny from all
+    Require all denied
+</Files>
+
 <FilesMatch "\.(sqlite|db|sqlite3)$">
     Order allow,deny
     Deny from all
