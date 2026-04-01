@@ -351,17 +351,28 @@ try {
     $fallback = [];
     foreach ($candidates as $row) {
         $score = 0;
-        if (!$is_private && isset($row['user']) && isset($video['user']) && $row['user'] === $video['user']) {
-            $score += 5;
-        }
+        $is_same_author = (isset($row['user']) && isset($video['user']) && (string)$row['user'] !== '' && (string)$video['user'] !== '' && (string)$row['user'] === (string)$video['user']);
         $row_tags = isset($row['tags']) ? trim((string)$row['tags']) : '';
+        $tag_match = 0;
         if (!empty($tag_words) && $row_tags !== '') {
             $ltags = mb_strtolower($row_tags, 'UTF-8');
             foreach ($tag_words as $w) {
                 if ($w === '') continue;
                 if (mb_stripos($ltags, $w, 0, 'UTF-8') !== false) {
-                    $score++;
+                    $tag_match++;
                 }
+            }
+        }
+        if ($tag_match > 0) {
+            $score += ($tag_match * 2);
+            if ($is_same_author) {
+                $score -= 1;
+            } else {
+                $score += 3;
+            }
+        } else {
+            if ($is_same_author) {
+                $score += 1;
             }
         }
         if ($score > 0) {
@@ -1123,7 +1134,7 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
             <?php else: ?>
               <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc;">Войти, чтобы добавить в избранное</a><br>
             <?php endif; ?>
-              <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=intval($id)?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
+              <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
             </div>
           </td>
           <td width="33%" style="font-size:12px; color:#333;">
