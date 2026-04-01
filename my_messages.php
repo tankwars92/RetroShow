@@ -88,7 +88,7 @@ try {
     $ts = (int) $row['sent_at'];
     $date_str = $days_ru[(int) date('w', $ts)] . ', ' . (int) date('j', $ts) . ' ' . $months_ru[(int) date('n', $ts)] . ' ' . date('Y', $ts);
     $link_class = $is_read ? '' : ' class="bold"';
-    $href = 'read_msg.php?id=' . $mid . '&amp;s=';
+    $href = 'read_msg.php?id=' . $mid;
 ?>
 	<tr bgcolor="<?= htmlspecialchars($bg, ENT_QUOTES, 'UTF-8') ?>">
 		<td width="5"><img src="img/<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>" alt=""></td>

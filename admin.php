@@ -176,6 +176,20 @@ function admin_human_log_line(array $row) {
         $by = ($admin_user !== '' ? $admin_user : $user);
         return 'Модерация: удаление всех видео канала "' . $t . '" (удалено ' . $deleted . ', админ "' . $by . '")';
     }
+    if ($event === 'contact_submit') {
+        $from_email = (string)($row['from_email'] ?? '');
+        $from_user_real = trim((string)($row['from_user_real'] ?? ''));
+        $from_user = trim((string)($row['from_user'] ?? ''));
+        $who = $from_user_real !== '' ? $from_user_real : ($from_user !== '' ? $from_user : 'Guest');
+        $subject = trim((string)($row['subject'] ?? ''));
+        $ip_address = (string)($row['ip'] ?? '');
+        $parts = [];
+        $parts[] = 'Обратная связь';
+        if ($from_email !== '') $parts[] = 'почта "' . $from_email . '"';
+        $parts[] = 'от "' . $who . '"';
+        $parts[] = 'IP ' . $ip_address;
+        return implode(': ', [array_shift($parts), implode(', ', $parts)]);
+    }
 
     return $event . ' | user=' . $user . ' | ip=' . $ip;
 }
