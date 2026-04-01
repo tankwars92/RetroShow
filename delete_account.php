@@ -40,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (file_exists($playlists_file)) unlink($playlists_file);
 		
         try { $db->prepare('DELETE FROM profile_comments WHERE profile_user = ? OR user = ?')->execute([$user, $user]); } catch (Exception $e) {}
-        try { $db->prepare('DELETE FROM comments WHERE user = ?')->execute([$user]); } catch (Exception $e) {}
         try { $db->prepare('DELETE FROM mail_inbox WHERE to_user = ? OR from_user = ?')->execute([$user, $user]); } catch (Exception $e) {}
 		
         foreach ($video_ids as $vid) {

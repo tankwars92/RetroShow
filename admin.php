@@ -110,7 +110,7 @@ function admin_collect_log_rows($limit = 200) {
     return array_reverse($rows);
 }
 
-function admin_delete_channel_keep_videos(PDO $db, $login) {
+function admin_delete_channel(PDO $db, $login) {
     try { $db->prepare('DELETE FROM users WHERE login = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM user_favourites WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM user_friends WHERE user = ? OR friend = ?')->execute([$login, $login]); } catch (Exception $e) {}
@@ -273,9 +273,9 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_channel
     if ($login === '') {
         $error = 'Укажите логин канала.';
     } else {
-        admin_delete_channel_keep_videos($db, $login);
+        admin_delete_channel($db, $login);
         log_event('admin_delete_channel', ['target_channel' => $login, 'admin_user' => $user]);
-        $message = 'Канал удалён (видео сохранены).';
+        $message = 'Канал удалён.';
     }
 }
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_by_channel') {
