@@ -351,28 +351,17 @@ try {
     $fallback = [];
     foreach ($candidates as $row) {
         $score = 0;
-        $is_same_author = (isset($row['user']) && isset($video['user']) && (string)$row['user'] !== '' && (string)$video['user'] !== '' && (string)$row['user'] === (string)$video['user']);
+        if (!$is_private && isset($row['user']) && isset($video['user']) && $row['user'] === $video['user']) {
+            $score += 5;
+        }
         $row_tags = isset($row['tags']) ? trim((string)$row['tags']) : '';
-        $tag_match = 0;
         if (!empty($tag_words) && $row_tags !== '') {
             $ltags = mb_strtolower($row_tags, 'UTF-8');
             foreach ($tag_words as $w) {
                 if ($w === '') continue;
                 if (mb_stripos($ltags, $w, 0, 'UTF-8') !== false) {
-                    $tag_match++;
+                    $score++;
                 }
-            }
-        }
-        if ($tag_match > 0) {
-            $score += ($tag_match * 2);
-            if ($is_same_author) {
-                $score -= 1;
-            } else {
-                $score += 3;
-            }
-        } else {
-            if ($is_same_author) {
-                $score += 1;
             }
         }
         if ($score > 0) {
