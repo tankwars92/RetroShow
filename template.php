@@ -302,7 +302,7 @@ $news_file = __DIR__ . '/news.txt';
 if (file_exists($news_file)) {
     $news_text = trim(file_get_contents($news_file));
     if (!empty($news_text)) {
-        echo '<div class="confirmBox">' . htmlspecialchars($news_text) . '</div>';
+        echo '<div class="confirmBox">' . nl2br($news_text) . '</div>';
     }
 }
 ?>
