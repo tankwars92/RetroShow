@@ -88,6 +88,30 @@ function log_event($event, array $extra = []) {
     @file_put_contents(get_modlog_path(), $line . PHP_EOL, FILE_APPEND | LOCK_EX);
 }
 
+function is_valid_video_public_id($s) {
+    $s = (string)$s;
+    if ($s === '' || !preg_match('/^[A-Za-z0-9_-]{6,20}$/', $s)) {
+        return false;
+    }
+    if (ctype_digit($s)) {
+        return false;
+    }
+    return true;
+}
+
+function video_public_id_from_get() {
+    foreach (['id', 'public_id', 'video_id'] as $key) {
+        if (!isset($_GET[$key])) {
+            continue;
+        }
+        $v = trim((string)$_GET[$key]);
+        if (is_valid_video_public_id($v)) {
+            return $v;
+        }
+    }
+    return '';
+}
+
 function is_ip_banned($ip) {
     global $db;
     if (!$ip || !isset($db)) return false;

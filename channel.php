@@ -617,8 +617,10 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                           <?php list($rc,$ra)=channel_get_rating_stats($db,$row['id']); echo channel_render_avg_stars_html($ra,$rc); ?>
                           <?php if ($is_owner): ?>
                           <td style="padding-right:0px;padding-top:0px;">
-    <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='my_videos_edit.php?id=<?=intval($row['id'])?>';">
+    <?php if (is_valid_video_public_id($row['public_id'] ?? '')): ?>
+    <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='my_videos_edit.php?id=<?=urlencode((string)$row['public_id'])?>';">
       Редактировать видео</button>
+    <?php endif; ?>
     <?php if ($can_choose_avatar): ?>
     <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='channel.php?user=<?=urlencode($user)?>&tab=videos&set_avatar=<?=intval($row['id'])?><?php if ($page > 1): ?>&page=<?=$page?><?php endif; ?>';">
       Сделать аватаром</button>

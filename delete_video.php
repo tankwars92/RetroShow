@@ -11,9 +11,8 @@ $current_user = $_SESSION['user'];
 $error = '';
 $success = false;
 
-$video_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-
-if ($video_id <= 0) {
+$public_id = video_public_id_from_get();
+if ($public_id === '') {
     showHeader('Удаление видео');
     echo '<div class="errorBox">Видео не найдено.</div>';
     echo '<div><a href="channel.php?user='.urlencode($current_user).'&tab=videos">Вернуться к моим видео</a></div>';
@@ -22,8 +21,8 @@ if ($video_id <= 0) {
 }
 
 try {
-    $stmt = $db->prepare('SELECT id, title, file, preview, user FROM videos WHERE id = ?');
-    $stmt->execute([$video_id]);
+    $stmt = $db->prepare('SELECT id, public_id, title, file, preview, user FROM videos WHERE public_id = ?');
+    $stmt->execute([$public_id]);
     $video = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $video = false;
@@ -41,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm']) && $_POST[
     try {
         $db->beginTransaction();
 
+        $video_id = (int)$video['id'];
         $file = $video['file'];
         $preview = $video['preview'];
 
@@ -53,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm']) && $_POST[
         $stmt = $db->prepare('DELETE FROM video_views WHERE video_id = ?');
         $stmt->execute([$video_id]);
 
-        $stmt = $db->prepare('DELETE FROM videos WHERE id = ? AND user = ?');
-        $stmt->execute([$video_id, $current_user]);
+        $stmt = $db->prepare('DELETE FROM videos WHERE public_id = ? AND user = ?');
+        $stmt->execute([$public_id, $current_user]);
 
         $db->commit();
 
@@ -110,7 +110,7 @@ showHeader('Удаление видео');
               Удаление видео
             </td>
             <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle">
-              <a href="my_videos_edit.php?id=<?=intval($video_id)?>" style="color:#0033cc; text-decoration:underline;">Назад к редактированию</a>
+              <a href="my_videos_edit.php?id=<?=urlencode($public_id)?>" style="color:#0033cc; text-decoration:underline;">Назад к редактированию</a>
             </td>
           </tr>
         </table>
@@ -141,7 +141,7 @@ showHeader('Удаление видео');
     Вы действительно хотите удалить видео "<b><?=htmlspecialchars($video['title'])?></b>"?
   </div>
 
-  <form method="post" action="delete_video.php?id=<?=intval($video_id)?>">
+  <form method="post" action="delete_video.php?id=<?=urlencode($public_id)?>">
     <input type="hidden" name="confirm" value="yes">
     <input type="submit" value="Удалить видео" style="font-size:13px; width:130px;">
   </form>

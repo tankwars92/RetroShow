@@ -11,21 +11,15 @@ $current_user = $_SESSION['user'];
 $error = '';
 $success = false;
 
-$video_id = 0;
-if (isset($_GET['id'])) {
-    $video_id = intval($_GET['id']);
-} elseif (isset($_GET['video_id'])) {
-    $video_id = intval($_GET['video_id']);
-}
-
-if ($video_id <= 0) {
+$public_id = video_public_id_from_get();
+if ($public_id === '') {
     header('Location: index.php?error=video_not_allowed');
     exit;
 }
 
 try {
-    $stmt = $db->prepare('SELECT id, title, description, tags, private, user FROM videos WHERE id = ?');
-    $stmt->execute([$video_id]);
+    $stmt = $db->prepare('SELECT id, public_id, title, description, tags, private, user FROM videos WHERE public_id = ?');
+    $stmt->execute([$public_id]);
     $video = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $video = false;
@@ -62,8 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $is_private = ($broadcast === 'private') ? 1 : 0;
         try {
-            $stmt = $db->prepare('UPDATE videos SET title = ?, description = ?, tags = ?, private = ? WHERE id = ? AND user = ?');
-            if ($stmt->execute([$title, $description, $tags, $is_private, $video_id, $current_user])) {
+            $stmt = $db->prepare('UPDATE videos SET title = ?, description = ?, tags = ?, private = ? WHERE public_id = ? AND user = ?');
+            if ($stmt->execute([$title, $description, $tags, $is_private, $public_id, $current_user])) {
                 $success = true;
                 $video['title'] = $title;
                 $video['description'] = $description;
@@ -83,7 +77,7 @@ showHeader('Редактирование видео');
 
 <center>
 <div style="width:600px; text-align:left;">
-  <form method="post" action="my_videos_edit.php?id=<?=intval($video_id)?>" style="margin:0;">
+  <form method="post" action="my_videos_edit.php?id=<?=urlencode($public_id)?>" style="margin:0;">
     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-family:Tahoma,Arial,sans-serif; font-size:13px; border-collapse:collapse;">
       <tr>
         <td colspan="2">
@@ -93,7 +87,7 @@ showHeader('Редактирование видео');
                 Редактирование видео
               </td>
               <td align="right" style="font-size:12px; font-weight:normal; padding-bottom:2px;" valign="middle">
-                <a href="delete_video.php?id=<?=intval($video_id)?>" style="color:#c00; text-decoration:underline;"><b>Удалить видео</b></a>
+                <a href="delete_video.php?id=<?=urlencode($public_id)?>" style="color:#c00; text-decoration:underline;"><b>Удалить видео</b></a>
               </td>
             </tr>
           </table>

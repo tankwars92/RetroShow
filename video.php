@@ -1479,6 +1479,12 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
       <span style="color:#333333;"><b>Загружено</b></span>&nbsp;&nbsp;<b><?=rus_date('j F Y', strtotime($video['time']))?></b><br>
       <span style="color:#333333;"><b>От</b></span>&nbsp;&nbsp;<b><a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc;"><?=htmlspecialchars($video['user'])?></a></b><br>
       </div>
+      <?php if ($user && $user === $video['user'] && is_valid_video_public_id($video['public_id'] ?? '')): ?>
+      <div style="margin: 8px 0px;" class="smallText">
+            <span class="smallLabel">Настройки видео:</span>
+            <a href="/my_videos_edit.php?id=<?= urlencode((string)$video['public_id']) ?>">Редактировать</a>
+      </div>
+      <?php endif; ?>
       </div>
       </div>
       <?php if (trim($desc) !== ''): ?>
