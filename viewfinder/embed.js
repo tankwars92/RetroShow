@@ -62,13 +62,14 @@ document.addEventListener('scroll', function() {
 contextMenu.style.display = "none";
 });
 
-//play video (crude autoplay workaround)
-video.load()
-video.play()
 
 function togglePlay() {
     if (video.paused || video.ended) {
-      video.play();
+      video.muted = false;
+      var p = video.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(function() {});
+      }
       playIcon.classList.add("hidden");
       pauseIcon.classList.remove("hidden");
     } else {
@@ -80,8 +81,23 @@ function togglePlay() {
 
 function toggleMute() {
     video.muted = !video.muted;
-    muteIcon.classList.toggle("hidden");
-    unmuteIcon.classList.toggle("hidden");
+    if (video.muted) {
+        muteIcon.classList.remove("hidden");
+        unmuteIcon.classList.add("hidden");
+    } else {
+        muteIcon.classList.add("hidden");
+        unmuteIcon.classList.remove("hidden");
+    }
+}
+
+function syncMuteIcons() {
+    if (video.muted) {
+        muteIcon.classList.remove("hidden");
+        unmuteIcon.classList.add("hidden");
+    } else {
+        muteIcon.classList.add("hidden");
+        unmuteIcon.classList.remove("hidden");
+    }
 }
 
 function initializeVideo() {
@@ -89,7 +105,31 @@ function initializeVideo() {
     seekHandle.setAttribute('max', videoDuration);
     seekProgress.setAttribute('max', videoDuration);
     updateProgress();
-    detectAutoplay();
+    video.muted = false;
+    syncMuteIcons();
+
+    var played = false;
+    try {
+        const p = video.play();
+        if (p && typeof p.then === 'function') {
+            p.then(function() {
+                played = true;
+                detectAutoplay();
+            }).catch(function() {
+                video.pause();
+                detectAutoplay();
+            });
+        } else {
+            played = true;
+            detectAutoplay();
+        }
+    } catch (e) {
+        video.pause();
+        detectAutoplay();
+    }
+    if (!played) {
+        detectAutoplay();
+    }
 }
 
 function detectAutoplay() {
