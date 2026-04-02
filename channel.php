@@ -34,8 +34,8 @@ function rus_date($time) {
 
 require_once 'duration_helper.php';
 
-function get_video_duration($file, $id) {
-    return get_video_duration_fast($file, $id);
+function get_video_duration($file, $id, $public_id = '') {
+    return get_video_duration_fast($file, $id, $public_id);
 }
 
 function channel_get_rating_stats($db, $video_id) {
@@ -567,7 +567,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                         <td width="120"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                         <td width="100%" style="padding-left:8px;">
                           <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['title'])?></a></div>
-                          <div style="font-size:12px; color:#222; margin:2px 0 2px 0;"><b><?=get_video_duration($row['file'], $row['id'])?></b>
+                          <div style="font-size:12px; color:#222; margin:2px 0 2px 0;"><b><?=get_video_duration($row['file'], $row['id'], $row['public_id'] ?? '')?></b>
                           <?php if (!empty($row['private']) && $is_owner): ?>
                             &nbsp;<font color="#FF0000"><b><i>(ПРИВАТНОЕ ВИДЕО!)</i></b></font>
                           <?php endif; ?></div>
@@ -1038,7 +1038,7 @@ foreach ($filters as $filter_key => $filter_label) {
 							</div>
 							<div class="title" style="text-align:left; padding-top: 6px; clear: left;">
 								<b><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($title_display)?></a></b><br>
-								<span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
+								<span class="runtime"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?></span>
 							</div>
 							<div style="font-size:11px; text-align:left;">
 								<span style="color:#888;">Добавлено:</span> <?=time_ago(strtotime($video['time']))?><br>

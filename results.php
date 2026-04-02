@@ -1,6 +1,7 @@
 <?php
 include 'init.php';
 include 'template.php';
+require_once __DIR__ . '/duration_helper.php';
 
 function get_profile_icon($username, $profile_icon_setting = '0') {
     static $icon_cache = [];
@@ -68,25 +69,8 @@ function time_ago($time) {
     return "$n $f назад";
 }
 
-function get_video_duration($file, $id) {
-    $cache_file = __DIR__ . '/uploads/' . intval($id) . '_duration.txt';
-    if (file_exists($cache_file)) {
-        $duration = trim(file_get_contents($cache_file));
-        if (preg_match('/^\d{1,5}(:[0-5]\d){1,2}$/', $duration)) return $duration;
-    }
-    $ffprobe = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($file);
-    $out = shell_exec($ffprobe);
-    $seconds = intval(round(floatval($out)));
-    $h = floor($seconds / 3600);
-    $m = floor(($seconds % 3600) / 60);
-    $s = $seconds % 60;
-    if ($h > 0) {
-        $duration = sprintf('%d:%02d:%02d', $h, $m, $s);
-    } else {
-        $duration = sprintf('%d:%02d', $m, $s);
-    }
-    if ($seconds < 360000) file_put_contents($cache_file, $duration);
-    return $duration;
+function get_video_duration($file, $id, $public_id = '') {
+    return get_video_duration_fast($file, $id, $public_id);
 }
 
 function get_results_rating_stats($db, $video_id) {
@@ -281,7 +265,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                       <td width="120"><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
                       <td width="100%" style="padding-left:8px;">
                         <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
-                        <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'])?></div>
+                        <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?></div>
                         <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
                           <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
                         </span>

@@ -58,6 +58,8 @@ function admin_delete_video_full(PDO $db, array $videoRow) {
     $video_id = (int)$videoRow['id'];
     $file = (string)($videoRow['file'] ?? '');
     $preview = (string)($videoRow['preview'] ?? '');
+    $pub = (string)($videoRow['public_id'] ?? '');
+    $base = function_exists('video_uploads_file_base') ? video_uploads_file_base($video_id, $pub) : (string)$video_id;
 
     $db->prepare('DELETE FROM comments WHERE video_id = ?')->execute([$video_id]);
     $db->prepare('DELETE FROM ratings WHERE video_id = ?')->execute([$video_id]);
@@ -65,16 +67,29 @@ function admin_delete_video_full(PDO $db, array $videoRow) {
     try { $db->prepare('DELETE FROM user_favourites WHERE video_id = ?')->execute([$video_id]); } catch (Exception $e) {}
     $db->prepare('DELETE FROM videos WHERE id = ?')->execute([$video_id]);
 
-    $duration_cache = __DIR__ . '/uploads/' . $video_id . '_duration.txt';
-    if (is_file($duration_cache)) @unlink($duration_cache);
-
-    if ($file !== '' && is_file($file)) @unlink($file);
-    $mp4 = __DIR__ . '/uploads/' . $video_id . '.mp4';
-    if (is_file($mp4)) @unlink($mp4);
-
-    if ($preview !== '' && is_file($preview)) @unlink($preview);
-    $jpg = __DIR__ . '/uploads/' . $video_id . '_preview.jpg';
-    if (is_file($jpg)) @unlink($jpg);
+    $paths = [
+        __DIR__ . '/uploads/' . $base . '_duration.txt',
+        __DIR__ . '/uploads/' . $video_id . '_duration.txt',
+        __DIR__ . '/uploads/' . $base . '_duration.lock',
+        __DIR__ . '/uploads/' . $video_id . '_duration.lock',
+        __DIR__ . '/uploads/' . $base . '_duration_temp.txt',
+        __DIR__ . '/uploads/' . $video_id . '_duration_temp.txt',
+    ];
+    if ($file !== '') {
+        $paths[] = (strpos($file, '/') === 0 || preg_match('~^[A-Za-z]:~', $file)) ? $file : (__DIR__ . '/' . ltrim($file, '/'));
+    }
+    if ($preview !== '') {
+        $paths[] = (strpos($preview, '/') === 0 || preg_match('~^[A-Za-z]:~', $preview)) ? $preview : (__DIR__ . '/' . ltrim($preview, '/'));
+    }
+    $paths[] = __DIR__ . '/uploads/' . $base . '.mp4';
+    $paths[] = __DIR__ . '/uploads/' . $video_id . '.mp4';
+    $paths[] = __DIR__ . '/uploads/' . $base . '_preview.jpg';
+    $paths[] = __DIR__ . '/uploads/' . $video_id . '_preview.jpg';
+    foreach (array_unique($paths) as $p) {
+        if ($p !== '' && is_file($p)) {
+            @unlink($p);
+        }
+    }
 }
 function admin_collect_video_ids_by_ip($ip) {
     $path = admin_modlog_file();

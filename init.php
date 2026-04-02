@@ -99,6 +99,19 @@ function is_valid_video_public_id($s) {
     return true;
 }
 
+/** Базовое имя файлов в uploads/ (без расширения): «123_abcXy9» или «123» для старых записей без валидного public_id. */
+function video_uploads_file_base($video_id, $public_id = '') {
+    $id = (int)$video_id;
+    if ($id <= 0) {
+        return '0';
+    }
+    $pid = trim((string)$public_id);
+    if ($pid !== '' && is_valid_video_public_id($pid)) {
+        return $id . '_' . $pid;
+    }
+    return (string)$id;
+}
+
 function video_public_id_from_get() {
     foreach (['id', 'public_id', 'video_id'] as $key) {
         if (!isset($_GET[$key])) {

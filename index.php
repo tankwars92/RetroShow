@@ -4,6 +4,7 @@ ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 include("init.php"); 
 include("template.php");
+require_once __DIR__ . '/duration_helper.php';
 
 $contest = false;
 
@@ -501,26 +502,6 @@ echo time_ago($ago_ts);
 
 		
 				<?php
-                function get_video_duration($file, $id) {
-                    $cache_file = __DIR__ . '/uploads/' . intval($id) . '_duration.txt';
-                    if (file_exists($cache_file)) {
-                        $duration = trim(file_get_contents($cache_file));
-                        if (preg_match('/^\d{1,5}(:[0-5]\d){1,2}$/', $duration)) return $duration;
-                    }
-                    $ffprobe = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($file);
-                    $out = shell_exec($ffprobe);
-                    $seconds = intval(round(floatval($out)));
-                    $h = floor($seconds / 3600);
-                    $m = floor(($seconds % 3600) / 60);
-                    $s = $seconds % 60;
-                    if ($h > 0) {
-                        $duration = sprintf('%d:%02d:%02d', $h, $m, $s);
-    } else {
-                        $duration = sprintf('%d:%02d', $m, $s);
-                    }
-                    if ($seconds < 360000) file_put_contents($cache_file, $duration);
-                    return $duration;
-                }
                 foreach ($featured_videos as $item):
                     $video = $item['video'];
                     $desc = htmlspecialchars($video['description']);
@@ -542,7 +523,7 @@ echo time_ago($ago_ts);
                       <td width="100%" style="padding-left:8px;">
 						<div class="moduleEntryTitle">
 							<a href="video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>"><?= htmlspecialchars($video['title']) ?></a><br>
-							<span class="runtime"><?=get_video_duration($video['file'], $video['id'])?></span>
+							<span class="runtime"><?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?></span>
 						</div>
                         <?php
                         $desc_id = 'desc_' . $video['id'];

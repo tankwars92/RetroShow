@@ -3,8 +3,8 @@ include("init.php");
 
 require_once 'duration_helper.php';
 
-function get_video_duration($file, $id) {
-    return get_video_duration_fast($file, $id);
+function get_video_duration($file, $id, $public_id = '') {
+    return get_video_duration_fast($file, $id, $public_id);
 }
 
 function time_ago($time) {
@@ -85,7 +85,7 @@ if (!$video || !$id) {
 @include_once __DIR__ . '/duration_helper.php';
 $flash_len = 0;
 if (function_exists('get_video_duration_fast')) {
-    $dur_str = get_video_duration_fast($video['file'], $id);
+    $dur_str = get_video_duration_fast($video['file'], $id, $video['public_id'] ?? '');
     if ($dur_str && $dur_str != '--:--') {
         $parts = explode(':', $dur_str);
         if (count($parts) == 3) {
@@ -106,7 +106,7 @@ if ($user) {
 }
 
 if (isset($_GET['download']) && $_GET['download'] == 'avi') {
-    $temp_avi = 'uploads/temp_' . $id . '.avi';
+    $temp_avi = 'uploads/temp_' . video_uploads_file_base($id, $video['public_id'] ?? '') . '.avi';
     
     $ffmpeg = "ffmpeg -i " . escapeshellarg($video['file']) . 
              " -c:v msmpeg4v2 " . 
@@ -1536,9 +1536,10 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         <input name="video_link" value="http://retroshow.hoho.ws/video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>" class="vidURLField" onclick="javascript:document.urlForm.video_link.focus();document.urlForm.video_link.select();" readonly="true" type="text">
         </td>
         </tr>
+        <?php $embed_file_base = video_uploads_file_base((int)$video['id'], $video['public_id'] ?? ''); ?>
         <tr><td class="smallLabel">Вставка</td>
         <td>
-        <input name="embed_code" value="&lt;script type=&quot;text/javascript&quot; src=&quot;http://retroshow.hoho.ws/jwplayer/jwplayer.js&quot;&gt;&lt;/script&gt;&lt;div id=&quot;mediaplayer&quot;&gt;&lt;/div&gt;&lt;script type=&quot;text/javascript&quot;&gt;jwplayer(&quot;mediaplayer&quot;).setup({&#39;controlbar.position&#39;:&#39;bottom&#39;,&#39;logo.hide&#39;:&#39;true&#39;,file:&quot;http://retroshow.hoho.ws/uploads/<?= $video['id'] ?>.mp4&quot;,image:&quot;http://retroshow.hoho.ws/uploads/<?= $video['id'] ?>_preview.jpg&quot;,height:344,width:425,modes:[{type:&quot;html5&quot;},{type:&quot;flash&quot;,src:&quot;http://retroshow.hoho.ws/jwplayer/player.swf&quot;},{type:&quot;download&quot;}]});&lt;/script&gt;" class="vidURLField" onclick="javascript:document.urlForm.embed_code.focus();document.urlForm.embed_code.select();" readonly="true" type="text">
+        <input name="embed_code" value="&lt;script type=&quot;text/javascript&quot; src=&quot;http://retroshow.hoho.ws/jwplayer/jwplayer.js&quot;&gt;&lt;/script&gt;&lt;div id=&quot;mediaplayer&quot;&gt;&lt;/div&gt;&lt;script type=&quot;text/javascript&quot;&gt;jwplayer(&quot;mediaplayer&quot;).setup({&#39;controlbar.position&#39;:&#39;bottom&#39;,&#39;logo.hide&#39;:&#39;true&#39;,file:&quot;http://retroshow.hoho.ws/uploads/<?= htmlspecialchars($embed_file_base, ENT_QUOTES, 'UTF-8') ?>.mp4&quot;,image:&quot;http://retroshow.hoho.ws/uploads/<?= htmlspecialchars($embed_file_base, ENT_QUOTES, 'UTF-8') ?>_preview.jpg&quot;,height:344,width:425,modes:[{type:&quot;html5&quot;},{type:&quot;flash&quot;,src:&quot;http://retroshow.hoho.ws/jwplayer/player.swf&quot;},{type:&quot;download&quot;}]});&lt;/script&gt;" class="vidURLField" onclick="javascript:document.urlForm.embed_code.focus();document.urlForm.embed_code.select();" readonly="true" type="text">
         </td></tr>
         </tbody></table>
         </form>
@@ -1588,9 +1589,9 @@ if (window.attachEvent) {
     <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse; background: #f5f5f5; border-top: none;">
       <tr><td>
         <table width="100%" cellpadding="2" cellspacing="0" border="0" style="background: #fff;">
-          <tr style="background: #ffffcc;"><td width="60"><a href="#"><img src="<?=htmlspecialchars($video['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="#"><b><?=htmlspecialchars($video['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($video['file'], $video['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a><br>Просмотров: <?=intval($video['views'] ?? 212)?><br><b>&lt;&lt; Сейчас смотрите</b></span></td></tr>
+          <tr style="background: #ffffcc;"><td width="60"><a href="#"><img src="<?=htmlspecialchars($video['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="#"><b><?=htmlspecialchars($video['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a><br>Просмотров: <?=intval($video['views'] ?? 212)?><br><b>&lt;&lt; Сейчас смотрите</b></span></td></tr>
           <?php foreach ($recommended as $rec): ?>
-          <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'])?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
+          <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'], $rec['public_id'] ?? '')?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
           <?php endforeach; ?>
           <tr>
             <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;">

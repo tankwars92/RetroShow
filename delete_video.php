@@ -58,26 +58,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm']) && $_POST[
 
         $db->commit();
 
-        $duration_cache = __DIR__ . '/uploads/' . $video_id . '_duration.txt';
-        if (file_exists($duration_cache)) {
-            @unlink($duration_cache);
+        $base = video_uploads_file_base($video_id, $public_id);
+        $paths = [
+            __DIR__ . '/uploads/' . $base . '_duration.txt',
+            __DIR__ . '/uploads/' . $video_id . '_duration.txt',
+            __DIR__ . '/uploads/' . $base . '_duration.lock',
+            __DIR__ . '/uploads/' . $video_id . '_duration.lock',
+            __DIR__ . '/uploads/' . $base . '_duration_temp.txt',
+            __DIR__ . '/uploads/' . $video_id . '_duration_temp.txt',
+        ];
+        if (!empty($file)) {
+            $paths[] = (strpos($file, '/') === 0 || preg_match('~^[A-Za-z]:~', $file)) ? $file : (__DIR__ . '/' . ltrim($file, '/'));
         }
-
-        if (!empty($file) && file_exists($file)) {
-            @unlink($file);
-        } else {
-            $mp4 = __DIR__ . '/uploads/' . $video_id . '.mp4';
-            if (file_exists($mp4)) {
-                @unlink($mp4);
-            }
+        if (!empty($preview)) {
+            $paths[] = (strpos($preview, '/') === 0 || preg_match('~^[A-Za-z]:~', $preview)) ? $preview : (__DIR__ . '/' . ltrim($preview, '/'));
         }
-
-        if (!empty($preview) && file_exists($preview)) {
-            @unlink($preview);
-        } else {
-            $jpg = __DIR__ . '/uploads/' . $video_id . '_preview.jpg';
-            if (file_exists($jpg)) {
-                @unlink($jpg);
+        $paths[] = __DIR__ . '/uploads/' . $base . '.mp4';
+        $paths[] = __DIR__ . '/uploads/' . $video_id . '.mp4';
+        $paths[] = __DIR__ . '/uploads/' . $base . '_preview.jpg';
+        $paths[] = __DIR__ . '/uploads/' . $video_id . '_preview.jpg';
+        foreach (array_unique($paths) as $p) {
+            if ($p !== '' && is_file($p)) {
+                @unlink($p);
             }
         }
 

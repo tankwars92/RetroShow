@@ -51,6 +51,11 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
+$ip_info = get_client_ip_info();
+$client_ip = $ip_info['ip'];
+$client_ip_source = $ip_info['source'];
+$ip_blocked = is_ip_banned($client_ip);
+
 $error = '';
 $success = '';
 
@@ -63,6 +68,9 @@ function normalize_tags($tags) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 1) {
+    if ($ip_blocked) {
+        $error = 'Загрузка видео для вашего IP адреса запрещена.';
+    } else {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $tags = normalize_tags($_POST['tags'] ?? '');
@@ -77,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 1) {
         header('Location: upload.php?p=2');
         exit;
     }
+    }
 } else {
     $title = $_SESSION['upload_title'] ?? '';
     $description = $_SESSION['upload_description'] ?? '';
@@ -84,6 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 1) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
+    if ($ip_blocked) {
+        $error = 'Загрузка видео для вашего IP адреса запрещена.';
+    } else {
     $title = $_SESSION['upload_title'] ?? '';
     $description = $_SESSION['upload_description'] ?? '';
     $tags = $_SESSION['upload_tags'] ?? '';
@@ -101,13 +113,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
         $stmt = $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
         $next_id = $stmt->fetch()['next_id'] ?? 1;
         $public_id = generate_public_video_id($db);
-        
+        $file_base = video_uploads_file_base((int)$next_id, $public_id);
+
         $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
-        $preview_ext = 'jpg'; 
-        
-        $temp_video = 'uploads/temp_' . $next_id . '.' . $video_ext;
-        $final_video = 'uploads/' . $next_id . '.mp4';
-        $preview_file = 'uploads/' . $next_id . '_preview.' . $preview_ext;
+        $preview_ext = 'jpg';
+
+        $temp_video = 'uploads/temp_' . $file_base . '.' . $video_ext;
+        $final_video = 'uploads/' . $file_base . '.mp4';
+        $preview_file = 'uploads/' . $file_base . '_preview.' . $preview_ext;
         
         if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
             $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
@@ -117,37 +130,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
 
             $dimensions = get_video_dimensions($temp_video);
             $vf_filter = "format=yuv420p";
-            if ($dimensions && is_4_3_aspect_ratio($dimensions['width'], $dimensions['height'])) {
-                $vf_filter .= ",scale=640:480";
+            if ($dimensions) {
+                $w = (int)($dimensions['width'] ?? 0);
+                $h = (int)($dimensions['height'] ?? 0);
+                if ($w > 0 && $h > 0) {
+                    if (is_4_3_aspect_ratio($w, $h)) {
+                        $vf_filter .= ",scale=640:480";
+                    } else {
+                        if ($w > 640 || $h > 480) {
+                            $vf_filter .= ",scale=640:-2";
+                        }
+                    }
+                }
             }
 
             if ($video_ext != 'mp4') {
                 $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($temp_video);
                 $has_video = trim(shell_exec($ffprobe)) === 'video';
                 
-                $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
-                
+                $log_file = 'uploads/ffmpeg_' . $file_base . '.log';
+
                 if (!$has_video) {
-                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
                              " -f lavfi -i color=c=black:s=640x360 -shortest " .
-                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
-                             " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
-                             " -movflags +faststart " .
-                             " -brand mp42 " .
-                             " -y " . 
-                             " -loglevel debug " . 
-                             escapeshellarg($final_video) . 
-                             " 2>" . escapeshellarg($log_file);
-                } else {
-                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
-                             " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
-                             " -vf \"" . $vf_filter . "\" " .
+                             " -vsync cfr -r 30 " .
+                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast -threads 0 " .
+                             " -c:a aac -b:a 96k -ar 44100 -ac 2 " .
                              " -movflags +faststart " .
                              " -brand mp42 " .
                              " -y " .
-                             " -loglevel debug " .
-                             escapeshellarg($final_video) . 
+                             " -loglevel error " .
+                             escapeshellarg($final_video) .
+                             " 2>" . escapeshellarg($log_file);
+                } else {
+                    $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
+                             " -vf \"" . $vf_filter . "\" " .
+                             " -vsync cfr -r 30 " .
+                             " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast -threads 0 " .
+                             " -c:a aac -b:a 96k -ar 44100 -ac 2 " .
+                             " -movflags +faststart " .
+                             " -brand mp42 " .
+                             " -y " .
+                             " -loglevel error " .
+                             escapeshellarg($final_video) .
                              " 2>" . escapeshellarg($log_file);
                 }
                 
@@ -172,11 +197,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                     }
                 }
             } else {
-                $log_file = 'uploads/ffmpeg_' . $next_id . '.log';
-                
+                $log_file = 'uploads/ffmpeg_' . $file_base . '.log';
+
                 $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
+                         " -vsync cfr -r 30 " .
                          " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
-                         " -c:a aac -b:a 64k -ar 44100 -ac 1 " .
+                         " -c:a aac -b:a 96k -ar 44100 -ac 2 " .
                          " -vf \"" . $vf_filter . "\" " .
                          " -movflags +faststart " .
                          " -brand mp42 " .
@@ -228,9 +254,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                 $tags = normalize_tags($tags ?? '');
                 $stmt = $db->prepare("INSERT INTO videos (public_id, title, description, file, preview, user, time, private, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$public_id, $title, $description, $final_video, $preview_file, $_SESSION['user'], $time, $is_private, $tags]);
+                $inserted_id = (int)$db->lastInsertId();
+                log_event('upload_video', [
+                    'upload_user' => (string)$_SESSION['user'],
+                    'video_public_id' => (string)$public_id,
+                    'video_id' => (int)$inserted_id,
+                    'title' => (string)$title,
+                    'tags' => (string)$tags,
+                    'ip_detected' => (string)$client_ip,
+                    'ip_detected_source' => (string)$client_ip_source,
+                ]);
                 $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";
             }
         }
+    }
     }
 }
 

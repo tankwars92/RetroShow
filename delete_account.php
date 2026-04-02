@@ -19,11 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$row || $password !== $row['pass']) {
         $error = 'Неверный пароль!';
     } else {
-        $stmt_videos = $db->prepare('SELECT id FROM videos WHERE user = ?');
+        $stmt_videos = $db->prepare('SELECT id, public_id, file, preview FROM videos WHERE user = ?');
         $stmt_videos->execute([$user]);
-        $video_ids = [];
+        $video_rows = [];
         while ($v = $stmt_videos->fetch(PDO::FETCH_ASSOC)) {
-            $video_ids[] = intval($v['id']);
+            $video_rows[] = $v;
         }
 		
         $db->prepare('DELETE FROM users WHERE login = ?')->execute([$user]);
@@ -42,11 +42,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try { $db->prepare('DELETE FROM profile_comments WHERE profile_user = ? OR user = ?')->execute([$user, $user]); } catch (Exception $e) {}
         try { $db->prepare('DELETE FROM mail_inbox WHERE to_user = ? OR from_user = ?')->execute([$user, $user]); } catch (Exception $e) {}
 		
-        foreach ($video_ids as $vid) {
-            $mp4 = __DIR__ . "/uploads/{$vid}.mp4";
-            $jpg = __DIR__ . "/uploads/{$vid}_preview.jpg";
-            if (file_exists($mp4)) unlink($mp4);
-            if (file_exists($jpg)) unlink($jpg);
+        foreach ($video_rows as $vr) {
+            $vid = (int)($vr['id'] ?? 0);
+            $pub = (string)($vr['public_id'] ?? '');
+            $base = video_uploads_file_base($vid, $pub);
+            $file = (string)($vr['file'] ?? '');
+            $preview = (string)($vr['preview'] ?? '');
+            $paths = [
+                __DIR__ . '/uploads/' . $base . '_duration.txt',
+                __DIR__ . '/uploads/' . $vid . '_duration.txt',
+            ];
+            if ($file !== '') {
+                $paths[] = (strpos($file, '/') === 0 || preg_match('~^[A-Za-z]:~', $file)) ? $file : (__DIR__ . '/' . ltrim($file, '/'));
+            }
+            if ($preview !== '') {
+                $paths[] = (strpos($preview, '/') === 0 || preg_match('~^[A-Za-z]:~', $preview)) ? $preview : (__DIR__ . '/' . ltrim($preview, '/'));
+            }
+            $paths[] = __DIR__ . '/uploads/' . $base . '.mp4';
+            $paths[] = __DIR__ . '/uploads/' . $vid . '.mp4';
+            $paths[] = __DIR__ . '/uploads/' . $base . '_preview.jpg';
+            $paths[] = __DIR__ . '/uploads/' . $vid . '_preview.jpg';
+            foreach (array_unique($paths) as $p) {
+                if ($p !== '' && file_exists($p)) {
+                    unlink($p);
+                }
+            }
         }
         session_destroy();
         $success = true;
