@@ -62,14 +62,13 @@ document.addEventListener('scroll', function() {
 contextMenu.style.display = "none";
 });
 
+//play video (crude autoplay workaround)
+video.load()
+video.play()
 
 function togglePlay() {
     if (video.paused || video.ended) {
-      video.muted = false;
-      var p = video.play();
-      if (p && typeof p.catch === 'function') {
-        p.catch(function() {});
-      }
+      video.play();
       playIcon.classList.add("hidden");
       pauseIcon.classList.remove("hidden");
     } else {
@@ -81,23 +80,8 @@ function togglePlay() {
 
 function toggleMute() {
     video.muted = !video.muted;
-    if (video.muted) {
-        muteIcon.style.display = "block";
-        unmuteIcon.style.display = "none";
-    } else {
-        muteIcon.style.display = "none";
-        unmuteIcon.style.display = "block";
-    }
-}
-
-function syncMuteIcons() {
-    if (video.muted) {
-        muteIcon.style.display = "block";
-        unmuteIcon.style.display = "none";
-    } else {
-        muteIcon.style.display = "none";
-        unmuteIcon.style.display = "block";
-    }
+    muteIcon.classList.toggle("hidden");
+    unmuteIcon.classList.toggle("hidden");
 }
 
 function initializeVideo() {
@@ -105,36 +89,7 @@ function initializeVideo() {
     seekHandle.setAttribute('max', videoDuration);
     seekProgress.setAttribute('max', videoDuration);
     updateProgress();
-    // Autoplay attempt with sound:
-    // - if the browser allows it: it will start playing (audio on)
-    // - if the browser blocks it: keep paused but unmuted; then user click will start audio
-    video.muted = false;
-    syncMuteIcons();
-
-    var played = false;
-    try {
-        const p = video.play();
-        if (p && typeof p.then === 'function') {
-            p.then(function() {
-                played = true;
-                detectAutoplay();
-            }).catch(function() {
-                // Autoplay blocked: keep paused and show play icon
-                video.pause();
-                detectAutoplay();
-            });
-        } else {
-            // Older browsers may not return a Promise
-            played = true;
-            detectAutoplay();
-        }
-    } catch (e) {
-        video.pause();
-        detectAutoplay();
-    }
-    if (!played) {
-        detectAutoplay();
-    }
+    detectAutoplay();
 }
 
 function detectAutoplay() {
