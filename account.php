@@ -270,38 +270,7 @@ showHeader('Настройки аккаунта');
     <label for="2">Не разрешать комментарии к профилю.</label><br>
   </td>
 </tr>
-<tr>
-      <td colspan="5">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Внешний вид</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
-    </tr>
-<tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Тип плеера:</b></td>
-  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
-    <input type="radio" name="player_type" value="auto" <?= ($user_data['player_type'] ?? 'auto') == 'auto' ? 'checked' : '' ?>> 
-    <label>Автоматический выбор (рекомендуется)</label><br>
-    <input type="radio" name="player_type" value="flash" <?= ($user_data['player_type'] ?? 'auto') == 'flash' ? 'checked' : '' ?>>
-    <label>Всегда Flash плеер</label><br>
-    <input type="radio" name="player_type" value="html5" <?= ($user_data['player_type'] ?? 'auto') == 'html5' ? 'checked' : '' ?>>
-    <label>Всегда HTML5 плеер</label><br>
-  </td>
-</tr>
-<tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Блок на главной:</b></td>
-  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
-    <input type="radio" name="home_block_type" value="recent_added" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_added' ? 'checked' : '' ?>>
-    <label>Недавно добавленные</label><br>
-    <input type="radio" name="home_block_type" value="recent_viewed" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_viewed' ? 'checked' : '' ?>>
-    <label>Недавно просмотренные</label><br>
-  </td>
-</tr>
+
 </table>
 </div>
 </div>
@@ -583,7 +552,40 @@ showHeader('Настройки аккаунта');
 </div>
 
 <div style="width:600px; text-align:left;">
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-family:Tahoma,Arial,sans-serif; font-size:13px; border-collapse:collapse;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-family:Tahoma,Arial,sans-serif; font-size:13px; border-collapse:collapse; table-layout:fixed;">
+  <colgroup><col style="width:120px"><col span="4"></colgroup>
+  <tr>
+      <td colspan="5">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Внешний вид</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
+    </tr>
+  <tr>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Тип плеера:</b></td>
+  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+    <input type="radio" name="player_type" value="auto" id="player_type_auto" <?= ($user_data['player_type'] ?? 'auto') == 'auto' ? 'checked' : '' ?>> 
+    <label for="player_type_auto">Автоматический выбор (рекомендуется)</label><br>
+    <input type="radio" name="player_type" value="flash" id="player_type_flash" <?= ($user_data['player_type'] ?? 'auto') == 'flash' ? 'checked' : '' ?>>
+    <label for="player_type_flash">Всегда Flash плеер</label><br>
+    <input type="radio" name="player_type" value="html5" id="player_type_html5" <?= ($user_data['player_type'] ?? 'auto') == 'html5' ? 'checked' : '' ?>>
+    <label for="player_type_html5">Всегда HTML5 плеер</label><br>
+  </td>
+  </tr>
+  <tr>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Блок на главной:</b></td>
+  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+    <input type="radio" name="home_block_type" value="recent_added" id="home_block_recent_added" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_added' ? 'checked' : '' ?>> 
+    <label for="home_block_recent_added">Недавно добавленные</label><br>
+    <input type="radio" name="home_block_type" value="recent_viewed" id="home_block_recent_viewed" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_viewed' ? 'checked' : '' ?>>
+    <label for="home_block_recent_viewed">Недавно просмотренные</label><br>
+  </td>
+  </tr>
   <tr>
       <td colspan="5">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -607,19 +609,19 @@ showHeader('Настройки аккаунта');
       </td>
     </tr>
 <tr>
-  <td width="180" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Старый пароль:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Старый пароль:</b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="password" name="old_password" maxlength="64" style="width:200px;">
   </td>
 </tr>
 <tr>
-  <td width="180" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Новый пароль:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Новый пароль:</b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="password" name="new_password" maxlength="64" style="width:200px;">
   </td>
 </tr>
 <tr>
-  <td width="180" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Повторите новый пароль:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Повторите новый пароль:</b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="password" name="new_password2" maxlength="64" style="width:200px;">
   </td>

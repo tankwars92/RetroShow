@@ -25,7 +25,11 @@ if ($_POST) {
 
 include("template.php");
 showHeader("Вход");
-?>
+
+if ($error): ?>
+	<div class="errorBox"><?=htmlspecialchars($error)?></div>
+<?php endif; ?>
+
 
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
 	<tbody><tr valign="top">
@@ -59,9 +63,6 @@ showHeader("Вход");
 			<br>
 			<br>
 			
-  <?php if ($error): ?>
-			<div style="background-color: #FFE6E6; border: 1px solid #FF9999; padding: 10px; margin: 10px 0px; color: #CC0000; font-size: 12px;"><?=htmlspecialchars($error)?></div>
-  <?php endif; ?>
 			
 			<table class="dataEntryTableSmall" cellpadding="5" cellspacing="0" border="0" style="width: 100%;">
 				<form name="loginForm" id="loginForm" method="post">

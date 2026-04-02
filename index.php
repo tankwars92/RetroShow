@@ -137,7 +137,6 @@ function calculate_trending_score($video, $comments, $rating_avg, $rating_count)
   $views_rate = $video['views'] / pow($age_hours, 1.2);
 
   $comments_score = $comments * 2;
-
   $rating_score = $rating_avg * log(1 + $rating_count) * 10;
 
   $fresh_bonus = ($age_hours < 24) ? 50 : 0;
@@ -207,13 +206,26 @@ $stmt = $db->query("SELECT COUNT(*) FROM videos");
 $total = $stmt->fetchColumn();
 $total_pages = ceil($total / $per_page);
 
-$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY id DESC LIMIT 200");
-$all_videos = $stmt->fetchAll();
+$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY id DESC LIMIT 600");
+$newest_pool = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY views DESC LIMIT 150");
+$views_pool = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$merged = [];
+foreach ($newest_pool as $v) {
+    $merged[(int)$v['id']] = $v;
+}
+foreach ($views_pool as $v) {
+    $merged[(int)$v['id']] = $v;
+}
+$all_videos = array_values($merged);
 
 $featured_videos = [];
 
 foreach ($all_videos as $video) {
     $video_time = strtotime($video['time']);
+    if ($video_time === false) {
+        continue;
+    }
     $age_hours = max(1, (time() - $video_time) / 3600);
 
     if ($age_hours > 168) continue;
@@ -230,6 +242,9 @@ foreach ($all_videos as $video) {
     list($rc, $ra) = get_home_rating_stats($db, $video['id']);
 
     $score = calculate_trending_score($video, $comments_count, $ra, $rc);
+    if ($score < 0) {
+        continue;
+    }
 
     $featured_videos[] = [
         'video' => $video,
