@@ -993,8 +993,8 @@ toggleVisibility('myAccountDropdown',0);
                         </div>
                         <div class="rBtnContainer">
                             <div class="button" id="muteButton">
-                                <img src="viewfinder/resource/mute.png" id="muteIcon">
-                                <img src="viewfinder/resource/unmute.png" class="hidden" id="unmuteIcon">
+                                <img src="viewfinder/resource/unmute.png" class="hidden" id="muteIcon" alt="">
+                                <img src="viewfinder/resource/mute.png" id="unmuteIcon" alt="">
                             </div>
                         </div>
                     </div>
