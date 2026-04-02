@@ -14,7 +14,7 @@ $pw_error = '';
 $pw_success = false;
 
 try {
-    $stmt = $db->prepare('SELECT email, about_me, gender, birthday_mon, birthday_day, birthday_yr, country, name, last_n, relationship, website, profile_icon, profile_comm, profile_bull, player_type, hometown, city FROM users WHERE login = ?');
+    $stmt = $db->prepare('SELECT email, about_me, gender, birthday_mon, birthday_day, birthday_yr, country, name, last_n, relationship, website, profile_icon, profile_comm, profile_bull, player_type, home_block_type, hometown, city FROM users WHERE login = ?');
     $stmt->execute([$user]);
     $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -41,13 +41,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $profile_comm = $_POST['profile_comm'] ?? '1';
     $profile_bull = $_POST['profile_bull'] ?? '1';
     $player_type = $_POST['player_type'] ?? 'auto';
+    $home_block_type = $_POST['home_block_type'] ?? 'recent_added';
     $hometown = trim($_POST['hometown'] ?? '');
     $city = trim($_POST['city'] ?? '');
+    if ($home_block_type !== 'recent_viewed') {
+        $home_block_type = 'recent_added';
+    }
     
     if (mb_strlen($about_me) > 500) $about_me = mb_substr($about_me, 0, 500);
     
-    $stmt = $db->prepare('UPDATE users SET email = ?, about_me = ?, gender = ?, birthday_mon = ?, birthday_day = ?, birthday_yr = ?, country = ?, name = ?, last_n = ?, relationship = ?, website = ?, profile_icon = ?, profile_comm = ?, profile_bull = ?, player_type = ?, hometown = ?, city = ? WHERE login = ?');
-    if ($stmt->execute([$email, $about_me, $gender, $birthday_mon, $birthday_day, $birthday_yr, $country, $name, $last_n, $relationship, $website, $profile_icon, $profile_comm, $profile_bull, $player_type, $hometown, $city, $user])) {
+    $stmt = $db->prepare('UPDATE users SET email = ?, about_me = ?, gender = ?, birthday_mon = ?, birthday_day = ?, birthday_yr = ?, country = ?, name = ?, last_n = ?, relationship = ?, website = ?, profile_icon = ?, profile_comm = ?, profile_bull = ?, player_type = ?, home_block_type = ?, hometown = ?, city = ? WHERE login = ?');
+    if ($stmt->execute([$email, $about_me, $gender, $birthday_mon, $birthday_day, $birthday_yr, $country, $name, $last_n, $relationship, $website, $profile_icon, $profile_comm, $profile_bull, $player_type, $home_block_type, $hometown, $city, $user])) {
         $success = true;
 		
         $user_data['email'] = $email;
@@ -65,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_data['profile_comm'] = $profile_comm;
         $user_data['profile_bull'] = $profile_bull;
         $user_data['player_type'] = $player_type;
+        $user_data['home_block_type'] = $home_block_type;
         $user_data['hometown'] = $hometown;
         $user_data['city'] = $city;
     } else {
@@ -266,14 +271,35 @@ showHeader('Настройки аккаунта');
   </td>
 </tr>
 <tr>
+      <td colspan="5">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Внешний вид</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
+    </tr>
+<tr>
   <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Тип плеера:</b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="radio" name="player_type" value="auto" <?= ($user_data['player_type'] ?? 'auto') == 'auto' ? 'checked' : '' ?>> 
-    <label for="1">Автоматический выбор (рекомендуется)</label><br>
+    <label>Автоматический выбор (рекомендуется)</label><br>
     <input type="radio" name="player_type" value="flash" <?= ($user_data['player_type'] ?? 'auto') == 'flash' ? 'checked' : '' ?>>
-    <label for="2">Всегда Flash плеер</label><br>
+    <label>Всегда Flash плеер</label><br>
     <input type="radio" name="player_type" value="html5" <?= ($user_data['player_type'] ?? 'auto') == 'html5' ? 'checked' : '' ?>>
-    <label for="3">Всегда HTML5 плеер</label><br>
+    <label>Всегда HTML5 плеер</label><br>
+  </td>
+</tr>
+<tr>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Блок на главной:</b></td>
+  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+    <input type="radio" name="home_block_type" value="recent_added" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_added' ? 'checked' : '' ?>>
+    <label>Недавно добавленные</label><br>
+    <input type="radio" name="home_block_type" value="recent_viewed" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_viewed' ? 'checked' : '' ?>>
+    <label>Недавно просмотренные</label><br>
   </td>
 </tr>
 </table>

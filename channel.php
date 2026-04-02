@@ -372,11 +372,11 @@ echo '</div>';
     <div class="profileBox">
       <div class="profileBoxHead" style="background:#888; color:#000; padding:3px; font-size:12px;">Подробнее обо мне</div>
       <div class="profileBoxContent">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <div style="font-size:12px; line-height:1.35;">
           <?php if ($about_me): ?>
-  <div style="margin-bottom:10px; background:#fff;">
-    <div style="font-size:13px; color:#222; white-space:pre-line;"> <?=htmlspecialchars($about_me)?> </div>
-    <hr style="border:0; border-top:1px dashed #888; height:1px; margin:2px 0 2px 0; background:none;">
+  <div style="margin:0 0 6px 0; background:#fff;">
+    <div style="font-size:13px; color:#222; white-space:pre-line; margin:0; padding:0;"><?=htmlspecialchars($about_me)?></div>
+    <div style="border-top:1px dashed #888; height:0; line-height:0; font-size:0; margin:4px 0 6px 0;"></div>
   </div>
 <?php endif; ?>
           <?php if ($user_data && ($user_data['name'] || $user_data['last_n'])): ?>
@@ -402,7 +402,7 @@ echo '</div>';
           <?php if ($user_data && $user_data['city']): ?>
             <span class="profileTitles">Текущий город:</span> <?= htmlspecialchars($user_data['city']) ?><br>
           <?php endif; ?>
-        </table>
+        </div>
       </div>
     </div>
           <div class="profileBox">

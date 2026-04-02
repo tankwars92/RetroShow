@@ -259,6 +259,36 @@ $db->exec("CREATE TABLE IF NOT EXISTS video_views (
     viewed_at INTEGER NOT NULL,
     FOREIGN KEY (video_id) REFERENCES videos(id)
 )");
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_video_views_viewed_at ON video_views (viewed_at DESC)"); } catch (Exception $e) {}
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_video_views_video_id ON video_views (video_id)"); } catch (Exception $e) {}
+
+function prune_views(PDO $db): void {
+    if (mt_rand(1, 100) !== 1) return;
+
+    try {
+        $cutoff = time() - (90 * 86400);
+        $stOld = $db->prepare("DELETE FROM video_views WHERE viewed_at < ?");
+        $stOld->execute([$cutoff]);
+    } catch (Exception $e) {
+    }
+
+    try {
+        $max_rows = 300000;
+        $cnt = (int)$db->query("SELECT COUNT(*) FROM video_views")->fetchColumn();
+        if ($cnt > $max_rows) {
+            $to_delete = $cnt - $max_rows;
+
+            $db->exec("DELETE FROM video_views WHERE id IN (
+                SELECT id FROM video_views
+                ORDER BY viewed_at ASC, id ASC
+                LIMIT " . intval($to_delete) . "
+            )");
+        }
+    } catch (Exception $e) {
+    }
+}
+
+prune_views($db);
 
 $cols = $db->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
 $existing_cols = array_column($cols, 'name');
@@ -276,6 +306,7 @@ $missing_cols = [
     'profile_comm' => 'TEXT DEFAULT "1"',
     'profile_bull' => 'TEXT DEFAULT "1"',
     'player_type' => 'TEXT DEFAULT "auto"',
+    'home_block_type' => 'TEXT DEFAULT "recent_added"',
     'reset_token' => 'TEXT',
     'reset_token_expires' => 'INTEGER'
 ];

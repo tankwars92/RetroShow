@@ -9,6 +9,7 @@ $contest = false;
 
 if (isset($_SESSION['user'])) {
     $current_user = $_SESSION['user'];
+    $home_block_type = 'recent_added';
 
     $stmt = $db->prepare("SELECT SUM(views) FROM videos WHERE user = ?");
     $stmt->execute([$current_user]);
@@ -38,6 +39,16 @@ if (isset($_SESSION['user'])) {
         $subscribers_count = (int)$stmt->fetchColumn();
     } catch (Exception $e) {
         $subscribers_count = 0;
+    }
+    try {
+        $stmt = $db->prepare("SELECT home_block_type FROM users WHERE login = ? LIMIT 1");
+        $stmt->execute([$current_user]);
+        $hbt = (string)$stmt->fetchColumn();
+        if ($hbt === 'recent_viewed') {
+            $home_block_type = 'recent_viewed';
+        }
+    } catch (Exception $e) {
+        $home_block_type = 'recent_added';
     }
 
     $userStats = [
@@ -134,8 +145,59 @@ function calculate_trending_score($video, $comments, $rating_avg, $rating_count)
   return $views_rate + $comments_score + $rating_score + $fresh_bonus;
 }  
 
-$stmt = $db->query("SELECT * FROM videos ORDER BY id DESC LIMIT 10");
-$recent_videos = array_filter($stmt->fetchAll(), function($v) { return empty($v['private']); });
+$recent_videos = [];
+$recent_block_mode = 'recent_added';
+if (isset($_SESSION['user']) && isset($home_block_type) && $home_block_type === 'recent_viewed') {
+    try {
+        $scan_limit = 300;
+        $stmt = $db->prepare("SELECT video_id, viewed_at FROM video_views ORDER BY viewed_at DESC LIMIT ?");
+        $stmt->bindValue(1, (int)$scan_limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $view_rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $picked = [];
+        $ordered_ids = [];
+        foreach ($view_rows as $vr) {
+            $vid = (int)($vr['video_id'] ?? 0);
+            $vts = (int)($vr['viewed_at'] ?? 0);
+            if ($vid <= 0 || $vts <= 0) continue;
+            if (isset($picked[$vid])) continue;
+            $picked[$vid] = $vts;
+            $ordered_ids[] = $vid;
+            if (count($ordered_ids) >= 30) break;
+        }
+
+        if (!empty($ordered_ids)) {
+            $in = implode(',', array_fill(0, count($ordered_ids), '?'));
+            $stmtV = $db->prepare("SELECT * FROM videos WHERE id IN ($in) AND (private = 0 OR private IS NULL)");
+            $stmtV->execute($ordered_ids);
+            $videos_rows = $stmtV->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            $by_id = [];
+            foreach ($videos_rows as $vr) {
+                $by_id[(int)$vr['id']] = $vr;
+            }
+
+            $recent_videos = [];
+            foreach ($ordered_ids as $vid) {
+                if (!isset($by_id[$vid])) continue;
+                $row = $by_id[$vid];
+                $row['last_viewed_at'] = (int)$picked[$vid];
+                $recent_videos[] = $row;
+                if (count($recent_videos) >= 10) break;
+            }
+        }
+        if (!empty($recent_videos)) {
+            $recent_block_mode = 'recent_viewed';
+        }
+    } catch (Exception $e) {
+        $recent_videos = [];
+    }
+}
+if (empty($recent_videos)) {
+    $stmt = $db->query("SELECT * FROM videos ORDER BY id DESC LIMIT 10");
+    $recent_videos = array_filter($stmt->fetchAll(), function($v) { return empty($v['private']); });
+}
 
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $per_page = 5;
@@ -185,10 +247,8 @@ showHeader("Главная");
 ?>
 
 <?php
-// Full tags page (index.php?p=tags)
 $tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
 if ($tags_mode === 'tags') {
-    // Latest tags: only from the most recently uploaded public videos.
     $latestLimit = 200;
     $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' ORDER BY id DESC LIMIT " . intval($latestLimit));
     $latest_counts = [];
@@ -208,7 +268,6 @@ if ($tags_mode === 'tags') {
     $latest_base_font_size = 12;
     $latest_max_font_size = 17;
 
-    // Most popular tags: counts across all public videos.
     $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
     $popular_counts = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -225,7 +284,6 @@ if ($tags_mode === 'tags') {
     $popular_min_count = !empty($popular_top) ? min($popular_top) : 1;
     $popular_max_count = !empty($popular_top) ? max($popular_top) : 1;
 
-    // Render full page
     ?>
     <div style="padding: 10px 0 0 0;">
         <div class="tableSubTitle">Теги</div>
@@ -362,7 +420,7 @@ if ($tags_mode === 'tags') {
 				<td><img src="img/pixel.gif" width="5" height="1"></td>
 				<td width="585">
 				<div style="padding: 2px 5px 8px 5px;">
-				<div style="font-size: 14px; font-weight: bold; color: #666633;">Недавно добавленные...</div>
+				<div style="font-size: 14px; font-weight: bold; color: #666633;"><?= ($recent_block_mode === 'recent_viewed') ? 'Недавно просмотренные' : 'Недавно добавленные' ?></div>
 				
 				<table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
 				<tbody><tr>
@@ -376,7 +434,12 @@ if ($tags_mode === 'tags') {
 		
 						<a href="video.php?id=<?= htmlspecialchars($video['public_id'] ?? $video['id']) ?>"><img src="<?= $video['preview'] ?>" width="80" height="60" style="border: 5px solid #FFFFFF; margin-top: 10px;"></a>
 						<div class="moduleFeaturedDetails" style="padding-top: 2px;">
-<?= time_ago(strtotime($video['time'])) ?>
+<?php
+$ago_ts = ($recent_block_mode === 'recent_viewed' && !empty($video['last_viewed_at']))
+    ? (int)$video['last_viewed_at']
+    : strtotime($video['time']);
+echo time_ago($ago_ts);
+?>
 </div>
 		
 						</td>
@@ -701,7 +764,6 @@ if ($tags_mode === 'tags') {
         <?php
         $tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
 
-        // Latest tags: only from the most recently uploaded public videos.
         $latestLimit = 200;
         $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' ORDER BY id DESC LIMIT " . intval($latestLimit));
         $latest_counts = [];
@@ -722,7 +784,6 @@ if ($tags_mode === 'tags') {
         $latest_base_font_size = 12;
         $latest_max_font_size = 17;
 
-        // Most popular tags: counts across all public videos.
         $popular_top = [];
         $popular_min_count = 1;
         $popular_max_count = 1;

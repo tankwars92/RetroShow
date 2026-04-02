@@ -335,15 +335,16 @@ if (!$is_private) {
     if (!$last_view || $now - $last_view > $timeout) {
         try {
             $db->prepare("UPDATE videos SET views = views + 1 WHERE id = ?")->execute([$id]);
-
-            $db->prepare("
-                INSERT INTO video_views (video_id, user, ip, viewed_at) 
-                VALUES (?, ?, ?, ?)
-            ")->execute([$id, $user, $ip, $now]);
-
             $video['views'] = ($video['views'] ?? 0) + 1;
         } catch (Exception $e) {}
     }
+
+    try {
+        $db->prepare("
+            INSERT INTO video_views (video_id, user, ip, viewed_at)
+            VALUES (?, ?, ?, ?)
+        ")->execute([$id, $user, $ip, $now]);
+    } catch (Exception $e) {}
 }
 
 try {
