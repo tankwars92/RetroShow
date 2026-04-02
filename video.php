@@ -971,7 +971,7 @@ toggleVisibility('myAccountDropdown',0);
                     <div class="playbackArea">
                         <div class="videoContainer">
                             <video class="videoObject" id="video">
-                                <source src="get_video.php?public_id=<?=htmlspecialchars($video['public_id'] ?? '')?>"> 
+                                <source src="get_video.php?id=<?=htmlspecialchars($video['public_id'] ?? '')?>"> 
                              </video>
                         </div>
                     </div>
@@ -1101,7 +1101,7 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
 <img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>
 <br>
 <?php endif; ?>
-<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
+<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
 			</div>
 		</div>
 		<div id="statsDiv" style="float:left; width:28%; padding:4px; font-size:12px; color:#333;">

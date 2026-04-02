@@ -7,6 +7,7 @@ include("init.php");
 function get_requested_public_id(): string {
     $raw = '';
     if (isset($_GET['public_id'])) $raw = (string)$_GET['public_id'];
+    elseif (isset($_GET['id'])) $raw = (string)$_GET['id'];
     elseif (isset($_GET['video_id'])) $raw = (string)$_GET['video_id'];
     if ($raw === '' || !preg_match('/^[A-Za-z0-9_-]{6,20}$/', $raw)) return '';
     return $raw;
@@ -44,7 +45,7 @@ try {
     }
 
     $relative = '/' . ltrim($filePath, '/');
-    header('Location: ' . $relative . '?v=' . urlencode($publicId), true, 302);
+    header('Location: ' . $relative, true, 302);
     exit;
 } catch (Exception $e) {
     forbid_403();
