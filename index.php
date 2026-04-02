@@ -420,7 +420,7 @@ if ($tags_mode === 'tags') {
 				<td><img src="img/pixel.gif" width="5" height="1"></td>
 				<td width="585">
 				<div style="padding: 2px 5px 8px 5px;">
-				<div style="font-size: 14px; font-weight: bold; color: #666633;"><?= ($recent_block_mode === 'recent_viewed') ? 'Недавно просмотренные' : 'Недавно добавленные' ?></div>
+				<div style="font-size: 14px; font-weight: bold; color: #666633;"><?= ($recent_block_mode === 'recent_viewed') ? 'Недавно просмотренные...' : 'Недавно добавленные...' ?></div>
 				
 				<table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
 				<tbody><tr>
