@@ -306,28 +306,41 @@ $recommended = [];
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 $ip = $_SERVER['REMOTE_ADDR'];
 $now = time();
-$timeout = 6 * 3600;
+$timeout = 2 * 3600;
 
 if (!$is_private) {
-    $last = null;
+    $last_view = null;
+
     try {
         if ($user) {
-            $check_stmt = $db->prepare("SELECT viewed_at FROM video_views WHERE video_id = ? AND user = ? ORDER BY viewed_at DESC LIMIT 1");
-            $check_stmt->execute([$id, $user]);
-            $last = $check_stmt->fetchColumn();
+            $stmt = $db->prepare("
+                SELECT MAX(viewed_at) 
+                FROM video_views 
+                WHERE video_id = ? AND user = ?
+            ");
+            $stmt->execute([$id, $user]);
         } else {
-            $check_stmt = $db->prepare("SELECT viewed_at FROM video_views WHERE video_id = ? AND ip = ? ORDER BY viewed_at DESC LIMIT 1");
-            $check_stmt->execute([$id, $ip]);
-            $last = $check_stmt->fetchColumn();
+            $stmt = $db->prepare("
+                SELECT MAX(viewed_at) 
+                FROM video_views 
+                WHERE video_id = ? AND ip = ?
+            ");
+            $stmt->execute([$id, $ip]);
         }
+        $last_view = $stmt->fetchColumn();
     } catch (Exception $e) {
-        $last = null;
+        $last_view = null;
     }
-    if (!$last || $now - $last > $timeout) {
+
+    if (!$last_view || $now - $last_view > $timeout) {
         try {
             $db->prepare("UPDATE videos SET views = views + 1 WHERE id = ?")->execute([$id]);
-            $db->prepare("INSERT INTO video_views (video_id, user, ip, viewed_at) VALUES (?, ?, ?, ?)")
-                ->execute([$id, $user, $ip, $now]);
+
+            $db->prepare("
+                INSERT INTO video_views (video_id, user, ip, viewed_at) 
+                VALUES (?, ?, ?, ?)
+            ")->execute([$id, $user, $ip, $now]);
+
             $video['views'] = ($video['views'] ?? 0) + 1;
         } catch (Exception $e) {}
     }
@@ -956,7 +969,7 @@ toggleVisibility('myAccountDropdown',0);
             <div class="playerScreen">
                 <div class="playbackArea">
                     <div class="videoContainer">
-                        <video class="videoObject" id="video" autoplay muted>
+                        <video class="videoObject" id="video" playsinline>
                             <source src="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>">
                         </video>
                     </div>
@@ -980,8 +993,8 @@ toggleVisibility('myAccountDropdown',0);
                     </div>
                     <div class="rBtnContainer">
                         <div class="button" id="muteButton">
-                            <img src="viewfinder/resource/unmute.png" id="muteIcon">
-                            <img src="viewfinder/resource/mute.png" class="hidden" id="unmuteIcon">
+                            <img src="viewfinder/resource/unmute.png" class="hidden" id="muteIcon" alt="">
+                            <img src="viewfinder/resource/mute.png" id="unmuteIcon" alt="">
                         </div>
                     </div>
                 </div>
