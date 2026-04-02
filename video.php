@@ -964,72 +964,71 @@ toggleVisibility('myAccountDropdown',0);
             <embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">
         </div>
 
-        <div class="player" id="playerBox" style="margin: 0 0 0 0; display:none;">
-        <div class="mainContainer">
-            <div class="playerScreen">
-                <div class="playbackArea">
-                    <div class="videoContainer">
-                        <video class="videoObject" id="video" playsinline>
-                            <source src="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>">
-                        </video>
-                    </div>
-                </div>
-            </div>
-            <div class="controlBackground">
-                <div class="controlContainer">
-                    <div class="lBtnContainer">
-                        <div class="button" id="playButton">
-                            <img src="viewfinder/resource/play.png" id="playIcon">
-                            <img src="viewfinder/resource/pause.png" class="hidden" id="pauseIcon">
-                        </div>
-                    </div>
-                    <div class="centerContainer">
-                        <div class="seekbarElementContainer">
-                            <progress class="seekProgress" id="seekProgress" value="0" min="0" max="10"></progress>
-                        </div>
-                        <div class="seekbarElementContainer">
-                            <input class="seekHandle" id="seekHandle" value="0" min="0" step="1" type="range" max="10">
-                        </div>
-                    </div>
-                    <div class="rBtnContainer">
-                        <div class="button" id="muteButton">
-                            <img src="viewfinder/resource/unmute.png" class="hidden" id="muteIcon" alt="">
-                            <img src="viewfinder/resource/mute.png" id="unmuteIcon" alt="">
+        <div class="player" id="playerBox">
+            <div class="mainContainer">
+                <div class="playerScreen">
+                    <div class="playbackArea">
+                        <div class="videoContainer">
+                            <video class="videoObject" id="video">
+                                <source src="get_video.php?public_id=<?=htmlspecialchars($video['public_id'] ?? '')?>"> 
+                             </video>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="aboutBox hidden" id="aboutBox">
-            <div class="aboutBoxContent">
-            <div class="aboutHeader">Viewfinder</div>
-            <div class="aboutBody">
-                <div>Version 1.0<br>
-                <br>
-                2005-Style HTML5 player<br>
-                <br>
-                Created by Purpleblaze
-            </div>
-            </div>
-            <button id="aboutCloseBtn">Close</button>
-            </div>
-        </div>
-        <div class="contextMenu hidden" id="playerContextMenu" style="display: none;">
-            <div class="contextItem" id="contextMute">
-                <span>Mute</span>
-                <div id="muteTick" class="tick hidden">    
+                <div class="controlBackground">
+                    <div class="controlContainer">
+                        <div class="lBtnContainer">
+                            <div class="button" id="playButton">
+                                <img src="viewfinder/resource/play.png" id="playIcon" class="">
+                                <img src="viewfinder/resource/pause.png" class="hidden" id="pauseIcon">
+                            </div>
+                        </div>
+                        <div class="centerContainer">
+                            <div class="seekbarElementContainer">
+                                <progress class="seekProgress" id="seekProgress" value="0" min="0" max="45"></progress>
+                            </div>
+                            <div class="seekbarElementContainer">
+                                <input class="seekHandle" id="seekHandle" value="0" min="0" step="1" type="range" max="45">
+                            </div>
+                        </div>
+                        <div class="rBtnContainer">
+                            <div class="button" id="muteButton">
+                                <img src="viewfinder/resource/mute.png" id="muteIcon">
+                                <img src="viewfinder/resource/unmute.png" class="hidden" id="unmuteIcon">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="contextItem" id="contextLoop">
-                <span>Loop</span>
-                <div id="loopTick" class="tick hidden">
+            <div class="aboutBox hidden" id="aboutBox">
+                <div class="aboutBoxContent">
+                <div class="aboutHeader">Viewfinder</div>
+                <div class="aboutBody">
+                    <div>Version 1.0<br>
+                    <br>
+                    2005-Style HTML5 player<br>
+                    <br>
+                    Created by Purpleblaze
+                </div>
+                </div>
+                <button id="aboutCloseBtn">Close</button>
                 </div>
             </div>
-            <div class="contextSeparator"></div>
-            <div class="contextItem" id="contextAbout">About</div>
+            <div class="contextMenu hidden" id="playerContextMenu" style="display: none;">
+                <div class="contextItem" id="contextMute">
+                    <span>Mute</span>
+                    <div id="muteTick" class="tick hidden">    
+                    </div>
+                </div>
+                <div class="contextItem" id="contextLoop">
+                    <span>Loop</span>
+                    <div id="loopTick" class="tick hidden">
+                    </div>
+                </div>
+                <div class="contextSeparator"></div>
+                <div class="contextItem" id="contextAbout">About</div>
+            </div>
         </div>
-        </div>
-    </div>
     
     <script type="text/javascript">
     (function() {

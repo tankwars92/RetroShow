@@ -184,6 +184,100 @@ $featured_videos = array_slice($featured_videos, 0, 5);
 showHeader("Главная");
 ?>
 
+<?php
+// Full tags page (index.php?p=tags)
+$tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
+if ($tags_mode === 'tags') {
+    // Latest tags: only from the most recently uploaded public videos.
+    $latestLimit = 200;
+    $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' ORDER BY id DESC LIMIT " . intval($latestLimit));
+    $latest_counts = [];
+    while ($row = $stmtLatest->fetch(PDO::FETCH_ASSOC)) {
+        $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($tags as $tag) {
+            $tag = trim((string)$tag);
+            if ($tag === '') continue;
+            if (!isset($latest_counts[$tag])) $latest_counts[$tag] = 0;
+            $latest_counts[$tag]++;
+        }
+    }
+    arsort($latest_counts);
+    $latest_top = array_slice($latest_counts, 0, 50, true);
+    $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
+    $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
+    $latest_base_font_size = 12;
+    $latest_max_font_size = 17;
+
+    // Most popular tags: counts across all public videos.
+    $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
+    $popular_counts = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($tags as $tag) {
+            $tag = trim((string)$tag);
+            if ($tag === '') continue;
+            if (!isset($popular_counts[$tag])) $popular_counts[$tag] = 0;
+            $popular_counts[$tag]++;
+        }
+    }
+    arsort($popular_counts);
+    $popular_top = array_slice($popular_counts, 0, 50, true);
+    $popular_min_count = !empty($popular_top) ? min($popular_top) : 1;
+    $popular_max_count = !empty($popular_top) ? max($popular_top) : 1;
+
+    // Render full page
+    ?>
+    <div style="padding: 10px 0 0 0;">
+        <div class="tableSubTitle">Теги</div>
+        <div style="font-size: 14px; font-weight: bold; color: #666666; margin-bottom: 10px;">Последние теги //</div>
+        <div style="margin-bottom: 20px; font-size: 13px; color: #333333;">
+            <?php if (!empty($latest_top)): ?>
+                <?php $i = 0; foreach ($latest_top as $tag => $count): ?>
+                    <?php
+                    if ($latest_max_count > $latest_min_count) {
+                        $ratio = ($count - $latest_min_count) / ($latest_max_count - $latest_min_count);
+                        $font_size = round($latest_base_font_size + ($latest_max_font_size - $latest_base_font_size) * $ratio);
+                    } else {
+                        $font_size = $latest_base_font_size;
+                    }
+                    ?>
+                    <?php if ($i > 0) echo ' : '; $i++; ?>
+                    <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
+                <?php endforeach; ?>
+                :
+            <?php else: ?>
+                <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+            <?php endif; ?>
+        </div>
+
+        <div style="font-size: 16px; font-weight: bold; color: #666666; margin-bottom: 10px;">Популярные теги //</div>
+        <div style="font-size: 13px; color: #333333;">
+            <?php if (!empty($popular_top)): ?>
+                <?php $i = 0; $popular_base_font_size = 12; $popular_max_font_size = 28; ?>
+                <?php foreach ($popular_top as $tag => $count): ?>
+                    <?php
+                    if ($popular_max_count > $popular_min_count) {
+                        $ratio = ($count - $popular_min_count) / ($popular_max_count - $popular_min_count);
+                        $font_size = round($popular_base_font_size + ($popular_max_font_size - $popular_base_font_size) * $ratio);
+                    } else {
+                        $font_size = $popular_base_font_size;
+                    }
+                    ?>
+                    <?php if ($i > 0) echo ' : '; $i++; ?>
+                    <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
+                <?php endforeach; ?>
+                    :
+            <?php else: ?>
+                <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php
+    showFooter();
+    exit;
+}
+?>
+
 <?php if (isset($_GET['error']) && $_GET['error'] === 'video_not_found'): ?>
   <div class="errorBox">Видео не найдено.</div>
 <?php endif; ?>
@@ -498,27 +592,33 @@ showHeader("Главная");
 		</div>
     <?php endif; ?>
 
-        <div class="hpContentBlock" style="margin-top:20px;">
-          <div class="headerRCBox">
-            <b class="rch">
-              <b class="rch1"><b></b></b>
-              <b class="rch2"><b></b></b>
-              <b class="rch3"></b>
-              <b class="rch4"></b>
-              <b class="rch5"></b>
-            </b> 
-            <div class="content">
-              <span class="headerTitle">
-                <?php if (isset($_SESSION['user'])): ?>
-                  Привет, <?=htmlspecialchars($_SESSION['user'])?>
-                <?php else: ?>
-                  Что тут делать?
-                <?php endif; ?>
-              </span>
-            </div>
+        <div style="margin-top:20px;">
+          <table class="roundedTable" width="180" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC">
+            <tbody>
+              <tr>
+                <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
+                <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
+                <td><img src="img/box_login_tr.gif" width="5" height="5"></td>
+              </tr>
+              <tr>
+                <td><img src="img/pixel.gif" width="5" height="1"></td>
+                <td width="170">
+          <div class="moduleTitleBar">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="font-size: 13px; font-weight: bold; color: #444444; padding-bottom: 5px;">
+                  <?php if (isset($_SESSION['user'])): ?>
+                    Привет, <?=htmlspecialchars($_SESSION['user'])?>
+                  <?php else: ?>
+                    Что тут делать?
+                  <?php endif; ?>
+                </td>
+                <td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;"></td>
+              </tr>
+            </table>
           </div>
           
-          <table width="180" cellpadding="6" cellspacing="0" border="0" style="background:#fff; border:1px solid #ccc;">
+          <table width="100%" cellpadding="6" cellspacing="0" border="0" style="background:#fff; border:0;">
             <tr>
               <td style="font-size:12px; color:#222;">
                 <?php if (isset($_SESSION['user'])): ?>
@@ -542,21 +642,21 @@ showHeader("Главная");
                 <?php else: ?>
                 <table class="hpAboutTable" width="90%">
                   <tbody><tr>
-                    <td class="label"><font size="2"><a href="channel.php">Смотрите</a></font></td>
+                    <td class="label"><font size="2"><a href="channel.php">Смотреть</a></font></td>
                     <td class="desc">Находите и смотрите тысячи видео.</td>
                   </tr>
                   <tr>
-                    <td class="label"><font size="2"><a href="upload.php">Загружайте</a></font></td>
+                    <td class="label"><font size="2"><a href="upload.php">Загружать</a></font></td>
                     <td class="desc">Быстро загружайте видео практически в любом формате.</td>
                   </tr>
                   <tr>
-                    <td class="label"><font size="2"><a href="my_friends_invite.php">Делитесь</a></font></td>
+                    <td class="label"><font size="2"><a href="my_friends_invite.php">Делиться</a></font></td>
                     <td>Легко делитесь своими видео с друзьями, семьёй или коллегами.</td>
                   </tr>
                   </tbody></table>
                         
 				<div style="border-top: 1px solid #CCC; margin-top: 6px; padding-top: 6px;">
-				<b><font size="2" color="#000000">Вход для участников</font></b>
+				<b><font size="2" color="#000000">Войти в аккаунт:</font></b>
 				</div>
 
                 <form method="post" action="login.php" style="margin:0;">
@@ -586,49 +686,132 @@ showHeader("Главная");
               </td>
             </tr>
           </table>
+                </td>
+                <td><img src="img/pixel.gif" width="5" height="1"></td>
+              </tr>
+              <tr>
+                <td><img src="img/box_login_bl.gif" width="5" height="5"></td>
+                <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
+                <td><img src="img/box_login_br.gif" width="5" height="5"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         
         <?php
-        $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
-        $all_tags = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $tags = preg_split('/\s+/', trim($row['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+        $tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
+
+        // Latest tags: only from the most recently uploaded public videos.
+        $latestLimit = 200;
+        $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' ORDER BY id DESC LIMIT " . intval($latestLimit));
+        $latest_counts = [];
+        while ($row = $stmtLatest->fetch(PDO::FETCH_ASSOC)) {
+            $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
             foreach ($tags as $tag) {
-                $tag = trim($tag);
-                if (!empty($tag)) {
-                    if (!isset($all_tags[$tag])) {
-                        $all_tags[$tag] = 0;
-                    }
+                $tag = trim((string)$tag);
+                if ($tag === '') continue;
+                if (!isset($latest_counts[$tag])) $latest_counts[$tag] = 0;
+                $latest_counts[$tag]++;
+            }
+        }
+        arsort($latest_counts);
+        $latest_top = array_slice($latest_counts, 0, 50, true);
+
+        $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
+        $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
+        $latest_base_font_size = 12;
+        $latest_max_font_size = 17;
+
+        // Most popular tags: counts across all public videos.
+        $popular_top = [];
+        $popular_min_count = 1;
+        $popular_max_count = 1;
+        if ($tags_mode === 'tags') {
+            $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
+            $all_tags = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
+                foreach ($tags as $tag) {
+                    $tag = trim((string)$tag);
+                    if ($tag === '') continue;
+                    if (!isset($all_tags[$tag])) $all_tags[$tag] = 0;
                     $all_tags[$tag]++;
                 }
             }
+            arsort($all_tags);
+            $popular_top = array_slice($all_tags, 0, 50, true);
+            $popular_min_count = !empty($popular_top) ? min($popular_top) : 1;
+            $popular_max_count = !empty($popular_top) ? max($popular_top) : 1;
         }
-        arsort($all_tags);
-        $top_tags = array_slice($all_tags, 0, 50, true);
-        $min_count = !empty($top_tags) ? min($top_tags) : 1;
-        $max_count = !empty($top_tags) ? max($top_tags) : 1;
-        $base_font_size = 12;
-        $max_font_size = 17;
         ?>
-                <div style="margin: 10px 0px 5px 0px; font-size: 12px; font-weight: bold; color: #333;">Недавние теги:</div>
-                <div style="font-size: 13px; color: #333333;">
-                  <?php if (!empty($top_tags)): ?>
-                    <?php foreach ($top_tags as $tag => $count): ?>
-                      <?php
-                      if ($max_count > $min_count) {
-                          $ratio = ($count - $min_count) / ($max_count - $min_count);
-                          $font_size = round($base_font_size + ($max_font_size - $base_font_size) * $ratio);
-                      } else {
-                          $font_size = $base_font_size;
-                      }
-                      ?>
-                      <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> :
-                    <?php endforeach; ?>
-                  <?php else: ?>
-                    <div style="font-size: 12px; color: #888;">Теги пока не добавлены</div>
-                  <?php endif; ?>
-                </div>
-        </div>
+
+        <?php if ($tags_mode === 'tags'): ?>
+          <div class="tableSubTitle">Tags</div>
+
+          <div style="font-size: 14px; font-weight: bold; color: #666666; margin-bottom: 10px;">Latest Tags //</div>
+          <div style="margin-bottom: 20px; font-size: 13px; color: #333333;">
+            <?php if (!empty($latest_top)): ?>
+              <?php $i = 0; foreach ($latest_top as $tag => $count): ?>
+                <?php
+                if ($latest_max_count > $latest_min_count) {
+                    $ratio = ($count - $latest_min_count) / ($latest_max_count - $latest_min_count);
+                    $font_size = round($latest_base_font_size + ($latest_max_font_size - $latest_base_font_size) * $ratio);
+                } else {
+                    $font_size = $latest_base_font_size;
+                }
+                ?>
+                <?php if ($i > 0) echo ' : '; $i++; ?>
+                <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+            <?php endif; ?>
+          </div>
+
+          <div style="font-size: 16px; font-weight: bold; color: #666666; margin-bottom: 10px;">Most Popular Tags //</div>
+          <div style="font-size: 13px; color: #333333;">
+            <?php if (!empty($popular_top)): ?>
+              <?php $i = 0; $popular_base_font_size = 12; $popular_max_font_size = 28; foreach ($popular_top as $tag => $count): ?>
+                <?php
+                if ($popular_max_count > $popular_min_count) {
+                    $ratio = ($count - $popular_min_count) / ($popular_max_count - $popular_min_count);
+                    $font_size = round($popular_base_font_size + ($popular_max_font_size - $popular_base_font_size) * $ratio);
+                } else {
+                    $font_size = $popular_base_font_size;
+                }
+                ?>
+                <?php if ($i > 0) echo ' : '; $i++; ?>
+                <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+            <?php endif; ?>
+          </div>
+        <?php else: ?>
+          <div style="margin: 10px 0px 5px 0px; font-size: 12px; font-weight: bold; color: #333;">Недавние теги:</div>
+          <div style="font-size: 13px; color: #333333;">
+            <?php if (!empty($latest_top)): ?>
+              <?php $i = 0; foreach ($latest_top as $tag => $count): ?>
+                <?php
+                if ($latest_max_count > $latest_min_count) {
+                    $ratio = ($count - $latest_min_count) / ($latest_max_count - $latest_min_count);
+                    $font_size = round($latest_base_font_size + ($latest_max_font_size - $latest_base_font_size) * $ratio);
+                } else {
+                    $font_size = $latest_base_font_size;
+                }
+                ?>
+                <?php if ($i > 0) echo ' : '; $i++; ?>
+                <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
+              <?php endforeach; ?>
+              :
+            <?php else: ?>
+              <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+            <?php endif; ?>
+          </div>
+          <div style="font-size: 14px; font-weight: bold; margin-top: 10px;">
+            <a href="index.php?p=tags">Больше тегов</a>
+          </div>
+        <?php endif; ?>
         
         <?php
         $stmt = $db->prepare("SELECT login, COALESCE(last_login, 0) as last_login FROM users ORDER BY last_login DESC, id DESC LIMIT 8");
