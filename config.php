@@ -1,5 +1,6 @@
 <?php
-define('RETROSHOW_DB_DSN', 'sqlite:retroshow.sqlite');
+define('RETROSHOW_DB_PATH', __DIR__ . DIRECTORY_SEPARATOR . 'retroshow.sqlite');
+define('RETROSHOW_DB_DSN', 'sqlite:' . RETROSHOW_DB_PATH);
 define('RETROSHOW_ADMINS', serialize([
     'ADMIN'
 ]));
