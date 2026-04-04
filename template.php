@@ -44,12 +44,13 @@ function showHeader($title = "RetroShow") {
 		</script>
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<meta name="description" content="Share your videos with friends and family">
 <link rel="stylesheet" href="img/styles.css" type="text/css">
 <link rel="stylesheet" href="img/base.css" type="text/css">
 <link rel="stylesheet" href="img/watch.css" type="text/css">
 <script type="text/javascript" src="img/ui_ets.js"></script>
 <link href="img/styles.css" rel="stylesheet" type="text/css">
-<link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
+<link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.php">
 <style type="text/css">
 .formTitle { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #333; }
 .error { background-color: #FFE6E6; border: 1px solid #FF9999; padding: 10px; margin: 10px 0px; color: #CC0000; font-size: 12px; }
