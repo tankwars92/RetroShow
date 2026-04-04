@@ -1172,7 +1172,7 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
             <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
             <?php endforeach; ?>
         </select>
-        <input type="submit" name="add_comment_button" value="Добавить" style="width: 70px;">
+        <input type="submit" name="add_comment_button" value="Добавить" style="width: 75px;">
         </div>
         
         </form>
@@ -1201,7 +1201,7 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
           <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
         <?php endforeach; ?>
       </select>
-      <input type="submit" name="add_comment_button" value="Добавить" style="width: 70px;">
+      <input type="submit" name="add_comment_button" value="Добавить" style="width: 75px;">
       <input type="button" name="discard_comment_button" value="Отмена" style="width: 60px;" onclick="return cancelCommentForm(this);">
       </div>
       <?php if ($comment_error): ?>
