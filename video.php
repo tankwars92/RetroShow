@@ -7,6 +7,55 @@ function get_video_duration($file, $id, $public_id = '') {
     return get_video_duration_fast($file, $id, $public_id);
 }
 
+function related_pop_norm(int $views, int $maxViews): int {
+    $maxViews = max(1, $maxViews);
+    $b = log1p($maxViews);
+    if ($b < 1e-12) {
+        return 0;
+    }
+
+    return (int)min(10000, max(0, round(10000 * log1p(max(0, $views)) / $b)));
+}
+
+function related_shuffle_within_buckets(array $rows, callable $bucketKey, bool $desc = true): array {
+    if ($rows === []) {
+        return [];
+    }
+    $popW = 2000;
+    $jitR = 20000000;
+    $buckets = [];
+    foreach ($rows as $row) {
+        $k = $bucketKey($row);
+        $buckets[$k][] = $row;
+    }
+    if ($desc) {
+        krsort($buckets, SORT_NUMERIC);
+    } else {
+        ksort($buckets, SORT_NUMERIC);
+    }
+    $out = [];
+    foreach ($buckets as $bucket) {
+        foreach ($bucket as &$row) {
+            $pn = (int)($row['_pop_norm'] ?? 0);
+            $row['_mix'] = $pn * $popW + mt_rand(0, $jitR);
+        }
+        unset($row);
+        usort($bucket, static function (array $a, array $b): int {
+            $x = (int)($a['_mix'] ?? 0);
+            $y = (int)($b['_mix'] ?? 0);
+            if ($x !== $y) {
+                return $y <=> $x;
+            }
+
+            return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+        });
+        foreach ($bucket as $r) {
+            $out[] = $r;
+        }
+    }
+    return $out;
+}
+
 function time_ago($time) {
     $diff = time() - $time;
     if ($diff < 60) return 'только что';
@@ -303,6 +352,9 @@ if ($user && $video['user'] && $user !== $video['user']) {
 $is_private = !empty($video['private']);
 $recommended = [];
 
+$RELATED_RECOMMEND_MAX = 60;
+$related_tag_match_total = 0;
+
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 $ip = $_SERVER['REMOTE_ADDR'];
 $now = time();
@@ -361,118 +413,241 @@ try {
     $stmtRec->execute([$id]);
     $candidates = $stmtRec->fetchAll(PDO::FETCH_ASSOC);
 
-    $scored = [];
-    $fallback = [];
+    $maxViews = 1;
+    foreach ($candidates as $cr) {
+        $maxViews = max($maxViews, (int)($cr['views'] ?? 0));
+    }
+
+    $tier_strong = [];
+    $tier_same_channel = [];
+    $tier_rest = [];
+    $cur_user = isset($video['user']) ? (string)$video['user'] : '';
+    $cur_title = isset($video['title']) ? trim((string)$video['title']) : '';
+    $cur_tokens = $tag_words;
+    if ($cur_title !== '') {
+        $tw = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($cur_title, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($tw as $w) {
+            if (mb_strlen($w, 'UTF-8') >= 2) {
+                $cur_tokens[] = $w;
+            }
+        }
+        $cur_tokens = array_values(array_unique($cur_tokens));
+    }
+
     foreach ($candidates as $row) {
+        $row['_pop_norm'] = related_pop_norm((int)($row['views'] ?? 0), $maxViews);
         $score = 0;
-        if (!$is_private && isset($row['user']) && isset($video['user']) && $row['user'] === $video['user']) {
+        if (!$is_private && $cur_user !== '' && isset($row['user']) && (string)$row['user'] === $cur_user) {
             $score += 5;
         }
         $row_tags = isset($row['tags']) ? trim((string)$row['tags']) : '';
         if (!empty($tag_words) && $row_tags !== '') {
             $ltags = mb_strtolower($row_tags, 'UTF-8');
             foreach ($tag_words as $w) {
-                if ($w === '') continue;
+                if ($w === '') {
+                    continue;
+                }
                 if (mb_stripos($ltags, $w, 0, 'UTF-8') !== false) {
                     $score++;
                 }
             }
         }
         if ($score > 0) {
-            $score_with_jitter = $score + (mt_rand(0, 10) / 100.0);
-            $row['_score'] = $score_with_jitter;
-            $scored[] = $row;
+            $row['_rel'] = $score;
+            $row['_pop'] = (int)($row['views'] ?? 0);
+            $tier_strong[] = $row;
+        } elseif ($cur_user !== '' && isset($row['user']) && (string)$row['user'] === $cur_user) {
+            $row['_pop'] = (int)($row['views'] ?? 0);
+            $tier_same_channel[] = $row;
         } else {
-            $fallback[] = $row;
+            $row['_pop'] = (int)($row['views'] ?? 0);
+            $weak = 0;
+            if ($cur_tokens !== []) {
+                $blob = mb_strtolower(
+                    trim((string)($row['tags'] ?? '') . ' ' . trim((string)($row['title'] ?? ''))),
+                    'UTF-8'
+                );
+                foreach ($cur_tokens as $tok) {
+                    if ($tok === '' || mb_strlen($tok, 'UTF-8') < 2) {
+                        continue;
+                    }
+                    if (mb_stripos($blob, $tok, 0, 'UTF-8') !== false) {
+                        $weak++;
+                    }
+                }
+            }
+            $row['_weak'] = $weak;
+            $tier_rest[] = $row;
         }
     }
 
-    $max_per_author = 3;
-    $author_counts = [];
+    $tier_strong = related_shuffle_within_buckets($tier_strong, static function (array $row): int {
+        return (int)($row['_rel'] ?? 0);
+    }, true);
+    $tier_same_channel = related_shuffle_within_buckets($tier_same_channel, static function (array $row): int {
+        return (int)($row['_pop'] ?? 0);
+    }, true);
+    if ($tier_rest !== []) {
+        $by_weak = [];
+        foreach ($tier_rest as $row) {
+            $w = (int)($row['_weak'] ?? 0);
+            $by_weak[$w][] = $row;
+        }
+        krsort($by_weak, SORT_NUMERIC);
+        $tier_rest = [];
+        foreach ($by_weak as $weak_bucket) {
+            $tier_rest = array_merge(
+                $tier_rest,
+                related_shuffle_within_buckets($weak_bucket, static function (array $row): int {
+                    return (int)($row['_pop'] ?? 0);
+                }, true)
+            );
+        }
+    }
 
-    if (!empty($scored)) {
-        usort($scored, function($a, $b) {
-            if ($a['_score'] == $b['_score']) {
-                return ($b['id'] ?? 0) - ($a['id'] ?? 0);
-            }
-            return ($a['_score'] < $b['_score']) ? 1 : -1;
-        });
-        foreach ($scored as $row) {
-            $author = isset($row['user']) ? (string)$row['user'] : '';
-            if ($author !== '') {
-                if (!isset($author_counts[$author])) $author_counts[$author] = 0;
-                if ($author_counts[$author] >= $max_per_author) {
+    $related_tag_match_total = count($tier_strong) + count($tier_same_channel);
+    if ($related_tag_match_total < 1) {
+        $related_tag_match_total = max(0, count($candidates));
+    }
+
+    $queues = [$tier_strong, $tier_same_channel, $tier_rest];
+    $used_ids = [];
+    $author_in_list = [];
+
+    $max_per_author = 2;
+    while (count($recommended) < $RELATED_RECOMMEND_MAX && $max_per_author <= 120) {
+        foreach ($queues as $queue) {
+            foreach ($queue as $row) {
+                if (count($recommended) >= $RELATED_RECOMMEND_MAX) {
+                    break 2;
+                }
+                $vid = (int)($row['id'] ?? 0);
+                if ($vid <= 0 || isset($used_ids[$vid])) {
                     continue;
                 }
-            }
-            unset($row['_score']);
-            $recommended[] = $row;
-            if ($author !== '') $author_counts[$author]++;
-            if (count($recommended) >= 5) break;
-        }
-    }
-
-    if (count($recommended) < 5 && !empty($fallback)) {
-        shuffle($fallback);
-        foreach ($fallback as $row) {
-            $author = isset($row['user']) ? (string)$row['user'] : '';
-            if ($author !== '') {
-                if (!isset($author_counts[$author])) $author_counts[$author] = 0;
-                if ($author_counts[$author] >= $max_per_author) {
+                $author = isset($row['user']) ? (string)$row['user'] : '';
+                if ($author !== '' && ($author_in_list[$author] ?? 0) >= $max_per_author) {
                     continue;
                 }
-            }
-            $recommended[] = $row;
-            if ($author !== '') $author_counts[$author]++;
-            if (count($recommended) >= 5) break;
-        }
-    }
-
-// Перемешивание, чтобы авторы не шли подряд
-if (count($recommended) > 1) {
-    $shuffled = [];
-    $used = array_fill(0, count($recommended), false);
-    $last_author = null;
-
-    for ($i = 0; $i < count($recommended); $i++) {
-        $candidates_idx = [];
-
-        // ищем кандидатов, которые не тот же автор
-        foreach ($recommended as $idx => $row) {
-            if ($used[$idx]) continue;
-            $author = isset($row['user']) ? (string)$row['user'] : '';
-            if ($author !== $last_author) {
-                $candidates_idx[] = $idx;
-            }
-        }
-
-        // если не нашли — берём любой оставшийся
-        if (empty($candidates_idx)) {
-            foreach ($recommended as $idx => $row) {
-                if (!$used[$idx]) {
-                    $candidates_idx[] = $idx;
+                $copy = $row;
+                unset($copy['_rel'], $copy['_pop'], $copy['_weak'], $copy['_pop_norm'], $copy['_mix']);
+                $recommended[] = $copy;
+                $used_ids[$vid] = true;
+                if ($author !== '') {
+                    $author_in_list[$author] = ($author_in_list[$author] ?? 0) + 1;
                 }
             }
         }
-
-        // случайный выбор
-        $pick = $candidates_idx[array_rand($candidates_idx)];
-        $used[$pick] = true;
-
-        $row = $recommended[$pick];
-        $shuffled[] = $row;
-        $last_author = isset($row['user']) ? (string)$row['user'] : '';
+        if (count($recommended) >= $RELATED_RECOMMEND_MAX) {
+            break;
+        }
+        $max_per_author++;
     }
 
-    $recommended = $shuffled;
-}
+    if (count($recommended) < $RELATED_RECOMMEND_MAX) {
+        foreach ($queues as $queue) {
+            foreach ($queue as $row) {
+                if (count($recommended) >= $RELATED_RECOMMEND_MAX) {
+                    break 2;
+                }
+                $vid = (int)($row['id'] ?? 0);
+                if ($vid <= 0 || isset($used_ids[$vid])) {
+                    continue;
+                }
+                $copy = $row;
+                unset($copy['_rel'], $copy['_pop'], $copy['_weak'], $copy['_pop_norm'], $copy['_mix']);
+                $recommended[] = $copy;
+                $used_ids[$vid] = true;
+            }
+        }
+    }
+
+    if (count($recommended) < $RELATED_RECOMMEND_MAX && $candidates !== []) {
+        $pad = [];
+        foreach ($queues as $queue) {
+            foreach ($queue as $row) {
+                $pad[] = $row;
+            }
+        }
+        if ($pad === []) {
+            $pad = $candidates;
+        }
+        shuffle($pad);
+        $pn = count($pad);
+        $pi = 0;
+        while (count($recommended) < $RELATED_RECOMMEND_MAX && $pn > 0) {
+            $row = $pad[$pi % $pn];
+            $copy = $row;
+            unset($copy['_rel'], $copy['_pop'], $copy['_weak'], $copy['_pop_norm'], $copy['_mix']);
+            $recommended[] = $copy;
+            $pi++;
+        }
+    }
+
+    if (count($recommended) > $RELATED_RECOMMEND_MAX) {
+        $recommended = array_slice($recommended, 0, $RELATED_RECOMMEND_MAX);
+    }
+
+    $RELATED_HEAD_SIMILAR = 24;
+    if (count($recommended) > 1) {
+        $nrec = count($recommended);
+        if ($nrec <= $RELATED_HEAD_SIMILAR) {
+            $head = $recommended;
+            $tail = [];
+        } else {
+            $head = array_slice($recommended, 0, $RELATED_HEAD_SIMILAR);
+            $tail = array_slice($recommended, $RELATED_HEAD_SIMILAR);
+        }
+        if ($tail !== []) {
+            shuffle($tail);
+            $tn = count($tail);
+            $shuffled = [];
+            $used = array_fill(0, $tn, false);
+            $last_author = null;
+            for ($i = 0; $i < $tn; $i++) {
+                $candidates_idx = [];
+                foreach ($tail as $idx => $row) {
+                    if ($used[$idx]) {
+                        continue;
+                    }
+                    $author = isset($row['user']) ? (string)$row['user'] : '';
+                    if ($author !== $last_author) {
+                        $candidates_idx[] = $idx;
+                    }
+                }
+                if ($candidates_idx === []) {
+                    foreach ($tail as $idx => $row) {
+                        if (!$used[$idx]) {
+                            $candidates_idx[] = $idx;
+                        }
+                    }
+                }
+                $pick = $candidates_idx[array_rand($candidates_idx)];
+                $used[$pick] = true;
+                $shuffled[] = $tail[$pick];
+                $last_author = isset($tail[$pick]['user']) ? (string)$tail[$pick]['user'] : '';
+            }
+            $recommended = array_merge($head, $shuffled);
+        } else {
+            $recommended = $head;
+        }
+    }
+
+    if ($related_tag_match_total < 1) {
+        $related_tag_match_total = count($recommended);
+    }
 
 } catch (Exception $e) {
+    $recommended = [];
+    $related_tag_match_total = 0;
     try {
-        $rec_stmt = $db->prepare("SELECT * FROM videos WHERE id != ? AND private = 0 ORDER BY id DESC LIMIT 5");
-        $rec_stmt->execute([$id]);
-        $recommended = $rec_stmt->fetchAll();
-    } catch (Exception $e2) {}
+        $st = $db->prepare("SELECT id, public_id, title, description, file, preview, user, tags, views
+            FROM videos WHERE id != ? AND (private = 0 OR private IS NULL) ORDER BY RANDOM() LIMIT " . (int)$RELATED_RECOMMEND_MAX);
+        $st->execute([$id]);
+        $recommended = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $related_tag_match_total = count($recommended);
+    } catch (Exception $e2) {
+    }
 }
 
 $comment_error = '';
@@ -1620,30 +1795,75 @@ if (window.attachEvent) {
 	<b class="rch5"></b>
 	</b> <div class="content"><span class="headerTitleLite">Посмотрите больше видео</span></div>
 	</div>  
-    <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse; background: #f5f5f5; border-top: none;">
-      <tr><td>
-        <table width="100%" cellpadding="2" cellspacing="0" border="0" style="background: #fff;">
-          <tr style="background: #ffffcc;"><td width="60"><a href="#"><img src="<?=htmlspecialchars($video['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="#"><b><?=htmlspecialchars($video['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a><br>Просмотров: <?=intval($video['views'] ?? 212)?><br><b>&lt;&lt; Сейчас смотрите</b></span></td></tr>
-          <?php foreach ($recommended as $rec): ?>
-          <tr style="background: #EEEEEE;"><td width="60"><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0"></a></td><td><a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>"><b><?=htmlspecialchars($rec['title'])?></b></a><br><span style="font-size: 11px;"><?=get_video_duration($rec['file'], $rec['id'], $rec['public_id'] ?? '')?><br>Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a><br>Просмотров: <?=intval($rec['views'] ?? 0)?></span></td></tr>
-          <?php endforeach; ?>
+    <?php
+    $rec_list = array_values($recommended);
+    $rec_shown = count($rec_list);
+    $rec_total_for_bar = max($rec_shown, (int)$related_tag_match_total);
+    $more_href = 'channel.php';
+    if (!empty($video['tags'])) {
+        $tags_str = trim((string)($video['tags'] ?? ''));
+        if ($tags_str !== '') {
+            $more_href = 'results.php?search_query=' . urlencode($tags_str) . '&search_type=tag';
+        }
+    }
+    $rec_last_i = $rec_shown - 1;
+    $bb0 = ' style="border-bottom:0 !important;"';
+    ?>
+    <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse:collapse; background:#f5f5f5; border-top:none;">
+      <tr><td style="padding:5px 6px; border-bottom:0 !important;">
+        
+        <?php if ($rec_shown > 0): ?>
+        <table width="100%" cellpadding="2" cellspacing="0" border="0" class="showingTable" >
           <tr>
-            <td colspan="2" style="background:#cccccc; text-align:right; font-size:11px; padding:3px 8px;">
-              <?php
-              $more_href = 'channel.php';
-              if (!empty($video['tags'])) {
-                  $tags_str = trim((string)($video['tags'] ?? ''));
-                  if ($tags_str !== '') {
-                      $more_href = 'results.php?search_query=' . urlencode($tags_str) . '&search_type=tag';
-                  }
-              }
-              ?>
-              <a href="<?=$more_href?>" style="color:#0033cc;">Ещё видео</a>
-            </td>
+            <td class="smallText">Показано 1-<?= (int)$rec_shown ?> из <?= (int)$rec_total_for_bar ?></td>
+            <td class="smallText" align="right"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;">Ещё видео</a></td>
           </tr>
-  </table>
-</td></tr>
+        </table>
+        <div id="side_related_scroll" style="max-height:360px; overflow-y:auto; overflow-x:hidden; width:100%;">
+        <table width="100%" cellpadding="2" cellspacing="0" border="0" style="background:#fff; border-collapse:collapse;">
+<tr style="background:#ffffcc;">
+    <td width="60">
+        <a href="#"><img src="<?=htmlspecialchars($video['preview'])?>" width="60" height="45" border="0"></a>
+    </td>
+    <td>
+        <a href="#"><span class="title" style="color:#0033CC"><?=htmlspecialchars($video['title'])?></span></a><br>
+        <span class="runtime"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?></span><br>
+        <span style="font-size: 11px;">Автор: <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a></span><br>
+        <span style="font-size: 11px;">Просмотров: <?=intval($video['views'] ?? 212)?></span>
+    </td>
+</tr>
+</table>
+
+<table width="100%" cellpadding="2" cellspacing="0" border="0" style="background:#fff; border-collapse:collapse;">
+<?php foreach ($rec_list as $rec): ?>
+<tr style="background:#EEEEEE;">
+    <td width="60">
+        <a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>">
+            <img src="<?=htmlspecialchars($rec['preview'])?>" width="60" height="45" border="0">
+        </a>
+    </td>
+    <td>
+        <a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>">
+            <span class="title" style="color:#0033CC"><?=htmlspecialchars($rec['title'])?></span>
+        </a><br>
+        <span class="runtime"><?=get_video_duration($rec['file'], $rec['id'], $rec['public_id'] ?? '')?></span><br>
+        <span style="font-size: 11px;">Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a></span><br>
+        <span style="font-size: 11px;">Просмотров: <?=intval($rec['views'] ?? 0)?></span>
+    </td>
+</tr>
+<?php endforeach; ?>
+</table>
+        </div>
+        <?php endif; ?>
+        <table width="100%" cellpadding="2" cellspacing="0" border="0" class="showingTable">
+          <tr>
+            <td class="smallText">Показано 1-<?= (int)$rec_shown ?> из <?= (int)$rec_total_for_bar ?></td>
+            <td class="smallText" align="right"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;">Ещё видео</a></td>
+          </tr>
+        </table>
+      </td></tr>
     </table>
+    </div>
   </td>
 </tr>
 </table><div style="padding: 0px 5px 0px 5px;">

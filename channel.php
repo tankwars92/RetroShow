@@ -723,9 +723,7 @@ img.videobarthumbnail_gray
       <td colspan="3" style="padding:10px; text-align:center; background:#F4F4F4; border-bottom:none; border-right:1px solid #666666;">Этот пользователь отключил возможность комментирования своего профиля.</td>
     </tr>
     <?php elseif (empty($profile_comments_preview)): ?>
-    <tr class="rowsLine">
-      <td colspan="3" style="padding:12px; text-align:center; color:#888; background:#fff; border-right:1px solid #666666;">Пока нет комментариев к профилю.</td>
-    </tr>
+
     <?php else:
       foreach ($profile_comments_preview as $pc):
         $c_author = (string)($pc['user'] ?? '');
