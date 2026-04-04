@@ -277,7 +277,7 @@ if ($tags_mode === 'tags') {
             $latest_counts[$tag]++;
         }
     }
-    arsort($latest_counts);
+    
     $latest_top = array_slice($latest_counts, 0, 50, true);
     $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
     $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
@@ -306,19 +306,26 @@ if ($tags_mode === 'tags') {
         <div style="font-size: 14px; font-weight: bold; color: #666666; margin-bottom: 10px;">Последние теги //</div>
         <div style="margin-bottom: 20px; font-size: 13px; color: #333333;">
             <?php if (!empty($latest_top)): ?>
-                <?php $i = 0; foreach ($latest_top as $tag => $count): ?>
-                    <?php
-                    if ($latest_max_count > $latest_min_count) {
-                        $ratio = ($count - $latest_min_count) / ($latest_max_count - $latest_min_count);
+                <?php
+                $latest_base_font_size = 12;
+                $latest_max_font_size = 28;
+                $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
+                $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
+
+                $i = 0;
+                foreach ($latest_top as $tag => $count):
+                    if ($latest_max_count != $latest_min_count) {
+                        $ratio = (sqrt($count) - sqrt($latest_min_count)) / (sqrt($latest_max_count) - sqrt($latest_min_count));
                         $font_size = round($latest_base_font_size + ($latest_max_font_size - $latest_base_font_size) * $ratio);
                     } else {
                         $font_size = $latest_base_font_size;
                     }
-                    ?>
+                ?>
                     <?php if ($i > 0) echo ' : '; $i++; ?>
-                    <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
+                    <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>">
+                        <?=htmlspecialchars($tag)?>
+                    </a>
                 <?php endforeach; ?>
-                :
             <?php else: ?>
                 <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
             <?php endif; ?>
@@ -662,7 +669,7 @@ echo time_ago($ago_ts);
               <tr>
                 <td><img src="img/pixel.gif" width="5" height="1"></td>
                 <td width="170">
-          <div class="moduleTitleBar">
+          <div class="moduleTitleBar" style="border: 0;">
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="font-size: 13px; font-weight: bold; color: #444444; padding-bottom: 5px;">
@@ -772,13 +779,12 @@ echo time_ago($ago_ts);
                 $latest_counts[$tag]++;
             }
         }
-        arsort($latest_counts);
         $latest_top = array_slice($latest_counts, 0, 50, true);
 
         $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
         $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
         $latest_base_font_size = 12;
-        $latest_max_font_size = 17;
+        $latest_max_font_size = 28;
 
         $popular_top = [];
         $popular_min_count = 1;
@@ -847,23 +853,30 @@ echo time_ago($ago_ts);
         <?php else: ?>
           <div style="margin: 10px 0px 5px 0px; font-size: 12px; font-weight: bold; color: #333;">Недавние теги:</div>
           <div style="font-size: 13px; color: #333333;">
-            <?php if (!empty($latest_top)): ?>
-              <?php $i = 0; foreach ($latest_top as $tag => $count): ?>
-                <?php
-                if ($latest_max_count > $latest_min_count) {
-                    $ratio = ($count - $latest_min_count) / ($latest_max_count - $latest_min_count);
-                    $font_size = round($latest_base_font_size + ($latest_max_font_size - $latest_base_font_size) * $ratio);
-                } else {
-                    $font_size = $latest_base_font_size;
-                }
-                ?>
-                <?php if ($i > 0) echo ' : '; $i++; ?>
-                <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
-              <?php endforeach; ?>
-              :
-            <?php else: ?>
-              <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
-            <?php endif; ?>
+              <?php if (!empty($latest_top)): ?>
+                  <?php
+                  $latest_base_font_size = 12;
+                  $latest_max_font_size = 28;
+                  $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
+                  $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
+
+                  $i = 0;
+                  foreach ($latest_top as $tag => $count):
+                      if ($latest_max_count != $latest_min_count) {
+                          $ratio = (sqrt($count) - sqrt($latest_min_count)) / (sqrt($latest_max_count) - sqrt($latest_min_count));
+                          $font_size = round($latest_base_font_size + ($latest_max_font_size - $latest_base_font_size) * $ratio);
+                      } else {
+                          $font_size = $latest_base_font_size;
+                      }
+                  ?>
+                      <?php if ($i > 0) echo ' : '; $i++; ?>
+                      <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>">
+                          <?=htmlspecialchars($tag)?>
+                      </a>
+                  <?php endforeach; ?>
+              <?php else: ?>
+                  <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+              <?php endif; ?>
           </div>
           <div style="font-size: 14px; font-weight: bold; margin-top: 10px;">
             <a href="index.php?p=tags">Больше тегов</a>

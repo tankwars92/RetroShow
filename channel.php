@@ -32,6 +32,11 @@ function rus_date($time) {
     return "$d $m $y";
 }
 
+/** Текст комментария в HTML: как под видео, но &lt;br&gt; без XHTML для старых браузеров. */
+function channel_comment_body_html($text) {
+    return nl2br(htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8'), false);
+}
+
 require_once 'duration_helper.php';
 
 function get_video_duration($file, $id, $public_id = '') {
@@ -160,7 +165,7 @@ try {
 
 $profile_comments_preview = [];
 try {
-    $stmtPcPrev = $db->prepare('SELECT time, user, text FROM profile_comments WHERE profile_user = ? ORDER BY time ASC, id ASC LIMIT 3');
+    $stmtPcPrev = $db->prepare('SELECT time, user, text FROM profile_comments WHERE profile_user = ? ORDER BY time DESC, id DESC LIMIT 3');
     $stmtPcPrev->execute([$user]);
     $profile_comments_preview = $stmtPcPrev->fetchAll(PDO::FETCH_ASSOC) ?: [];
 } catch (Exception $e) {
@@ -281,10 +286,10 @@ echo '</div>';
 
 <style>
 .profileBox {
-  border:1px solid #ddd;
+  border:1px solid #999999;
   margin-bottom:10px;
   zoom:1;
-  overflow:hidden;
+  overflow:visible;
 }
 
 .profileBoxHead {
@@ -301,9 +306,10 @@ echo '</div>';
 
 .profileBoxContent{
   padding:6px;
-  width:100%;
+  width:auto;
+  max-width:100%;
   box-sizing:border-box;
-  overflow:auto;
+  overflow:visible;
   zoom:1;
 }
 
@@ -321,8 +327,17 @@ echo '</div>';
 }
 </style>
 <!--[if lte IE 6]>
-<style>
+<style type="text/css">
 .profileBox, .profileBoxHead, .profileBoxContent { zoom:1; }
+.profileBox {
+  overflow:visible !important;
+  border:1px solid #999999 !important;
+}
+.profileBoxContent {
+  width:auto !important;
+  overflow:visible !important;
+  height:auto !important;
+}
 </style>
 <![endif]-->
 
@@ -330,7 +345,7 @@ echo '</div>';
 <tr valign="top">
   <td width="320">
     <div class="profileBox">
-      <div class="profileBoxHead" style="background:#888; color:#000; padding:3px; font-size:12px; ">Привет. Я <?= $profile['username'] ?></div>
+      <div class="profileBoxHead" style="background:#999999; color:#fff; padding-bottom: 2px; padding-left: 5px; font-size:12px;">Привет. Я <?= $profile['username'] ?></div>
       <div class="profileBoxContent">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr valign="top">
@@ -368,9 +383,9 @@ echo '</div>';
       </div>
     </div>
   </td>
-  <td style="padding-left:10px;" valign="top">
+  <td style="padding-left:10px; width: 462px;" valign="top">
     <div class="profileBox">
-      <div class="profileBoxHead" style="background:#888; color:#000; padding:3px; font-size:12px;">Подробнее обо мне</div>
+      <div class="profileBoxHead" style="background:#999999; color:#fff; padding-bottom: 2px; padding-left: 5px; font-size:12px;">Подробнее обо мне</div>
       <div class="profileBoxContent">
         <div style="font-size:12px; line-height:1.35;">
           <?php if ($about_me): ?>
@@ -405,30 +420,343 @@ echo '</div>';
         </div>
       </div>
     </div>
-          <div class="profileBox">
-      <div class="profileBoxHead" style="background:#888; color:#000; padding:3px; font-size:12px;">Мои комментарии</div>
-      
-        <?php if ($user_data && isset($user_data['profile_comm']) && $user_data['profile_comm'] === '2'): ?>
-          <div class="profileBoxContent" style="background:#F4F4F4;">
-          <center>Этот пользователь отключил возможность комментирования своего профиля.</center>
-        <?php elseif (isset($_SESSION['user'])): ?>
-          <div class="profileBoxContent">
-  <a href="channel.php?user=<?=urlencode($profile['username'])?>&tab=comments&action=new" class="profileLink">Оставить комментарий</a> для <?= $profile['username'] ?>.
-  <form id="profileCommentForm" action="comments.php?user=<?=urlencode($profile['username'])?>" method="post" style="display:none; margin-top:8px;">
-    <textarea name="comment" rows="3" cols="40" style="font-size:13px;"></textarea><br>
-    <input type="submit" value="Отправить" style="font-size:13px;">
-  </form>
-        <?php else: ?>
-          <div class="profileBoxContent">
-  <a href="#" class="profileLink" onclick="alert('Только для зарегистрированных пользователей!');return false;">Оставить комментарий</a> для <?= $profile['username'] ?>.
 
-        <?php endif; ?>
-        <?php if (!$user_data || !isset($user_data['profile_comm']) || $user_data['profile_comm'] !== '2'): ?>
-Публикуемые вами комментарии будут видны всем, кто просматривает профиль пользователя <?= $profile['username'] ?>.
-        <?php endif; ?>
+<style type="text/css">
+.userTable {
+	border: 1px solid #999999;
+	background-color: #F4F4F4;
+    color: ;
+	width: 300px;
+	}
+    	.aboutTable {
+	border: 1px solid #999999;
+	background-color: #ffffff;
+    color: #00000;
+	width: 300px;
+	}
+    	.normal-box {
+	background-color: #ffffff;
+    color: #00000;
+	}
+	
+	.spaceMaker {
+	padding-top: 2px;
+	}
+		
+	tr.rows td{
+	padding-top: 6px;
+	padding-bottom: 6px;
+	padding-left: 15px;
+	}
+	
+	tr.connectRows td{
+	padding-top: 3px;
+	}
+	
+	tr.broadcastRow td {
+	padding-top: 6px;
+	padding-bottom: 6px;
+	}
+	
+	tr.connectRowsTop td {
+	padding-top: 8px;
+	}
+	
+	tr.connectRowsBottom td {
+	padding-top: 3px;
+	padding-bottom: 8px;
+	}
+
+	tr.rowsLine td{
+	padding-top: 6px;
+	padding-bottom: 6px;
+	padding-left: 15px;
+	border-bottom: 1px solid #666666;
+	}
+	
+	tr.rowsLineBottom td{
+	padding-top: 6px;
+	padding-bottom: 6px;
+	padding-left: 15px;
+	}
+	
+	.profileTitles {
+	font-family:  Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	color: gray;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	}
+	
+	.profileHeaders {
+	background-color: #999999;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 13px;
+	font-weight: bold;
+	color: white;
+	padding-bottom: 3px;
+	padding-top: 3px;
+	}
+	
+	.aboutTable {
+	width: 560px;
+	border: 1px solid #999999;
+	}
+	
+	.aboutImg {
+	width: 140px;
+	height: 108px;
+	border: 2px solid #999999;
+	}
+	
+	.commentPostTable {
+	border: 1px solid #666666;
+	}
+	
+	
+	.videoPostTable {
+	width: 560px;
+	border: 1px solid #999999;
+	padding-left: 15px;
+	}
+	
+	.videoPostImg {
+	width: 154px;
+	height: 124px;
+	border: 1px solid #999999;
+	}
+	
+	
+	.connectTable {
+	border: 1px solid #999999;	
+	width: 300px;
+	}
+	
+	.topSpace {
+	padding-top: 3px;
+	}	
+	
+	.connectImages {
+	padding-left: 3px;
+	}
+	
+	.connectImages2 {
+	padding-left: 2px;
+	}
+
+	
+	.connectLinks {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	font-weight: normal;
+	}
+	
+	.bulletinTable {
+	width: 300px;
+	border: 1px solid #999999;
+	}
+	
+	tr.bulletin td {
+	background-color: #F4F4F4;
+	border-right: 1px solid #FFFFFF;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	padding-left: 3px;
+	padding-right: 3px;
+	border-bottom: 1px solid #FFFFFF;
+	}
+	
+	tr.bulletinTitle td {
+	padding-top: 3px;
+	padding-bottom: 3px;
+	border-bottom: 1px solid #999999;
+	}
+	.bulletinPost
+    {
+        color: ;
+    }
+	tr.bulletinPost td {
+	padding-top: 5px;
+	padding-bottom: 5px;
+	border-top: 1px solid #999999;
+	}
+	
+	tr.commentsMsg td {
+	padding-top: 5px;
+	padding-bottom: 5px;
+	border-top: 1px solid #666666;
+	background-color: #F4F4F4;
+	}
+	
+	td.buttonPost {
+	padding-top: 4px;
+	padding-bottom: 4px;
+	border-top: 1px solid #999999;
+	}
+	
+	td.bulletinTopFirstCells {
+	border-right: 1px solid #999999;
+	border-bottom: none;
+	}
+	
+	td.checkBoxSection {
+	background-color: #F4F4F4;
+	width: 15px;
+	border-right: 1px solid #999999;
+	}
+		
+	
+	.bulletinSmallImg {
+	padding-left: 5px;
+	}
+	
+	.commentsImg {
+	width: 60px;
+	border: 2px solid #666666;
+	}
+	
+	tr.comments td{
+	border-bottom: 1px solid #666666;
+	padding-top: 3px;
+	padding-bottom: 5px;
+	}
+	
+	
+	.bulletinReadTable {
+	width: 560px;
+	border: 1px solid #999999;
+	}
+	
+	td.bulletinRead {
+	background-color: #F4F4F4;
+	border-right: 1px solid #999999;
+	border-bottom: 1px solid #999999;
+	}
+	
+	td.bulletinReadBottom {
+	background-color: #F4F4F4;
+	border-right: 1px solid #999999;
+	}
+	
+	
+	td.bulletinReadLast {
+	background-color: #F4F4F4;
+	border-bottom: 1px solid #999999;
+	}
+	
+	
+	tr.emptyBulletin td{
+	background-color: #F4F4F4;
+	padding-top: 3px;
+	padding-bottom: 5px;
+	}
+	
+	
+	td.leftBg {
+	background-color: #F4F4F4;
+	border-right: 1px solid #666666;
+	}
+	
+
+	a.edit:link {color: white; text-decoration: underline; }
+	a.edit:visited {color: white; text-decoration: underline; }
+	a.edit:hover {color: white; text-decoration: underline; }
+	a.edit:active {color: white; text-decoration: underline; } 
+
+
+	
+	td.bulletinReadRight {
+	border-bottom: 1px solid #999999;
+	}
+	
+	
+	td.bulletinReadRightBottom {
+	border-bottom: none;
+	}
+	
+	td.bulletinReadBottom {
+	background-color: F4F4F4;
+	border-right: 1px solid #999999;
+	border-bottom: none;
+	}
+	
+	tr.bulletinCols td {
+	border-bottom: 1px solid #999999;
+	padding-top: 3px;
+	padding-bottom: 5px;
+	}
+	
+	td.bulletinData {
+	border-right: 1px solid #999999;
+	padding-bottom: 5px;
+	padding-right: 3px;
+	padding-left: 3px;
+	}
+.videobarthumbnail_block
+{
+	float: left;
+	width: 115px;
+	padding: 5px;
+}
+img.videobarthumbnail_gray
+{
+	border: 2px solid #999999;
+ margin-bottom:5px;
+    
+}
+</style>
+
+<table class="commentPostTable" width="100%" border="1" bordercolor="#666666" cellpadding="0" cellspacing="0" style="border:1px solid #666666;border-collapse:collapse;max-width:550px;">
+    <tbody>
+    <tr class="profileHeaders" style="background-color:#999999">
+    <td colspan="3" style="border-right:1px solid #666666; padding:0; height:20px;">
+      <div style="height:100%; line-height:20px; padding-left:5px; padding-botom: 3px; font-size:12px; color:#fff;">
+        Мои комментарии
       </div>
-  </div>
-  </td>
+    </td>
+    </tr>
+    <?php
+    $pc_disabled = $user_data && (string)($user_data['profile_comm'] ?? '0') === '2';
+    if ($pc_disabled): ?>
+    <tr class="rowsLineBottom">
+      <td colspan="3" style="padding:10px; text-align:center; background:#F4F4F4; border-bottom:none; border-right:1px solid #666666;">Этот пользователь отключил возможность комментирования своего профиля.</td>
+    </tr>
+    <?php elseif (empty($profile_comments_preview)): ?>
+    <tr class="rowsLine">
+      <td colspan="3" style="padding:12px; text-align:center; color:#888; background:#fff; border-right:1px solid #666666;">Пока нет комментариев к профилю.</td>
+    </tr>
+    <?php else:
+      foreach ($profile_comments_preview as $pc):
+        $c_author = (string)($pc['user'] ?? '');
+        $pi_c = get_user_profile_icon_setting($c_author);
+        $avatar_c = htmlspecialchars(get_profile_icon($c_author, $pi_c), ENT_QUOTES, 'UTF-8');
+        $cts = isset($pc['time']) ? (int)$pc['time'] : 0;
+    ?>
+    <tr class="rowsLine">
+      <td class="leftBg" style="padding:6px 6px 6px 10px; width:118px; max-width:118px;" valign="top" align="center">
+        <span class="profileTitles"><a href="channel.php?user=<?=urlencode($c_author)?>"><?=htmlspecialchars($c_author)?></a></span>
+        <br><br>
+        <a href="channel.php?user=<?=urlencode($c_author)?>"><img src="<?=$avatar_c?>" alt="" class="commentsImg" width="50" height="38" style="width:50px;height:38px;"></a>
+      </td>
+      <td colspan="2" style="padding:6px 8px 6px 4px; border-right:1px solid #666666;" valign="top">
+        <span class="profileTitles"><?= $cts > 0 ? htmlspecialchars(rus_date($cts), ENT_QUOTES, 'UTF-8') : '—' ?></span><br><br>
+        <div style="font-size:13px;color:#222;word-break:break-all;max-width:400px;"><?=channel_comment_body_html($pc['text'] ?? '')?></div>
+      </td>
+    </tr>
+    <?php endforeach; endif; ?>
+    <?php if (!$pc_disabled): ?>
+    <tr class="commentsMsg">
+      <td colspan="3" align="center" style="border-right:1px solid #666666;">
+        <span class="bulletinPost" style="padding-left: 5px; padding-right: 5px;">
+          <a href="channel.php?user=<?=urlencode($user)?>&tab=comments&amp;action=new" style="color:#0033cc; text-decoration:underline;">Оставить комментарий</a> для <?=htmlspecialchars($user)?>.
+          <span style="color:#666; font-size:12px;">Публикуемые вами комментарии будут видны всем, кто просматривает профиль пользователя <?=htmlspecialchars($user)?>.</span>
+        </span>
+      </td>
+    </tr>
+    <?php endif; ?>
+  </tbody></table>
+</td>
 </tr>
 </table>
   <?php
@@ -1192,7 +1520,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
 <form method="post" action="channel.php?user=<?=urlencode($user)?>&tab=comments&action=new">
 <table width="550" align="center" cellpadding="0" cellspacing="0" border="1" style="border-collapse:collapse; margin-top:30px; border-color:#999999;">
   <tr>
-    <td colspan="2" style="background:#888; color:#000; font-weight:bold; padding:3px;">Оставить новый комментарий</td>
+    <td colspan="2" style="background:#999999; color:#fff; font-weight:bold; padding:3px;">Оставить новый комментарий</td>
   </tr>
   <tr>
     <td width="110" style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;">От:</td>
@@ -1280,31 +1608,31 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 		? '<b>Комментарии ('.$comments_count.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=comments">Комментарии ('.$comments_count.')</a>';
 	echo '</div>';
     ?>
-    <table width="550" align="center" cellpadding="0" cellspacing="0" border="1" style="border-collapse:collapse; border-color:#999999;">
+    <table width="550" align="center" cellpadding="0" cellspacing="0" border="1" bordercolor="#666666" style="border-collapse:collapse; border:1px solid #666666; border-color:#666666;">
       <tr>
-        <td colspan="2" style="background:#888; color:#000; font-weight:bold; padding:3px;">
+        <td colspan="2" style="background:#999999; color:#fff; font-weight:bold; padding:3px; border-right:1px solid #666666;">
           Комментарии <?=htmlspecialchars($user)?>
         </td>
       </tr>
       <?php if ($user_data && isset($user_data['profile_comm']) && $user_data['profile_comm'] === '2'): ?>
       <tr>
-        <td colspan="2" style="padding:5px; text-align:center; background:#F4F4F4;">Этот пользователь отключил возможность комментирования своего профиля.</td>
+        <td colspan="2" style="padding:5px; text-align:center; background:#F4F4F4; border-right:1px solid #666666;">Этот пользователь отключил возможность комментирования своего профиля.</td>
       </tr>
       <?php elseif (count($comments) == 0): ?>
       <tr>
-        <td colspan="2" style="padding:20px; text-align:center; color:#888;">Нет комментариев.</td>
+        <td colspan="2" style="padding:20px; text-align:center; color:#888; border-right:1px solid #666666;">Нет комментариев.</td>
       </tr>
       <?php else: foreach (array_reverse($comments) as $c): ?>
       <tr>
-        <td width="110" style="background:#f8f8f8; text-align:center; padding:8px; border-right:1px solid #bbb;">
+        <td width="110" style="background:#f8f8f8; text-align:center; padding:8px; border-right:1px solid #666666;">
           <a href="channel.php?user=<?=htmlspecialchars($c['user'])?>" style="font-weight:bold; color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($c['user'])?></a><br>
           <?php $pi = get_user_profile_icon_setting($c['user']); $avatar = get_profile_icon($c['user'], $pi); ?>
-          <br><img src="<?= $avatar ?>" width="64" height="50" style="border:1px solid #bbb; background:#eee;">
+          <br><img src="<?= $avatar ?>" width="64" height="50" style="border:1px solid #666666; background:#eee;">
         </td>
-        <td style="padding:8px; vertical-align:top;">
+        <td style="padding:8px; vertical-align:top; border-right:1px solid #666666;">
           <div style="color:#888; font-size:13px;"><b><?=rus_date($c['time'])?></b></div>
 		  <br>
-          <div style="word-wrap: anywhere; width: 400px"><?=nl2br(htmlspecialchars($c['text']))?></div>
+          <div style="font-size:13px;color:#222;word-break:break-all;width:320px;"><?=channel_comment_body_html($c['text'] ?? '')?></div>
         </td>
       </tr>
       <?php endforeach; endif; ?>
@@ -1313,7 +1641,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 
           <?php else: ?>
             <tr>
-        <td colspan="2" style="padding:10px; background:#f8f8f8; text-align:center;">
+        <td colspan="2" style="padding:10px; background:#f8f8f8; text-align:center; border-right:1px solid #666666;">
             <a href="channel.php?user=<?=urlencode($user)?>&tab=comments&action=new" style="color:#0033cc; text-decoration:underline;">Оставить комментарий</a> для <?=htmlspecialchars($user)?>.
             <span style="color:#666; font-size:12px;">Публикуемые вами комментарии будут видны всем, кто просматривает профиль пользователя <?=htmlspecialchars($user)?>.</span>
           <?php endif; ?>

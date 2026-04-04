@@ -1262,7 +1262,7 @@ function submitCommentAjax(form) {
         if (xhr.status == 200) {
             var t = xhr.responseText || '';
             if (t.indexOf('OK') === 0) {
-                showCommentAjaxMessage(form, 'Комментарий успешно опубликован!', true);
+                alert('Спасибо. Ваш комментарий успешно опубликован!');
                 try {
                     if (form.comment_text) form.comment_text.value = '';
                     if (form.reference_video_id) form.reference_video_id.selectedIndex = 0;
@@ -1272,31 +1272,15 @@ function submitCommentAjax(form) {
             }
             var msg = t;
             if (msg.indexOf('ERROR:') === 0) msg = msg.substring(6);
-            showCommentAjaxMessage(form, msg || 'Ошибка при отправке комментария!', false);
+            alert(msg || 'Ошибка при отправке комментария!');
         } else {
-            showCommentAjaxMessage(form, 'Ошибка связи при отправке комментария!', false);
+            alert('Ошибка связи при отправке комментария!');
         }
     };
     xhr.send(data.join('&'));
     return false;
 }
-function showCommentAjaxMessage(form, text, ok) {
-    var box = null;
-    var nodes = form.getElementsByTagName('div');
-    for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i].className == 'commentAjaxNotice') { box = nodes[i]; break; }
-    }
-    if (!box) {
-        box = document.createElement('div');
-        box.className = 'commentAjaxNotice';
-        box.style.fontSize = '12px';
-        box.style.padding = '4px 0 2px 0';
-        box.style.fontWeight = 'bold';
-        form.appendChild(box);
-    }
-    if (typeof box.innerText != 'undefined') box.innerText = text;
-    else box.innerHTML = text;
-}
+
 function refreshCommentsAjax() {
     var xhr = createXHR();
     if (!xhr) {
