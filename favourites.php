@@ -102,7 +102,6 @@ if ($user) {
 
 $videos = array();
 if ($fav_list) {
-    $db = new PDO('sqlite:retroshow.sqlite');
     $in = str_repeat('?,', count($fav_list)-1) . '?';
     $stmt = $db->prepare("SELECT id, public_id, user, title, description, file, tags, time, views, private, preview 
                       FROM videos 

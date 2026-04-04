@@ -427,6 +427,46 @@ try {
             if (count($recommended) >= 5) break;
         }
     }
+
+// Перемешивание, чтобы авторы не шли подряд
+if (count($recommended) > 1) {
+    $shuffled = [];
+    $used = array_fill(0, count($recommended), false);
+    $last_author = null;
+
+    for ($i = 0; $i < count($recommended); $i++) {
+        $candidates_idx = [];
+
+        // ищем кандидатов, которые не тот же автор
+        foreach ($recommended as $idx => $row) {
+            if ($used[$idx]) continue;
+            $author = isset($row['user']) ? (string)$row['user'] : '';
+            if ($author !== $last_author) {
+                $candidates_idx[] = $idx;
+            }
+        }
+
+        // если не нашли — берём любой оставшийся
+        if (empty($candidates_idx)) {
+            foreach ($recommended as $idx => $row) {
+                if (!$used[$idx]) {
+                    $candidates_idx[] = $idx;
+                }
+            }
+        }
+
+        // случайный выбор
+        $pick = $candidates_idx[array_rand($candidates_idx)];
+        $used[$pick] = true;
+
+        $row = $recommended[$pick];
+        $shuffled[] = $row;
+        $last_author = isset($row['user']) ? (string)$row['user'] : '';
+    }
+
+    $recommended = $shuffled;
+}
+
 } catch (Exception $e) {
     try {
         $rec_stmt = $db->prepare("SELECT * FROM videos WHERE id != ? AND private = 0 ORDER BY id DESC LIMIT 5");

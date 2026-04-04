@@ -143,6 +143,27 @@ try {
     die("Ошибка подключения к базе данных: " . $e->getMessage());
 }
 
+function sqlite_configure(PDO $db): void {
+    try {
+        $db->exec('PRAGMA busy_timeout = 10000');
+        $db->exec('PRAGMA foreign_keys = ON');
+        $db->exec('PRAGMA temp_store = MEMORY');
+        $db->exec('PRAGMA cache_size = -64000');
+        try {
+            $db->exec('PRAGMA journal_mode = WAL');
+        } catch (Exception $e) {
+        }
+        $db->exec('PRAGMA synchronous = NORMAL');
+        try {
+            $db->exec('PRAGMA mmap_size = 67108864');
+        } catch (Exception $e) {
+        }
+    } catch (Exception $e) {
+    }
+}
+
+sqlite_configure($db);
+
 $db->exec("CREATE TABLE IF NOT EXISTS ip_bans (
     ip TEXT PRIMARY KEY,
     created_at INTEGER NOT NULL,
@@ -300,27 +321,43 @@ try { $db->exec("CREATE INDEX IF NOT EXISTS idx_video_views_viewed_at ON video_v
 try { $db->exec("CREATE INDEX IF NOT EXISTS idx_video_views_video_id ON video_views (video_id)"); } catch (Exception $e) {}
 
 function prune_views(PDO $db): void {
-    if (mt_rand(1, 100) !== 1) return;
+    try {
+        $row = $db->query("SELECT value FROM meta WHERE key = 'prune_views_at'")->fetchColumn();
+        $last = $row !== false && $row !== null ? (int)$row : 0;
+        if ($last > 0 && (time() - $last) < 3600) {
+            return;
+        }
+    } catch (Exception $e) {
+        return;
+    }
 
     try {
         $cutoff = time() - (90 * 86400);
-        $stOld = $db->prepare("DELETE FROM video_views WHERE viewed_at < ?");
+        $stOld = $db->prepare('DELETE FROM video_views WHERE viewed_at < ?');
         $stOld->execute([$cutoff]);
     } catch (Exception $e) {
     }
 
     try {
         $max_rows = 300000;
-        $cnt = (int)$db->query("SELECT COUNT(*) FROM video_views")->fetchColumn();
+        $batch = 20000;
+        $cnt = (int)$db->query('SELECT COUNT(*) FROM video_views')->fetchColumn();
         if ($cnt > $max_rows) {
-            $to_delete = $cnt - $max_rows;
-
-            $db->exec("DELETE FROM video_views WHERE id IN (
-                SELECT id FROM video_views
-                ORDER BY viewed_at ASC, id ASC
-                LIMIT " . intval($to_delete) . "
-            )");
+            $n = min($batch, $cnt - $max_rows);
+            if ($n > 0) {
+                $db->exec('DELETE FROM video_views WHERE id IN (
+                    SELECT id FROM video_views
+                    ORDER BY viewed_at ASC, id ASC
+                    LIMIT ' . intval($n) . '
+                )');
+            }
         }
+    } catch (Exception $e) {
+    }
+
+    try {
+        $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)')
+            ->execute(['prune_views_at', (string)time()]);
     } catch (Exception $e) {
     }
 }
