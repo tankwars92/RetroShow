@@ -321,7 +321,11 @@ if ($tags_mode === 'tags') {
                         $font_size = $latest_base_font_size;
                     }
                 ?>
-                    <?php if ($i > 0) echo ' : '; $i++; ?>
+                    <?php if ($i > 0) echo ' : '; $i++; 
+                    $display_tag = (mb_strlen($tag) > 20) 
+                        ? mb_substr($tag, 0, 20)
+                        : $tag;
+                    ?>
                     <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>">
                         <?=htmlspecialchars($tag)?>
                     </a>
@@ -344,7 +348,11 @@ if ($tags_mode === 'tags') {
                         $font_size = $popular_base_font_size;
                     }
                     ?>
-                    <?php if ($i > 0) echo ' : '; $i++; ?>
+                    <?php if ($i > 0) echo ' : '; $i++; 
+                    $display_tag = (mb_strlen($tag) > 20) 
+                        ? mb_substr($tag, 0, 20)
+                        : $tag;
+                    ?>
                     <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
                 <?php endforeach; ?>
                     :
@@ -784,7 +792,7 @@ echo time_ago($ago_ts);
         $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
         $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
         $latest_base_font_size = 12;
-        $latest_max_font_size = 28;
+        $latest_max_font_size = 18;
 
         $popular_top = [];
         $popular_min_count = 1;
@@ -856,7 +864,7 @@ echo time_ago($ago_ts);
               <?php if (!empty($latest_top)): ?>
                   <?php
                   $latest_base_font_size = 12;
-                  $latest_max_font_size = 28;
+                  $latest_max_font_size = 18;
                   $latest_min_count = !empty($latest_top) ? min($latest_top) : 1;
                   $latest_max_count = !empty($latest_top) ? max($latest_top) : 1;
 
@@ -869,9 +877,13 @@ echo time_ago($ago_ts);
                           $font_size = $latest_base_font_size;
                       }
                   ?>
-                      <?php if ($i > 0) echo ' : '; $i++; ?>
+                      <?php if ($i > 0) echo ' : '; $i++; 
+                      $display_tag = (mb_strlen($tag) > 20) 
+                          ? mb_substr($tag, 0, 20)
+                          : $tag;
+                      ?>
                       <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>">
-                          <?=htmlspecialchars($tag)?>
+                          <?=htmlspecialchars($display_tag)?>
                       </a>
                   <?php endforeach; ?>
               <?php else: ?>

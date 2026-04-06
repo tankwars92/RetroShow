@@ -219,7 +219,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 
     $profile = [
         'username' => htmlspecialchars($user),
-        'url' => 'http://retroshow.hoho.ws/channel.php?user='.urlencode($user),
+        'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/channel.php?user='.urlencode($user),
         'videos_watched' => $videos_watched,
         'profile_viewed' => $profile_viewed,
     ];
