@@ -326,19 +326,6 @@ echo '</div>';
   white-space:normal;
 }
 </style>
-<!--[if lte IE 6]>
-<style type="text/css">
-.profileBox, .profileBoxHead, .profileBoxContent { zoom:1; }
-.profileBox {
-  overflow:visible !important;
-  border:1px solid #999999 !important;
-}
-.profileBoxContent {
-  width:auto !important;
-  overflow:visible !important;
-  height:auto !important;
-}
-</style>
 <![endif]-->
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -1175,9 +1162,33 @@ function performOnLoadFunctions() {
     }
 }
 </script>
+<!--[if lt IE 6]>
+<style type="text/css">
+#ratingMessage { display:none; }
+</style>
+<![endif]-->
+<!--[if lte IE 6]>
+<style type="text/css">
+html, body {
+	margin: 10px !important;
+	padding: 0 !important;
+}
+.showingTable {
+	padding: 8px 6px !important;
+	margin: 0 !important;
+}
+.showingTable td {
+	padding-top: 4px !important;
+	padding-bottom: 4px !important;
+    padding-left: 6px !important;
+	line-height: 16px !important;
+	vertical-align: middle !important;
+}
+</style>
+<![endif]-->
 </head>
 <body onload="performOnLoadFunctions();">
-<table width="800" cellpadding="0" cellspacing="0" border="0" align="center">
+<table width="800" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-top:0; border-collapse:collapse;">
 <tr><td bgcolor="#FFFFFF" style="padding-bottom: 25px;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
@@ -1674,8 +1685,8 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 .codeArea { background-color: #F5F5F5; border: 1px solid #CCCCCC; padding: 10px; margin: 10px 0px; font-family: monospace; font-size: 11px; color: #333; }
 </style>
 </head>
-<body onload="performOnLoadFunctions();">
-<table width="800" cellpadding="0" cellspacing="0" border="0" align="center">
+<body onload="performOnLoadFunctions();" style="margin:0; padding:0;">
+<table width="800" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-top:0; border-collapse:collapse;">
 <tr><td bgcolor="#FFFFFF" style="padding-bottom: 25px;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">

@@ -7,7 +7,6 @@ function get_video_duration($file, $id, $public_id = '') {
     return get_video_duration_fast($file, $id, $public_id);
 }
 
-/** Группы по релевантности (ключ по убыванию); внутри группы — полный shuffle при каждом запросе. */
 function related_shuffle_within_buckets(array $rows, callable $bucketKey, bool $desc = true): array {
     if ($rows === []) {
         return [];
@@ -992,6 +991,10 @@ function performOnLoadFunctions() {
 <![endif]-->
 <!--[if lte IE 6]>
 <style type="text/css">
+html, body {
+	margin: 10px !important;
+	padding: 0 !important;
+}
 .showingTable {
 	padding: 8px 6px !important;
 	margin: 0 !important;

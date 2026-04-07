@@ -64,10 +64,8 @@ function showHeader($title = "RetroShow") {
 .pagingDiv { text-align: center; margin: 15px 0px; font-size: 12px; }
 .pagerCurrent { background-color: #CCCCCC; border: 1px solid #999999; padding: 3px 8px; margin: 0px 2px; font-weight: bold; }
 .pagerNotCurrent { background-color: #FFFFFF; border: 1px solid #CCCCCC; padding: 3px 8px; margin: 0px 2px; cursor: pointer; text-decoration: none; color: #000000; }
-/* Footer Elements */
 #footerDiv {
 	clear: both;
-	/* width: 875px; */
 	margin: 12px auto 24px auto;
 	padding-bottom: 12px;
 	font-size: 11px;
@@ -86,7 +84,6 @@ function showHeader($title = "RetroShow") {
 	height: 60px;
 	width: 170px;
 	margin-right: 20px;
-	/* border-right: 1px solid #CCC; */
 }
 .footLabel {
 	font-weight: bold;
@@ -112,6 +109,30 @@ function showHeader($title = "RetroShow") {
 	color: #333;
 }
 </style>
+<!--[if lt IE 6]>
+<style type="text/css">
+#ratingMessage { display:none; }
+</style>
+<![endif]-->
+<!--[if lte IE 6]>
+<style type="text/css">
+html, body {
+	margin: 10px !important;
+	padding: 0 !important;
+}
+.showingTable {
+	padding: 8px 6px !important;
+	margin: 0 !important;
+}
+.showingTable td {
+	padding-top: 4px !important;
+	padding-bottom: 4px !important;
+    padding-left: 6px !important;
+	line-height: 16px !important;
+	vertical-align: middle !important;
+}
+</style>
+<![endif]-->
 </head>
 
 
