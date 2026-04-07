@@ -1,48 +1,123 @@
 <?php
-declare(strict_types=1);
+include "init.php";
+include_once "template.php";
 
-require_once __DIR__ . '/includes/init.php';
-
-$me = current_user();
-if ($me === null) {
-    header('Location: login.php', true, 302);
+if (!isset($_SESSION['user'])) {
+    header('Location: login.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: settings.php', true, 302);
-    exit;
+$user = $_SESSION['user'];
+$error = '';
+$success = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $password = $_POST['password'] ?? '';
+    $stmt = $db->prepare('SELECT pass FROM users WHERE login = ?');
+    $stmt->execute([$user]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || $password !== $row['pass']) {
+        $error = 'Неверный пароль!';
+    } else {
+        $stmt_videos = $db->prepare('SELECT id, public_id, file, preview FROM videos WHERE user = ?');
+        $stmt_videos->execute([$user]);
+        $video_rows = [];
+        while ($v = $stmt_videos->fetch(PDO::FETCH_ASSOC)) {
+            $video_rows[] = $v;
+        }
+		
+        $db->prepare('DELETE FROM users WHERE login = ?')->execute([$user]);
+        $db->prepare('DELETE FROM video_views WHERE user = ?')->execute([$user]);
+        $db->prepare('DELETE FROM videos WHERE user = ?')->execute([$user]);
+		
+        try { $db->prepare('DELETE FROM user_favourites WHERE user = ?')->execute([$user]); } catch (Exception $e) {}
+        try { $db->prepare('DELETE FROM user_friends WHERE user = ? OR friend = ?')->execute([$user, $user]); } catch (Exception $e) {}
+		
+        $messages_file = __DIR__ . '/messages/' . urlencode($user) . '.txt';
+        if (file_exists($messages_file)) unlink($messages_file);
+		
+        $playlists_file = __DIR__ . '/playlists/' . urlencode($user) . '.txt';
+        if (file_exists($playlists_file)) unlink($playlists_file);
+		
+        try { $db->prepare('DELETE FROM profile_comments WHERE profile_user = ? OR user = ?')->execute([$user, $user]); } catch (Exception $e) {}
+        try { $db->prepare('DELETE FROM mail_inbox WHERE to_user = ? OR from_user = ?')->execute([$user, $user]); } catch (Exception $e) {}
+		
+        foreach ($video_rows as $vr) {
+            $vid = (int)($vr['id'] ?? 0);
+            $pub = (string)($vr['public_id'] ?? '');
+            $base = video_uploads_file_base($vid, $pub);
+            $file = (string)($vr['file'] ?? '');
+            $preview = (string)($vr['preview'] ?? '');
+            $paths = [
+                __DIR__ . '/uploads/' . $base . '_duration.txt',
+                __DIR__ . '/uploads/' . $vid . '_duration.txt',
+            ];
+            if ($file !== '') {
+                $paths[] = (strpos($file, '/') === 0 || preg_match('~^[A-Za-z]:~', $file)) ? $file : (__DIR__ . '/' . ltrim($file, '/'));
+            }
+            if ($preview !== '') {
+                $paths[] = (strpos($preview, '/') === 0 || preg_match('~^[A-Za-z]:~', $preview)) ? $preview : (__DIR__ . '/' . ltrim($preview, '/'));
+            }
+            $paths[] = __DIR__ . '/uploads/' . $base . '.mp4';
+            $paths[] = __DIR__ . '/uploads/' . $vid . '.mp4';
+            $paths[] = __DIR__ . '/uploads/' . $base . '_preview.jpg';
+            $paths[] = __DIR__ . '/uploads/' . $vid . '_preview.jpg';
+            foreach (array_unique($paths) as $p) {
+                if ($p !== '' && file_exists($p)) {
+                    unlink($p);
+                }
+            }
+        }
+        session_destroy();
+        $success = true;
+        header('Location: index.php');
+        exit;
+    }
 }
 
-$pdo = app_pdo();
-$id = (int) $me['id'];
-
-user_clear_avatar_files($id);
-
-$deletedUsername = 'deleted_' . $id;
-$deletedDisplay = 'Deleted Account';
-$deletedEmail = 'deleted_' . $id . '@invalid.local';
-$newHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
-
-$st = $pdo->prepare(
-    'UPDATE users
-     SET username = ?,
-         display_name = ?,
-         email = ?,
-         password_hash = ?,
-         time_zone = NULL,
-         bio = NULL,
-         location = NULL,
-         web = NULL,
-         avatar_path = NULL,
-         current_status = NULL,
-         status_updated_at = NULL,
-         is_deleted = 1
-     WHERE id = ?'
-);
-$st->execute([$deletedUsername, $deletedDisplay, $deletedEmail, $newHash, $id]);
-
-logout_user();
-header('Location: index.php', true, 302);
-exit;
-
+showHeader('Удаление аккаунта');
+?>
+<center>
+<div style="width:600px; text-align:left;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-family:Tahoma,Arial,sans-serif; font-size:13px; border-collapse:collapse;">
+    <tr>
+      <td colspan="2">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Удаление аккаунта</td>
+            <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle"><a href="account.php" style="color:#0033cc; text-decoration:underline;">Назад к настройкам</a></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <?php if ($error): ?>
+          <div class="errorBox" style="margin-bottom:8px;"> <?=htmlspecialchars($error)?> </div>
+        <?php endif; ?>
+        <?php if ($success): ?>
+          <div class="confirmBox" style="margin-bottom:8px;">Аккаунт успешно удалён!</div>
+        <?php endif; ?>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+  <tr>
+    <td height="1" bgcolor="#CCCCCC"></td>
+  </tr>
+</table></td>
+    </tr>
+  </table>
+  <div style="color:#c00; font-size:13px; margin-bottom:10px; margin-top:6px;">
+    Удаление аккаунта приведёт к безвозвратному удалению всех ваших данных (видео, комментарии, избранное и т.д.) с RetroShow. Это действие необратимо.
+  </div>
+  <form method="post" action="delete_account.php">
+    <label for="password" style="font-size:13px;">Введите ваш пароль:</label>
+    <input type="password" name="password" id="password" style="font-size:13px; border:1px solid #ccc; padding:2px 6px; margin-left:8px;" maxlength="32">
+    <br><br>
+    <input type="submit" value="Удалить аккаунт" style="font-size:13px; width:130px;">
+  </form>
+</div>
+</center>
+<?php
+showFooter(); 
