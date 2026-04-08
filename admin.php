@@ -125,12 +125,47 @@ function admin_collect_log_rows($limit = 200) {
     return array_reverse($rows);
 }
 
+function admin_resolve_channel_login(PDO $db, $rawLogin) {
+    $raw = trim((string)$rawLogin);
+    if ($raw === '') {
+        return '';
+    }
+    $variants = [$raw];
+    $variants[] = str_replace('+', ' ', $raw);
+    $variants[] = urldecode($raw);
+    $variants[] = rawurldecode($raw);
+    $variants = array_values(array_unique($variants));
+
+    foreach ($variants as $cand) {
+        try {
+            $st = $db->prepare('SELECT login FROM users WHERE login = ? LIMIT 1');
+            $st->execute([$cand]);
+            $found = $st->fetchColumn();
+            if (is_string($found) && $found !== '') {
+                return $found;
+            }
+        } catch (Exception $e) {}
+    }
+    foreach ($variants as $cand) {
+        try {
+            $st = $db->prepare('SELECT user FROM videos WHERE user = ? LIMIT 1');
+            $st->execute([$cand]);
+            $found = $st->fetchColumn();
+            if (is_string($found) && $found !== '') {
+                return $found;
+            }
+        } catch (Exception $e) {}
+    }
+    return $raw;
+}
+
 function admin_delete_channel(PDO $db, $login) {
     try { $db->prepare('DELETE FROM users WHERE login = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM user_favourites WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM user_friends WHERE user = ? OR friend = ?')->execute([$login, $login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM profile_comments WHERE profile_user = ? OR user = ?')->execute([$login, $login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM comments WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM ratings WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM mail_inbox WHERE to_user = ? OR from_user = ?')->execute([$login, $login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM video_views WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
 }
@@ -143,16 +178,19 @@ function admin_human_log_line(array $row) {
     $admin_user = (string)($row['admin_user'] ?? '');
     if ($event === 'upload_video') {
         $u = (string)($row['upload_user'] ?? $user);
+        $u = str_replace(' ', '+', $u);
         $title = (string)($row['title'] ?? '');
         return 'Загрузка видео: аккаунт "' . $u . '", видео "' . $title . '", IP ' . $ip;
     }
     if ($event === 'comment_video') {
         $author = (string)($row['author'] ?? $user);
+        $author = str_replace(' ', '+', $author);
         $title = (string)($row['video_title'] ?? '');
         return 'Комментарий к видео: аккаунт "' . $author . '", видео "' . $title . '", IP ' . $ip;
     }
     if ($event === 'comment_profile') {
         $author = (string)($row['author'] ?? $user);
+        $author = str_replace(' ', '+', $author);
         $target = (string)($row['profile_user'] ?? '');
         return 'Комментарий на канал: аккаунт "' . $author . '" на канал "' . $target . '", IP ' . $ip;
     }
@@ -196,6 +234,7 @@ function admin_human_log_line(array $row) {
         $from_user_real = trim((string)($row['from_user_real'] ?? ''));
         $from_user = trim((string)($row['from_user'] ?? ''));
         $who = $from_user_real !== '' ? $from_user_real : ($from_user !== '' ? $from_user : 'Guest');
+        $who = str_replace(' ', '+', $who);
         $subject = trim((string)($row['subject'] ?? ''));
         $ip_address = (string)($row['ip'] ?? '');
         $parts = [];
@@ -284,17 +323,19 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_
 }
 
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_channel') {
-    $login = trim((string)($_POST['field_channel'] ?? ''));
+    $login_raw = trim((string)($_POST['field_channel'] ?? ''));
+    $login = admin_resolve_channel_login($db, $login_raw);
     if ($login === '') {
         $error = 'Укажите логин канала.';
     } else {
         admin_delete_channel($db, $login);
-        log_event('admin_delete_channel', ['target_channel' => $login, 'admin_user' => $user]);
+        log_event('admin_delete_channel', ['target_channel' => $login, 'target_channel_input' => $login_raw, 'admin_user' => $user]);
         $message = 'Канал удалён.';
     }
 }
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_by_channel') {
-    $login = trim((string)($_POST['field_channel'] ?? ''));
+    $login_raw = trim((string)($_POST['field_channel'] ?? ''));
+    $login = admin_resolve_channel_login($db, $login_raw);
     if ($login === '') {
         $error = 'Укажите логин канала.';
     } else {
@@ -308,7 +349,7 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_
                 $deleted++;
             }
             $message = 'Удалено видео канала: ' . (int)$deleted . '.';
-            log_event('admin_delete_videos_by_channel', ['target_channel' => $login, 'deleted' => (int)$deleted, 'admin_user' => $user]);
+            log_event('admin_delete_videos_by_channel', ['target_channel' => $login, 'target_channel_input' => $login_raw, 'deleted' => (int)$deleted, 'admin_user' => $user]);
         } catch (Exception $e) {
             $error = 'Ошибка удаления видео канала.';
         }

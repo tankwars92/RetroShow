@@ -385,7 +385,7 @@ if ($user && $video['user'] && $user !== $video['user']) {
 $is_private = !empty($video['private']);
 $recommended = [];
 
-$RELATED_RECOMMEND_MAX = 60;
+$RELATED_RECOMMEND_MAX = 20;
 $related_tag_match_total = 0;
 
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
@@ -1797,7 +1797,7 @@ if (window.attachEvent) {
         <?php if ($rec_shown > 0): ?>
         <table width="100%" cellpadding="2" cellspacing="0" border="0" class="showingTable" >
           <tr>
-            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;">Показано 1-<?= (int)$rec_shown ?> из 60</td>
+            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;">Показано 1-<?= (int)$rec_shown ?> из 20</td>
             <td class="smallText" align="right" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;">Ещё видео</a></td>
           </tr>
         </table>
@@ -1839,7 +1839,7 @@ if (window.attachEvent) {
         <?php endif; ?>
         <table width="100%" cellpadding="2" cellspacing="0" border="0" class="showingTable">
           <tr>
-            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;">Показано 1-<?= (int)$rec_shown ?> из 60</td>
+            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;">Показано 1-<?= (int)$rec_shown ?> из 20</td>
             <td class="smallText" align="right" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;">Ещё видео</a></td>
           </tr>
         </table>
