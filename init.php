@@ -225,6 +225,38 @@ $db->exec("CREATE TABLE IF NOT EXISTS users (
     last_login INTEGER
 )");
 
+function force_logout_if_user_missing(PDO $db): void {
+    if (empty($_SESSION['user'])) {
+        return;
+    }
+    $login = (string)$_SESSION['user'];
+    if ($login === '') {
+        return;
+    }
+    $exists = false;
+    try {
+        $st = $db->prepare('SELECT 1 FROM users WHERE login = ? LIMIT 1');
+        $st->execute([$login]);
+        $exists = (bool)$st->fetchColumn();
+    } catch (Exception $e) {
+        return;
+    }
+    if ($exists) {
+        return;
+    }
+
+    $_SESSION = [];
+    if (session_id() !== '') {
+        @session_destroy();
+    }
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params['path'] ?? '/', $params['domain'] ?? '', (bool)($params['secure'] ?? false), (bool)($params['httponly'] ?? true));
+    }
+}
+
+force_logout_if_user_missing($db);
+
 
 $db->exec("CREATE TABLE IF NOT EXISTS videos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

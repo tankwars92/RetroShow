@@ -1165,13 +1165,11 @@ toggleVisibility('myAccountDropdown',0);
     <div style="text-align: center; margin-bottom: 8px;">
         <div id="noJsFlashFallback" style="border: 1px solid gray; width: 425px; height: 350px; background: #fff; text-align: center;">
             <div style="padding: 20px; font-size:14px; font-weight: bold;">
-            Кажется, у вас либо отключён JavaScript, либо установлена ​​старая версия Flash Player. <a href="http://www.macromedia.com/go/getflashplayer/">Нажмите здесь</a>, чтобы загрузить последнюю версию Flash Player.
+            Кажется, у вас либо отключён JavaScript, либо установлена ​​старая версия Flash Player. <a href="http://www.oldversion.com/software/macromedia-flash-player/macromedia-flash-player-10-0-32-18/">Нажмите здесь</a>, чтобы загрузить последнюю версию Flash Player.
             </div>
         </div>
 
-        <div id="flashPlayerBox" style="display:none; font-size:14px; font-weight: bold;">
-            <embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">
-        </div>
+        <div id="flashPlayerBox" style="display:none; font-size:14px; font-weight: bold;"></div>
 
         <div class="player" id="playerBox">
             <div class="mainContainer">
@@ -1266,22 +1264,41 @@ toggleVisibility('myAccountDropdown',0);
         var flashOk = hasFlash();
         var flashBox = document.getElementById('flashPlayerBox');
         var html5Box = document.getElementById('playerBox');
+        var html5Video = document.getElementById('video');
         var fallback = document.getElementById('noJsFlashFallback');
+        var flashEmbedHtml = '<embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '', ENT_QUOTES, 'UTF-8')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">';
+        function setFlashEnabled(enabled) {
+            if (!flashBox) return;
+            if (enabled) {
+                if (flashBox.innerHTML === '') flashBox.innerHTML = flashEmbedHtml;
+                flashBox.style.display = 'block';
+            } else {
+                flashBox.style.display = 'none';
+                flashBox.innerHTML = '';
+            }
+        }
+        function setHtml5Enabled(enabled) {
+            if (!html5Box) return;
+            html5Box.style.display = enabled ? '' : 'none';
+            if (!enabled && html5Video && typeof html5Video.pause === 'function') {
+                try { html5Video.pause(); } catch (e) {}
+            }
+        }
         if (fallback) fallback.style.display = 'none';
         
         if (userPlayerType === 'flash') {
-            if (html5Box) html5Box.style.display = 'none';
-            if (flashBox) flashBox.style.display = 'block';
+            setHtml5Enabled(false);
+            setFlashEnabled(true);
         } else if (userPlayerType === 'html5') {
-            if (html5Box) html5Box.style.display = '';
-            if (flashBox) flashBox.style.display = 'none';
+            setHtml5Enabled(true);
+            setFlashEnabled(false);
         } else {
             if (flashOk) {
-                if (html5Box) html5Box.style.display = 'none';
-                if (flashBox) flashBox.style.display = 'block';
+                setHtml5Enabled(false);
+                setFlashEnabled(true);
             } else {
-                if (html5Box) html5Box.style.display = '';
-                if (flashBox) flashBox.style.display = 'none';
+                setHtml5Enabled(true);
+                setFlashEnabled(false);
             }
         }
     })();
