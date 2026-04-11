@@ -63,13 +63,13 @@ function channel_render_avg_stars_html($avg, $count) {
     ?>
     <div style="margin:2px 0 2px 0;">
       <nobr>
-        <img src="img/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
-        <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
       </nobr>
-      <div class="rating"><?=intval($count)?> оценок</div>
+      <span style="color:#666666; font-size:smaller;">(<?=intval($count)?> оценок)</span>
     </div>
     <?php
     return ob_get_clean();
@@ -868,67 +868,87 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
 				</script>
                 <?php foreach ($videos as $row): ?>
                   <?php
+                  $vid_link = htmlspecialchars($row['public_id'] ?? $row['id']);
                   $desc = htmlspecialchars($row['description']);
                   $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
                   $desc_id = 'desc_chan_' . $row['id'];
                   $desc_full = nl2br($desc);
+                  $comments_count = 0;
+                  try {
+                      $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+                      $stmtCc->execute([$row['id']]);
+                      $comments_count = (int)$stmtCc->fetchColumn();
+                  } catch (Exception $e) {
+                      $comments_count = 0;
+                  }
+                  list($rc, $ra) = channel_get_rating_stats($db, $row['id']);
                   ?>
                   <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                     <table width="565" cellpadding="0" cellspacing="0" border="0">
                       <tr valign="top">
-                        <td width="120"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
-                        <td width="100%" style="padding-left:8px;">
-                          <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?=htmlspecialchars($row['public_id'] ?? $row['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['title'])?></a></div>
-                          <div style="font-size:12px; color:#222; margin:2px 0 2px 0;"><b><?=get_video_duration($row['file'], $row['id'], $row['public_id'] ?? '')?></b>
+                        <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a></td>
+                        <td width="445" valign="top" style="padding-left:8px;">
+                          <?php if ($is_owner): ?>
+                          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;"><tr valign="top">
+                          <td valign="top">
+                          <?php endif; ?>
+                          <div class="moduleEntryTitle">
+                            <a href="video.php?id=<?=$vid_link?>"><?=htmlspecialchars($row['title'])?></a>
+                          </div>
                           <?php if (!empty($row['private']) && $is_owner): ?>
-                            &nbsp;<font color="#FF0000"><b><i>(ПРИВАТНОЕ ВИДЕО!)</i></b></font>
-                          <?php endif; ?></div>
-                          <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
+                          <div style="font-size:12px; color:#cc0000; font-weight:bold; margin:2px 0 4px 0;"><i>(ПРИВАТНОЕ ВИДЕО!)</i></div>
+                          <?php endif; ?>
+                          <div class="moduleEntryDescription">
+                          <span id="<?= $desc_id ?>-short">
                             <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
                           </span>
-                          <span id="<?= $desc_id ?>-full" style="display:none; font-size:12px; color:#222; margin:2px 0 2px 0;">
+                          <span id="<?= $desc_id ?>-full" style="display:none;">
                             <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
                           </span>
                           <?php if (!empty($row['tags'])): ?>
                           <div class="vfacets">
-                              <div class="vtagLabel">Теги:</div>
-                              <div class="vtagValue">
-                                  <span id="vidTagsBegin-<?=$row['id']?>">
-                                      <?php 
+                              <div class="moduleEntryTags">Теги //
+                                <span class="vidTagsBegin-<?=$row['id']?>">
+                                      <?php
                                       $tags = preg_split('/\s+/', trim($row['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
                                       $visible_tags = array_slice($tags, 0, 5);
                                       $hidden_tags = array_slice($tags, 5);
-                                      
-                                      foreach ($visible_tags as $tag): 
+
+                                      foreach ($visible_tags as $tag):
                                         $tag = trim($tag);
                                         if (!empty($tag)):
                                       ?>
-                                        <a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;
-                                      <?php 
+                                        <a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> :
+                                      <?php
                                         endif;
-                                      endforeach; 
-                                      
+                                      endforeach;
+
                                       if (!empty($hidden_tags)):
                                       ?>
                                       <span id="vidTagsRemain-<?=$row['id']?>" style="display: none;">
-                                        <?php foreach ($hidden_tags as $tag): 
+                                        <?php foreach ($hidden_tags as $tag):
                                           $tag = trim($tag);
                                           if (!empty($tag)):
-                                        ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;<?php 
+                                        ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> : <?php
                                           endif;
-                                        endforeach; 
+                                        endforeach;
                                         ?></span>&nbsp;<span id="vidTagsMore-<?=$row['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$row['id']?>'); hideInline('vidTagsMore-<?=$row['id']?>'); showInline('vidTagsLess-<?=$row['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$row['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$row['id']?>'); hideInline('vidTagsLess-<?=$row['id']?>'); showInline('vidTagsMore-<?=$row['id']?>'); return false;">меньше</a>)</span>
                                       <?php endif; ?>
                                   </span>
                               </div>
                           </div>
                           <?php endif; ?>
-                          <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Добавлено:</span> <?= time_ago(strtotime($row['time'])) ?></div>
-                          <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор:</span> <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($row['user']) ?></b></a></div>
-                          <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($row['views']) ?></div>
-                          <?php list($rc,$ra)=channel_get_rating_stats($db,$row['id']); echo channel_render_avg_stars_html($ra,$rc); ?>
+                          <div class="moduleEntryDetails">
+                            Добавлено: <?= time_ago(strtotime($row['time'])) ?> от <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($row['user']) ?></a>
+                          </div>
+                          <div class="moduleEntryDetails">
+                            Время: <?=get_video_duration_fast($row['file'], $row['id'], $row['public_id'] ?? '')?> | Просмотров: <?= intval($row['views']) ?> | Комментариев: <?= intval($comments_count) ?>
+                          </div>
+                          <?= channel_render_avg_stars_html($ra, $rc) ?>
+                          </div>
                           <?php if ($is_owner): ?>
-                          <td style="padding-right:0px;padding-top:0px;">
+                          </td>
+                          <td valign="top" width="133" style="padding-left:4px;">
     <?php if (is_valid_video_public_id($row['public_id'] ?? '')): ?>
     <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='my_videos_edit.php?id=<?=urlencode((string)$row['public_id'])?>';">
       Редактировать видео</button>
@@ -937,7 +957,8 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
     <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='channel.php?user=<?=urlencode($user)?>&tab=videos&set_avatar=<?=intval($row['id'])?><?php if ($page > 1): ?>&page=<?=$page?><?php endif; ?>';">
       Сделать аватаром</button>
     <?php endif; ?>
-  </td>
+                          </td>
+                          </tr></table>
                           <?php endif; ?>
                         </td>
                       </tr>

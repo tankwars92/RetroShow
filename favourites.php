@@ -84,6 +84,40 @@ function time_ago($time) {
 function get_video_duration($file, $id, $public_id = '') {
     return get_video_duration_fast($file, $id, $public_id);
 }
+
+function favourites_rating_stats($db, $video_id) {
+    $stmt = $db->query("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM ratings WHERE video_id = ".intval($video_id));
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $count = intval($row['cnt'] ?? 0);
+    $avg = $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : 0.0;
+    return [$count, $avg];
+}
+
+function favourites_render_avg_stars_html($avg, $count) {
+    $remaining = floatval($avg);
+    $parts = [];
+    for ($i=0; $i<5; $i++) {
+        if ($remaining >= 0.75) $parts[] = 'full';
+        elseif ($remaining >= 0.25) $parts[] = 'half';
+        else $parts[] = 'empty';
+        $remaining = max(0.0, $remaining - 1.0);
+    }
+    ob_start();
+    ?>
+    <div style="margin:2px 0 2px 0;">
+      <nobr>
+        <img src="img/star_smn<?=($parts[0]==='full'?'':($parts[0]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[1]==='full'?'':($parts[1]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[2]==='full'?'':($parts[2]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+        <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
+      </nobr>
+      <span style="color:#666666; font-size:smaller;">(<?=intval($count)?> оценок)</span>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
 $user = isset($_GET['user']) ? $_GET['user'] : (isset($_SESSION['user']) ? $_SESSION['user'] : null);
 
 if (isset($_SESSION['user']) && $user === $_SESSION['user'] && isset($_POST['remove_fav']) && isset($_POST['video_id'])) {
@@ -196,65 +230,83 @@ echo '</div>';
                 <?=($is_own ? 'У вас нет избранных видео.' : 'У пользователя '.$user_disp.' нет избранных видео.')?>
               </div>
             <?php else: ?>
-              <?php foreach ($paged_fav_list as $vid): if (empty($videos[$vid])) continue; $video = $videos[$vid]; 
+              <?php foreach ($paged_fav_list as $vid): if (empty($videos[$vid])) continue; $video = $videos[$vid];
+                    $vid_link = htmlspecialchars($video['public_id'] ?? $video['id']);
                     $desc = htmlspecialchars($video['description']);
                     $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
                     $desc_id = 'desc_' . $video['id'];
                     $desc_full = nl2br($desc);
+                    $comments_count = 0;
+                    try {
+                        $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
+                        $stmtCc->execute([$video['id']]);
+                        $comments_count = (int)$stmtCc->fetchColumn();
+                    } catch (Exception $e) {
+                        $comments_count = 0;
+                    }
+                    list($rc, $ra) = favourites_rating_stats($db, $video['id']);
               ?>
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
-                      <td width="120"><a href="video.php?id=<?=htmlspecialchars($video['public_id'])?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleEntryThumb" width="120" height="90" style="border:1px solid #888;"></a></td>
+                      <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a></td>
                       <td width="100%" style="padding-left:8px;">
-                        <div style="font-size:15px; font-weight:bold;"><a href="video.php?id=<?= htmlspecialchars($video['public_id']) ?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['title'])?></a></div>
-                        <div style="font-size:12px; color:#222; font-weight:bold; margin:2px 0 2px 0;"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?></div>
-                        <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
+                        <div class="moduleEntryTitle">
+                          <a href="video.php?id=<?=$vid_link?>"><?=htmlspecialchars($video['title'])?></a>
+                        </div>
+                        <div class="moduleEntryDescription">
+                        <span id="<?= $desc_id ?>-short">
                           <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
                         </span>
-                        <span id="<?= $desc_id ?>-full" style="display:none; font-size:12px; color:#222; margin:2px 0 2px 0;">
+                        <span id="<?= $desc_id ?>-full" style="display:none;">
                           <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
                         </span>
                         <?php if (!empty($video['tags'])): ?>
                         <div class="vfacets">
-                            <div class="vtagLabel">Теги:</div>
-                            <div class="vtagValue">
-                                <span id="vidTagsBegin-<?=$video['id']?>">
-                                    <?php 
+                            <div class="moduleEntryTags">Теги //
+                              <span class="vidTagsBegin-<?=$video['id']?>">
+                                    <?php
                                     $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
                                     $visible_tags = array_slice($tags, 0, 5);
                                     $hidden_tags = array_slice($tags, 5);
-                                    
-                                    foreach ($visible_tags as $tag): 
+
+                                    foreach ($visible_tags as $tag):
                                       $tag = trim($tag);
                                       if (!empty($tag)):
                                     ?>
-                                      <a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;
-                                    <?php 
+                                      <a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> :
+                                    <?php
                                       endif;
-                                    endforeach; 
-                                    
+                                    endforeach;
+
                                     if (!empty($hidden_tags)):
                                     ?>
                                     <span id="vidTagsRemain-<?=$video['id']?>" style="display: none;">
-                                      <?php foreach ($hidden_tags as $tag): 
+                                      <?php foreach ($hidden_tags as $tag):
                                         $tag = trim($tag);
                                         if (!empty($tag)):
-                                      ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;<?php 
+                                      ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> : <?php
                                         endif;
-                                      endforeach; 
+                                      endforeach;
                                       ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;">меньше</a>)</span>
                                     <?php endif; ?>
                                 </span>
                             </div>
                         </div>
                         <?php endif; ?>
-                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Добавлено:</span> <?= time_ago(strtotime($video['time'])) ?></div>
-                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Автор:</span> <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><b><?= htmlspecialchars($video['user']) ?></b></a></div>
-                        <div style="font-size:11px; margin:2px 0 2px 0;"><span style="color:#888;">Просмотров:</span> <?= intval($video['views']) ?></div>
+                        <div class="moduleEntryDetails">
+                          Добавлено: <?= time_ago(strtotime($video['time'])) ?> от <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
+                        </div>
+                        <div class="moduleEntryDetails">
+                          Время: <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | Просмотров: <?= intval($video['views']) ?> | Комментариев: <?= intval($comments_count) ?>
+                        </div>
+                        <?= favourites_render_avg_stars_html($ra, $rc) ?>
                         <?php if ($is_own): ?>
-                        <form method="post" style="margin:0; display:inline;"><input type="hidden" name="remove_fav" value="1"><input type="hidden" name="video_id" value="<?=intval($video['id'])?>"><a href="#" onclick="this.parentNode.submit();return false;" style="color:#0033cc; text-decoration:underline; font-size:11px; margin:0; padding:0; cursor:pointer;">Удалить из избранного</a></form>
+                        <div class="moduleEntryDetails">
+                        <form method="post" style="margin:0; display:inline;"><input type="hidden" name="remove_fav" value="1"><input type="hidden" name="video_id" value="<?=intval($video['id'])?>"><a href="#" onclick="this.parentNode.submit();return false;" style="color:#0033cc; text-decoration:underline; cursor:pointer;">Удалить из избранного</a></form>
+                        </div>
                         <?php endif; ?>
+                        </div>
                       </td>
                     </tr>
                   </table>
