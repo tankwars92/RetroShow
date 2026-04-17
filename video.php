@@ -1130,7 +1130,11 @@ html, body {
 		
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
 	<tbody><tr valign="top">
-		<td width="130" rowspan="2" style="padding: 0px 5px 5px 5px;"><a href="index.php"><img src="img/logo_sm.gif" width="120" height="48" alt="RetroShow" border="0" style="vertical-align: middle; "></a></td>
+		<?php
+		$__vid_logo = (!empty($_SESSION['user']) && isset($db) && $db instanceof PDO) ? user_header_logo_src($db, (string)$_SESSION['user']) : 'img/logo_sm.gif';
+		$__vid_alt = ($__vid_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
+		?>
+		<td width="130" rowspan="2" style="padding: 0px 5px 5px 5px;"><a href="index.php"><img src="<?= htmlspecialchars($__vid_logo, ENT_QUOTES, 'UTF-8') ?>" width="120" height="48" alt="<?= htmlspecialchars($__vid_alt, ENT_QUOTES, 'UTF-8') ?>" border="0" style="vertical-align: middle; "></a></td>
 		<td valign="top">
 		
 		<table width="670" cellpadding="0" cellspacing="0" border="0">

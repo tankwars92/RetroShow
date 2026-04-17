@@ -14,7 +14,7 @@ $pw_error = '';
 $pw_success = false;
 
 try {
-    $stmt = $db->prepare('SELECT email, about_me, gender, birthday_mon, birthday_day, birthday_yr, country, name, last_n, relationship, website, profile_icon, profile_comm, profile_bull, player_type, home_block_type, hometown, city FROM users WHERE login = ?');
+    $stmt = $db->prepare('SELECT email, about_me, gender, birthday_mon, birthday_day, birthday_yr, country, name, last_n, relationship, website, profile_icon, profile_comm, profile_bull, player_type, home_block_type, header_logo, hometown, city FROM users WHERE login = ?');
     $stmt->execute([$user]);
     $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -47,11 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($home_block_type !== 'recent_viewed') {
         $home_block_type = 'recent_added';
     }
+    $header_logo = trim((string)($_POST['header_logo'] ?? 'retroshow'));
+    if ($header_logo !== 'youtube') {
+        $header_logo = 'retroshow';
+    }
     
     if (mb_strlen($about_me) > 500) $about_me = mb_substr($about_me, 0, 500);
     
-    $stmt = $db->prepare('UPDATE users SET email = ?, about_me = ?, gender = ?, birthday_mon = ?, birthday_day = ?, birthday_yr = ?, country = ?, name = ?, last_n = ?, relationship = ?, website = ?, profile_icon = ?, profile_comm = ?, profile_bull = ?, player_type = ?, home_block_type = ?, hometown = ?, city = ? WHERE login = ?');
-    if ($stmt->execute([$email, $about_me, $gender, $birthday_mon, $birthday_day, $birthday_yr, $country, $name, $last_n, $relationship, $website, $profile_icon, $profile_comm, $profile_bull, $player_type, $home_block_type, $hometown, $city, $user])) {
+    $stmt = $db->prepare('UPDATE users SET email = ?, about_me = ?, gender = ?, birthday_mon = ?, birthday_day = ?, birthday_yr = ?, country = ?, name = ?, last_n = ?, relationship = ?, website = ?, profile_icon = ?, profile_comm = ?, profile_bull = ?, player_type = ?, home_block_type = ?, header_logo = ?, hometown = ?, city = ? WHERE login = ?');
+    if ($stmt->execute([$email, $about_me, $gender, $birthday_mon, $birthday_day, $birthday_yr, $country, $name, $last_n, $relationship, $website, $profile_icon, $profile_comm, $profile_bull, $player_type, $home_block_type, $header_logo, $hometown, $city, $user])) {
         $success = true;
 		
         $user_data['email'] = $email;
@@ -70,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_data['profile_bull'] = $profile_bull;
         $user_data['player_type'] = $player_type;
         $user_data['home_block_type'] = $home_block_type;
+        $user_data['header_logo'] = $header_logo;
         $user_data['hometown'] = $hometown;
         $user_data['city'] = $city;
     } else {
@@ -584,6 +589,15 @@ showHeader('Настройки аккаунта');
     <label for="home_block_recent_added">Недавно добавленные</label><br>
     <input type="radio" name="home_block_type" value="recent_viewed" id="home_block_recent_viewed" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_viewed' ? 'checked' : '' ?>>
     <label for="home_block_recent_viewed">Недавно просмотренные</label><br>
+  </td>
+  </tr>
+  <tr>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Логотип:</b></td>
+  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+    <select name="header_logo" id="header_logo" style="font-size:13px;">
+      <option value="retroshow" <?= (($user_data['header_logo'] ?? 'retroshow') === 'retroshow') ? 'selected' : '' ?>>RetroShow</option>
+      <option value="youtube" <?= (($user_data['header_logo'] ?? 'retroshow') === 'youtube') ? 'selected' : '' ?>>YouTube</option>
+    </select>
   </td>
   </tr>
   <tr>

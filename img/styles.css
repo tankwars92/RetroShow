@@ -194,7 +194,7 @@ a.title:hover {font-family: Arial, Helvetica, sans-serif; color: #CCFFFF; font-s
 .moduleTitleBar {
 	width: 100%;
 	background-color: #CCC;
-	border-bottom: 1px dashed #999;
+	border-bottom: 1px dashed #999999;
 }
 
 .moduleFeatured {

@@ -250,7 +250,6 @@ function is_user_shadow_banned($username) {
     }
 }
 
-/** Убрать теневой бан при удалении/бане аккаунта (логин освобождается для новой регистрации). */
 function channel_moderation_remove_user($login) {
     global $db;
     $login = trim((string)$login);
@@ -269,6 +268,23 @@ function visible_video_sql_condition($videos_alias = 'videos', $user_col = 'user
     if ($va === '') $va = 'videos';
     if ($uc === '') $uc = 'user';
     return "NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = {$va}.{$uc} AND cm.shadow_banned = 1)";
+}
+
+function user_header_logo_src(PDO $db, $username) {
+    $u = trim((string)$username);
+    if ($u === '') {
+        return 'img/logo_sm.gif';
+    }
+    try {
+        $st = $db->prepare('SELECT header_logo FROM users WHERE login = ? LIMIT 1');
+        $st->execute([$u]);
+        $v = trim((string)$st->fetchColumn());
+        if ($v === 'youtube') {
+            return 'img/logo_sm_YT.gif';
+        }
+    } catch (Exception $e) {
+    }
+    return 'img/logo_sm.gif';
 }
 
 function force_logout_if_user_missing(PDO $db): void {
@@ -459,6 +475,7 @@ $missing_cols = [
     'profile_bull' => 'TEXT DEFAULT "1"',
     'player_type' => 'TEXT DEFAULT "auto"',
     'home_block_type' => 'TEXT DEFAULT "recent_added"',
+    'header_logo' => 'TEXT DEFAULT "retroshow"',
     'reset_token' => 'TEXT',
     'reset_token_expires' => 'INTEGER'
 ];

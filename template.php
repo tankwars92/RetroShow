@@ -5,7 +5,7 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 function showHeader($title = "RetroShow") {
-    global $show_menu;
+    global $show_menu, $db;
     if (!isset($show_menu)) $show_menu = true;
     $current = strtolower(basename($_SERVER['SCRIPT_NAME']));
     function nav_link($href, $text) {
@@ -145,7 +145,14 @@ html, body {
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0">
 	<tbody><tr valign="top">
-		<td width="130" rowspan="2" style="padding: 0px 5px 5px 5px;"><a href="index.php"><img src="img/logo_sm.gif" width="120" height="48" alt="RetroShow" border="0" style="vertical-align: middle; "></a></td>
+		<?php
+		$__logo_src = 'img/logo_sm.gif';
+		if (!empty($_SESSION['user']) && is_string($_SESSION['user']) && isset($db) && $db instanceof PDO) {
+			$__logo_src = user_header_logo_src($db, $_SESSION['user']);
+		}
+		$__logo_alt = ($__logo_src === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
+		?>
+		<td width="130" rowspan="2" style="padding: 0px 5px 5px 5px;"><a href="index.php"><img src="<?= htmlspecialchars($__logo_src, ENT_QUOTES, 'UTF-8') ?>" width="120" height="48" alt="<?= htmlspecialchars($__logo_alt, ENT_QUOTES, 'UTF-8') ?>" border="0" style="vertical-align: middle; "></a></td>
 		<td valign="top">
 		
 		<table width="670" cellpadding="0" cellspacing="0" border="0">
