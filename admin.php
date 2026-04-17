@@ -160,6 +160,7 @@ function admin_resolve_channel_login(PDO $db, $rawLogin) {
 }
 
 function admin_delete_channel(PDO $db, $login) {
+    try { channel_moderation_remove_user($login); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM users WHERE login = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM user_favourites WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
     try { $db->prepare('DELETE FROM user_friends WHERE user = ? OR friend = ?')->execute([$login, $login]); } catch (Exception $e) {}
@@ -379,6 +380,42 @@ if ($log_query !== '') {
     $log_rows = $filtered;
 }
 
+$stats_videos = 0;
+$stats_views = 0;
+$stats_mail = 0;
+$stats_comments = 0;
+$stats_favourites = 0;
+$stats_users = 0;
+try {
+    $stats_videos = (int)$db->query('SELECT COUNT(*) FROM videos')->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $stats_views = (int)$db->query('SELECT COALESCE(SUM(views), 0) FROM videos')->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $stats_mail = (int)$db->query('SELECT COUNT(*) FROM mail_inbox')->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $c_vid = (int)$db->query('SELECT COUNT(*) FROM comments')->fetchColumn();
+    $c_prof = (int)$db->query('SELECT COUNT(*) FROM profile_comments')->fetchColumn();
+    $stats_comments = $c_vid + $c_prof;
+} catch (Exception $e) {
+}
+try {
+    $stats_favourites = (int)$db->query('SELECT COUNT(*) FROM user_favourites')->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $stats_users = (int)$db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+} catch (Exception $e) {
+}
+$stats_fmt = function ($n) {
+    return number_format((int)$n, 0, '', ',');
+};
+
 showHeader("Админ панель");
 ?>
 
@@ -396,7 +433,39 @@ showHeader("Админ панель");
 <form method="post" action="admin.php">
 <input type="hidden" name="field_command" value="news_submit">
 
+<table class="roundedTable" width="180" align="right" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEEEDD">
+<tbody>
+<tr>
+    <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
+    <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
+    <td><img src="img/box_login_tr.gif" width="5" height="5"></td>
+</tr>
+<tr>
+    <td><img src="img/pixel.gif" width="5" height="1"></td>
+    <td width="170">
+    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;">Как дела у RetroShow?</div>
+    <b>Прямо сейчас у нас:</b>
+    <div style="margin-top: 10px; margin-bottom: 10px;">
+    <div style="margin-bottom: 5px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_videos)?></b> видео</div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_vid.gif" alt="Watches" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_views)?></b> просмотров</div>
+    <div style="margin-bottom: 5px;"><img src="img/mail.gif" alt="Mail" width="14" height="10" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_mail)?></b> сообщений</div>
+    <div style="margin-bottom: 5px;"><img src="img/mail.gif" alt="Mail" width="14" height="10" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_comments)?></b> комментариев</div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_favourites)?></b> видео в избранном</div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_users)?></b> пользователей</div>
+    <div style="margin-top: 8px;"><b>Разве это не круто?</b></div>
+    </div>
+    </td>
+    <td><img src="img/pixel.gif" width="5" height="1"></td>
+</tr>
+<tr>
+    <td><img src="img/box_login_bl.gif" width="5" height="5"></td>
+    <td><img src="img/pixel.gif" width="1" height="5"></td>
+    <td><img src="img/box_login_br.gif" width="5" height="5"></td>
+</tr>
+</tbody></table>
+
 <table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin-top: 10px;">
+
 <tr>
       <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Текст новости:</b></td>
       <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
@@ -414,7 +483,6 @@ showHeader("Админ панель");
 </form>
 
 <br>
-<div class="tableSubTitle">Функции модерации</div>
 <div class="highlight">Бан IP.</div>
 <form method="post" action="admin.php" style="margin-top:8px;">
 <input type="hidden" name="field_command" value="ip_ban_submit">
