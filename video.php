@@ -179,6 +179,63 @@ if (function_exists('get_video_duration_fast')) {
 }
 
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
+$admins = @unserialize(RETROSHOW_ADMINS);
+if (!is_array($admins)) $admins = [];
+$is_admin = $user && in_array($user, $admins, true);
+
+if (is_user_shadow_banned($video['user'] ?? '')) {
+    $can_view_shadow = $is_admin || ($user && $user === ($video['user'] ?? ''));
+    if (!$can_view_shadow) {
+        header('Location: index.php?error=video_not_found');
+        exit;
+    }
+}
+
+function video_delete_full(PDO $db, array $videoRow) {
+    $video_id = (int)($videoRow['id'] ?? 0);
+    if ($video_id <= 0) return;
+    $file = (string)($videoRow['file'] ?? '');
+    $preview = (string)($videoRow['preview'] ?? '');
+    $pub = (string)($videoRow['public_id'] ?? '');
+    $base = function_exists('video_uploads_file_base') ? video_uploads_file_base($video_id, $pub) : (string)$video_id;
+
+    try { $db->prepare('DELETE FROM comments WHERE video_id = ?')->execute([$video_id]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM ratings WHERE video_id = ?')->execute([$video_id]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM video_views WHERE video_id = ?')->execute([$video_id]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM user_favourites WHERE video_id = ?')->execute([$video_id]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM video_promotions WHERE video_id = ?')->execute([$video_id]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM videos WHERE id = ?')->execute([$video_id]); } catch (Exception $e) {}
+
+    $paths = [
+        __DIR__ . '/uploads/' . $base . '_duration.txt',
+        __DIR__ . '/uploads/' . $video_id . '_duration.txt',
+        __DIR__ . '/uploads/' . $base . '_duration.lock',
+        __DIR__ . '/uploads/' . $video_id . '_duration.lock',
+        __DIR__ . '/uploads/' . $base . '_duration_temp.txt',
+        __DIR__ . '/uploads/' . $video_id . '_duration_temp.txt',
+        __DIR__ . '/uploads/' . $base . '.mp4',
+        __DIR__ . '/uploads/' . $video_id . '.mp4',
+        __DIR__ . '/uploads/' . $base . '_preview.jpg',
+        __DIR__ . '/uploads/' . $video_id . '_preview.jpg',
+    ];
+    if ($file !== '') $paths[] = (strpos($file, '/') === 0 || preg_match('~^[A-Za-z]:~', $file)) ? $file : (__DIR__ . '/' . ltrim($file, '/'));
+    if ($preview !== '') $paths[] = (strpos($preview, '/') === 0 || preg_match('~^[A-Za-z]:~', $preview)) ? $preview : (__DIR__ . '/' . ltrim($preview, '/'));
+    foreach (array_unique($paths) as $p) {
+        if ($p !== '' && is_file($p)) @unlink($p);
+    }
+}
+
+function video_admin_delete_channel_data(PDO $db, $login) {
+    try { channel_moderation_remove_user($login); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM user_favourites WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM user_friends WHERE user = ? OR friend = ?')->execute([$login, $login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM profile_comments WHERE profile_user = ? OR user = ?')->execute([$login, $login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM comments WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM ratings WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM mail_inbox WHERE to_user = ? OR from_user = ?')->execute([$login, $login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM video_views WHERE user = ?')->execute([$login]); } catch (Exception $e) {}
+    try { $db->prepare('DELETE FROM users WHERE login = ?')->execute([$login]); } catch (Exception $e) {}
+}
 
 $user_player_type = 'auto';
 if ($user) {
@@ -227,6 +284,58 @@ if (isset($_GET['download']) && $_GET['download'] == 'avi') {
     
     unlink($temp_avi);
     exit;
+}
+
+if ($is_admin && (isset($_GET['admin_action']) || isset($_POST['admin_action']))) {
+    $action = trim((string)($_POST['admin_action'] ?? $_GET['admin_action'] ?? ''));
+    if ($action === 'promote') {
+        try {
+            $db->prepare('INSERT OR REPLACE INTO video_promotions (video_id, promoted_at, promoted_by) VALUES (?, ?, ?)')
+               ->execute([(int)$id, time(), (string)$user]);
+            log_event('admin_promote_video', ['admin_user' => (string)$user, 'video_id' => (int)$id, 'video_owner' => (string)($video['user'] ?? '')]);
+        } catch (Exception $e) {}
+        header('Location: video.php?id=' . urlencode($video['public_id'] ?? $id) . '&admin_msg=promoted');
+        exit;
+    }
+    if ($action === 'delete_video') {
+        $vidId = (int)$id;
+        $owner = (string)($video['user'] ?? '');
+        $pubId = (string)($video['public_id'] ?? $id);
+        video_delete_full($db, $video);
+        log_event('admin_delete_video', ['admin_user' => (string)$user, 'video_id' => $vidId, 'video_owner' => $owner]);
+        header('Location: channel.php?user=' . urlencode($owner));
+        exit;
+    }
+    if ($action === 'shadow_ban') {
+        $owner = (string)($video['user'] ?? '');
+        if ($owner !== '') {
+            try {
+                $db->prepare('INSERT OR REPLACE INTO channel_moderation (user, shadow_banned, shadow_banned_at, shadow_banned_by) VALUES (?, 1, ?, ?)')
+                   ->execute([$owner, time(), (string)$user]);
+                log_event('admin_shadow_ban', ['admin_user' => (string)$user, 'target_user' => $owner, 'video_id' => (int)$id]);
+            } catch (Exception $e) {}
+        }
+        header('Location: video.php?id=' . urlencode($video['public_id'] ?? $id) . '&admin_msg=shadow_banned');
+        exit;
+    }
+    if ($action === 'ban_author') {
+        $owner = (string)($video['user'] ?? '');
+        if ($owner !== '') {
+            try {
+                $st = $db->prepare('SELECT id, public_id, file, preview FROM videos WHERE user = ?');
+                $st->execute([$owner]);
+                $all = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                foreach ($all as $vr) {
+                    video_delete_full($db, $vr);
+                }
+            } catch (Exception $e) {}
+            video_admin_delete_channel_data($db, $owner);
+            try { $db->prepare('DELETE FROM channel_moderation WHERE user = ?')->execute([$owner]); } catch (Exception $e) {}
+            log_event('admin_ban_author', ['admin_user' => (string)$user, 'target_user' => $owner, 'source_video_id' => (int)$id]);
+        }
+        header('Location: index.php?admin_msg=author_banned');
+        exit;
+    }
 }
 
 function get_video_rating_stats($db, $video_id) {
@@ -1012,6 +1121,7 @@ html, body {
 
 <body onload="performOnLoadFunctions();">
 
+
 <table width="800" cellpadding="0" cellspacing="0" border="0" align="center">
 	<tbody><tr>
 		<td bgcolor="#FFFFFF" style="padding-bottom: 25px;">
@@ -1107,6 +1217,7 @@ toggleVisibility('myAccountDropdown',0);
 
 </tbody></table>
 
+
 <table align="center" width="800" bgcolor="#DDDDDD" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
 	<tbody><tr>
 		<td><img src="img/box_login_tl.gif" width="5" height="5"></td>
@@ -1152,6 +1263,19 @@ toggleVisibility('myAccountDropdown',0);
 <script language="javascript">
 	onLoadFunctionList.push(function () { document.searchForm.search_query.focus(); });
 </script>
+
+<?php
+$admin_msg = trim((string)($_GET['admin_msg'] ?? ''));
+$admin_confirm = '';
+if ($admin_msg === 'promoted') {
+    $admin_confirm = 'Видео продвинуто в блоке популярных.';
+} elseif ($admin_msg === 'shadow_banned') {
+    $admin_confirm = 'Теневой бан для канала включен.';
+}
+if ($admin_confirm !== ''):
+?>
+<div class="confirmBox"><?=htmlspecialchars($admin_confirm, ENT_QUOTES, 'UTF-8')?></div>
+<?php endif; ?>
 
 <?php if ($comment_error): ?>
         <div class="errorBox"><?=htmlspecialchars($comment_error)?></div>
@@ -1692,6 +1816,16 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
       <div style="margin: 8px 0px;" class="smallText">
             <span class="smallLabel">Настройки видео:</span>
             <a href="/my_videos_edit.php?id=<?= urlencode((string)$video['public_id']) ?>">Редактировать</a>
+      </div>
+      <?php endif; ?>
+      <?php if ($is_admin): ?>
+      <div style="margin: 8px 0px;" class="smallText">
+            <span class="smallLabel">Администрирование:</span>
+            <br>
+            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Продвинуть это видео в блоке популярных?');"><input type="hidden" name="admin_action" value="promote"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Продвинуть видео</button></form> |
+            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Забанить автора и удалить канал вместе со всеми видео?');"><input type="hidden" name="admin_action" value="ban_author"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Забанить автора</button></form> |
+            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Включить теневой бан для канала автора?');"><input type="hidden" name="admin_action" value="shadow_ban"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Теневой бан</button></form> |
+            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Удалить это видео?');"><input type="hidden" name="admin_action" value="delete_video"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Удалить видео</button></form>
       </div>
       <?php endif; ?>
       </div>

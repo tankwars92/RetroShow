@@ -99,7 +99,6 @@ function is_valid_video_public_id($s) {
     return true;
 }
 
-/** Базовое имя файлов в uploads/ (без расширения): «123_abcXy9» или «123» для старых записей без валидного public_id. */
 function video_uploads_file_base($video_id, $public_id = '') {
     $id = (int)$video_id;
     if ($id <= 0) {
@@ -224,6 +223,53 @@ $db->exec("CREATE TABLE IF NOT EXISTS users (
     signup_time INTEGER,
     last_login INTEGER
 )");
+
+$db->exec("CREATE TABLE IF NOT EXISTS channel_moderation (
+    user TEXT PRIMARY KEY,
+    shadow_banned INTEGER NOT NULL DEFAULT 0,
+    shadow_banned_at INTEGER,
+    shadow_banned_by TEXT
+)");
+
+$db->exec("CREATE TABLE IF NOT EXISTS video_promotions (
+    video_id INTEGER PRIMARY KEY,
+    promoted_at INTEGER NOT NULL,
+    promoted_by TEXT
+)");
+
+function is_user_shadow_banned($username) {
+    global $db;
+    $u = trim((string)$username);
+    if ($u === '') return false;
+    try {
+        $st = $db->prepare('SELECT shadow_banned FROM channel_moderation WHERE user = ? LIMIT 1');
+        $st->execute([$u]);
+        return (int)$st->fetchColumn() === 1;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/** Убрать теневой бан при удалении/бане аккаунта (логин освобождается для новой регистрации). */
+function channel_moderation_remove_user($login) {
+    global $db;
+    $login = trim((string)$login);
+    if ($login === '') {
+        return;
+    }
+    try {
+        $db->prepare('DELETE FROM channel_moderation WHERE user = ?')->execute([$login]);
+    } catch (Exception $e) {
+    }
+}
+
+function visible_video_sql_condition($videos_alias = 'videos', $user_col = 'user') {
+    $va = trim((string)$videos_alias);
+    $uc = trim((string)$user_col);
+    if ($va === '') $va = 'videos';
+    if ($uc === '') $uc = 'user';
+    return "NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = {$va}.{$uc} AND cm.shadow_banned = 1)";
+}
 
 function force_logout_if_user_missing(PDO $db): void {
     if (empty($_SESSION['user'])) {

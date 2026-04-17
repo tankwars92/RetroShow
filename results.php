@@ -131,7 +131,7 @@ if ($search_query) {
     try {
         $search_term = '%' . $search_query . '%';
         
-        $stmt = $db->prepare("SELECT * FROM videos WHERE (private = 0 OR private IS NULL) ORDER BY id DESC");
+        $stmt = $db->prepare("SELECT * FROM videos WHERE (private = 0 OR private IS NULL) AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY id DESC");
         $stmt->execute();
         $all_public = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

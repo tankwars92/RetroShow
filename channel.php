@@ -32,7 +32,6 @@ function rus_date($time) {
     return "$d $m $y";
 }
 
-/** Текст комментария в HTML: как под видео, но &lt;br&gt; без XHTML для старых браузеров. */
 function channel_comment_body_html($text) {
     return nl2br(htmlspecialchars((string)$text, ENT_QUOTES, 'UTF-8'), false);
 }
@@ -1087,7 +1086,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 (COALESCE(AVG(r.rating),0) * COUNT(r.id)) / (1 + COUNT(r.id)) AS weighted_rating
                 FROM videos v
                 LEFT JOIN ratings r ON r.video_id = v.id
-                WHERE v.private = 0
+                WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
                 GROUP BY v.id
                 ORDER BY weighted_rating DESC, v.views DESC, v.id DESC");
             $stmt->execute();
@@ -1108,7 +1107,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                     FROM comments
                     GROUP BY video_id
                 ) cc ON cc.video_id = v.id
-                WHERE v.private = 0
+                WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
                 ORDER BY comments_count DESC, v.views DESC, v.id DESC
             ");
             $stmt->execute();
@@ -1128,7 +1127,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                     FROM user_favourites
                     GROUP BY video_id
                 ) fv ON fv.video_id = v.id
-                WHERE v.private = 0
+                WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
                 ORDER BY favorites_count DESC, v.views DESC, v.id DESC
             ");
             $stmt->execute();
@@ -1140,23 +1139,23 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             break;
 
         case 'random':
-            $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0");
+            $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user'));
             $stmt->execute();
             $total = $stmt->fetchColumn();
             $total_pages = ceil($total / $per_page);
-            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 ORDER BY RANDOM() LIMIT $offset, $per_page");
+            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY RANDOM() LIMIT $offset, $per_page");
             $stmt->execute();
             $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             break;
     }
     
     if ($filter !== 'discussed' && $filter !== 'favorites' && $filter !== 'rated' && $filter !== 'random') {
-        $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0");
+        $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user'));
         $stmt->execute();
         $total = $stmt->fetchColumn();
         $total_pages = ceil($total / $per_page);
         
-        $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 ORDER BY $order_by LIMIT $offset, $per_page");
+        $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY $order_by LIMIT $offset, $per_page");
         $stmt->execute();
         $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

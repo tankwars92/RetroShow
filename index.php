@@ -196,8 +196,14 @@ if (isset($_SESSION['user']) && isset($home_block_type) && $home_block_type === 
 }
 if (empty($recent_videos)) {
     $stmt = $db->query("SELECT * FROM videos ORDER BY id DESC LIMIT 10");
-    $recent_videos = array_filter($stmt->fetchAll(), function($v) { return empty($v['private']); });
+    $recent_videos = array_filter($stmt->fetchAll(), function($v) {
+        if (!empty($v['private'])) return false;
+        return !is_user_shadow_banned($v['user'] ?? '');
+    });
 }
+$recent_videos = array_values(array_filter($recent_videos, function($v) {
+    return !is_user_shadow_banned($v['user'] ?? '');
+}));
 
 $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $per_page = 5;
@@ -219,6 +225,36 @@ foreach ($views_pool as $v) {
     $merged[(int)$v['id']] = $v;
 }
 $all_videos = array_values($merged);
+$all_videos = array_values(array_filter($all_videos, function($v) {
+    return !is_user_shadow_banned($v['user'] ?? '');
+}));
+
+$promoted_map = [];
+try {
+    $rowsP = $db->query("SELECT video_id FROM video_promotions")->fetchAll(PDO::FETCH_COLUMN, 0) ?: [];
+    foreach ($rowsP as $pvid) {
+        $pid = (int)$pvid;
+        if ($pid > 0) $promoted_map[$pid] = true;
+    }
+} catch (Exception $e) {
+    $promoted_map = [];
+}
+
+if (!empty($promoted_map)) {
+    try {
+        $ids = array_keys($promoted_map);
+        $ph = implode(',', array_fill(0, count($ids), '?'));
+        $stProm = $db->prepare("SELECT * FROM videos WHERE id IN ($ph) AND private = 0");
+        $stProm->execute($ids);
+        $promoted_rows = $stProm->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        foreach ($promoted_rows as $pv) {
+            if (is_user_shadow_banned($pv['user'] ?? '')) continue;
+            $all_videos[(int)$pv['id']] = $pv;
+        }
+        $all_videos = array_values($all_videos);
+    } catch (Exception $e) {
+    }
+}
 
 $featured_videos = [];
 
@@ -243,6 +279,9 @@ foreach ($all_videos as $video) {
     list($rc, $ra) = get_home_rating_stats($db, $video['id']);
 
     $score = calculate_trending_score($video, $comments_count, $ra, $rc);
+    if (!empty($promoted_map[(int)$video['id']])) {
+        $score += 1000000;
+    }
     if ($score < 0) {
         continue;
     }
@@ -266,7 +305,7 @@ showHeader("Главная");
 $tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
 if ($tags_mode === 'tags') {
     $latestLimit = 200;
-    $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' ORDER BY id DESC LIMIT " . intval($latestLimit));
+    $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY id DESC LIMIT " . intval($latestLimit));
     $latest_counts = [];
     while ($row = $stmtLatest->fetch(PDO::FETCH_ASSOC)) {
         $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
@@ -284,7 +323,7 @@ if ($tags_mode === 'tags') {
     $latest_base_font_size = 12;
     $latest_max_font_size = 17;
 
-    $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
+    $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' AND " . visible_video_sql_condition('videos', 'user'));
     $popular_counts = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
@@ -378,6 +417,10 @@ if ($tags_mode === 'tags') {
 
 <?php if (isset($_GET['info']) && $_GET['info'] === 'video_converting'): ?>
   <div class="confirmBox">Ваше видео конвертируется! Скоро он будет доступно к просмотру.</div>
+<?php endif; ?>
+
+<?php if (isset($_GET['admin_msg']) && $_GET['admin_msg'] === 'author_banned'): ?>
+  <div class="confirmBox">Автор забанен, канал и все его видео удалены.</div>
 <?php endif; ?>
 
 <style>
@@ -778,7 +821,7 @@ echo time_ago($ago_ts);
         $tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
 
         $latestLimit = 200;
-        $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' ORDER BY id DESC LIMIT " . intval($latestLimit));
+        $stmtLatest = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY id DESC LIMIT " . intval($latestLimit));
         $latest_counts = [];
         while ($row = $stmtLatest->fetch(PDO::FETCH_ASSOC)) {
             $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
@@ -800,7 +843,7 @@ echo time_ago($ago_ts);
         $popular_min_count = 1;
         $popular_max_count = 1;
         if ($tags_mode === 'tags') {
-            $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != ''");
+            $stmt = $db->query("SELECT tags FROM videos WHERE private = 0 AND tags IS NOT NULL AND tags != '' AND " . visible_video_sql_condition('videos', 'user'));
             $all_tags = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $tags = preg_split('/\s+/', trim((string)($row['tags'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
@@ -899,7 +942,7 @@ echo time_ago($ago_ts);
         <?php endif; ?>
         
         <?php
-        $stmt = $db->prepare("SELECT login, COALESCE(last_login, 0) as last_login FROM users ORDER BY last_login DESC, id DESC LIMIT 8");
+        $stmt = $db->prepare("SELECT login, COALESCE(last_login, 0) as last_login FROM users u WHERE NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = u.login AND cm.shadow_banned = 1) ORDER BY last_login DESC, id DESC LIMIT 8");
         $stmt->execute();
         $online_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
