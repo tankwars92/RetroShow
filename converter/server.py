@@ -20,7 +20,7 @@ FFMPEG_BIN = "ffmpeg"
 FFPROBE_BIN = "ffprobe"
 HOST = "127.0.0.1"
 PORT = 8090
-LOG_PATH = "log.txt"
+LOG_PATH = os.path.join(BASE_DIR, "log.txt")
 
 
 def log_line(msg: str):
