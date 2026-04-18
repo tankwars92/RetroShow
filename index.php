@@ -543,7 +543,7 @@ if ($tags_mode === 'tags') {
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr valign="top">
 					<td width="50%" style="border-right: 1px dashed #369; padding: 0px 10px 2px 10px; color: #444;">
-                    <div style="font-size: 16px; font-weight: bold; color: #3255AF; margin-bottom: 10px;">Мой аккаунт</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #003366; margin-bottom: 10px;">Мой аккаунт</div>
                     <div style="margin-bottom: 5px; font-size: 13px;"><b>Имя пользователя:</b> <a href="channel.php?user=<?php echo urlencode($_SESSION['user']); ?>"><?php echo htmlspecialchars($_SESSION['user'], ENT_QUOTES, 'UTF-8'); ?></a></div>
                     <div style="margin-bottom: 5px; font-size: 13px;"><b>Email:</b> <?php echo htmlspecialchars($account_email !== '' ? $account_email : '-', ENT_QUOTES, 'UTF-8'); ?></div>
                     <div style="margin-bottom: 5px; font-size: 13px;"><b>Видео просмотрено:</b> <?php echo (int)$account_videos_watched; ?></div>
@@ -580,9 +580,9 @@ if ($tags_mode === 'tags') {
 					<img src="<?= htmlspecialchars($account_mail_icon, ENT_QUOTES, 'UTF-8') ?>" width="14" height="10" border="0"> У вас <a href="my_messages.php"><?= (int)$account_unread_mail ?> новых сообщений</a>.
           <br>
           <div style="margin-top: 5px; margin-bottom: 5px;"><span class="highlight">ToDo...</span></div>
-          - <a href="my_friends_invite.php">Пригласите своих друзей</a>
+          <img src="img/icon_todo.gif" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> <a href="my_friends_invite.php">Пригласите своих друзей</a>
           <br>
-          - <a href="account.php">Кастомизируйте свой профиль</a>
+          <img src="img/icon_todo.gif" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> <a href="account.php">Кастомизируйте свой профиль</a>
 					</td>
 					</tr>
 				</tbody></table>

@@ -120,6 +120,7 @@ function render_avg_stars_html($avg, $count) {
 
 $search_query = isset($_GET['search_query']) ? trim($_GET['search_query']) : '';
 $search_type = isset($_GET['search_type']) ? trim($_GET['search_type']) : '';
+$related_tags = [];
 
 if (empty($search_query)) {
     header('Location: index.php');
@@ -137,6 +138,63 @@ if ($search_query) {
 
         $needle = mb_strtolower($search_query, 'UTF-8');
         $needle_words = preg_split('/\s+/', $needle, -1, PREG_SPLIT_NO_EMPTY);
+        $related_counts = [];
+
+        foreach ($all_public as $row) {
+            $tags_raw = trim((string)($row['tags'] ?? ''));
+            if ($tags_raw === '') {
+                continue;
+            }
+
+            $video_tags = preg_split('/\s+/', $tags_raw, -1, PREG_SPLIT_NO_EMPTY);
+            if (empty($video_tags)) {
+                continue;
+            }
+
+            $has_query_tag = false;
+            foreach ($video_tags as $t) {
+                $t_lc = mb_strtolower(trim((string)$t), 'UTF-8');
+                if ($t_lc !== '' && mb_stripos($t_lc, $needle, 0, 'UTF-8') !== false) {
+                    $has_query_tag = true;
+                    break;
+                }
+            }
+            if (!$has_query_tag) {
+                continue;
+            }
+
+            $seen_in_video = [];
+            foreach ($video_tags as $t) {
+                $tag = trim((string)$t);
+                if ($tag === '') {
+                    continue;
+                }
+                $tag_lc = mb_strtolower($tag, 'UTF-8');
+                if (mb_stripos($tag_lc, $needle, 0, 'UTF-8') !== false) {
+                    continue;
+                }
+                if (isset($seen_in_video[$tag_lc])) {
+                    continue;
+                }
+                $seen_in_video[$tag_lc] = true;
+
+                if (!isset($related_counts[$tag_lc])) {
+                    $related_counts[$tag_lc] = ['tag' => $tag, 'count' => 0];
+                }
+                $related_counts[$tag_lc]['count']++;
+            }
+        }
+
+        if (!empty($related_counts)) {
+            uasort($related_counts, function($a, $b) {
+                if ((int)$a['count'] !== (int)$b['count']) {
+                    return (int)$b['count'] - (int)$a['count'];
+                }
+                return strcmp((string)$a['tag'], (string)$b['tag']);
+            });
+            $related_tags = array_slice(array_values($related_counts), 0, 10);
+        }
+
         $videos = [];
         $video_scores = [];
         foreach ($all_public as $row) {
@@ -380,26 +438,67 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
         </tr>
       </table>
     </td>
+    <?php
+      $stmt = $db->prepare("SELECT login, COALESCE(last_login, 0) as last_login FROM users u WHERE NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = u.login AND cm.shadow_banned = 1) ORDER BY last_login DESC, id DESC LIMIT 4");
+      $stmt->execute();
+      $online_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      $count_user_videos = function($u) use ($db) {
+          $q = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+          $q->execute([$u]);
+          return (int)$q->fetchColumn();
+      };
+      $count_user_favorites = function($u) use ($db) {
+          $q = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE user = ?");
+          $q->execute([$u]);
+          return (int)$q->fetchColumn();
+      };
+      $count_user_friends = function($u) use ($db) {
+          $q = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
+          $q->execute([$u]);
+          return (int)$q->fetchColumn();
+      };
+    ?>
     <td width="180">
-      <table width="180" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFEEBB">
-        <tr>
-          <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
-          <td><img src="img/pixel.gif" width="1" height="5"></td>
-          <td><img src="img/box_login_tr.gif" width="5" height="5"></td>
-        </tr>
-        <tr>
-          <td><img src="img/pixel.gif" width="5" height="1"></td>
-          <td width="170">
-            <div style="font-size: 16px; font-weight: bold; text-align: center; padding: 5px 5px 10px 5px;"><a href="register.php">Зарегистрируйтесь бесплатно!</a></div>
-          </td>
-          <td><img src="img/pixel.gif" width="5" height="1"></td>
-        </tr>
-        <tr>
-          <td><img src="img/box_login_bl.gif" width="5" height="5"></td>
-          <td><img src="img/pixel.gif" width="1" height="5"></td>
-          <td><img src="img/box_login_br.gif" width="5" height="5"></td>
-        </tr>
-      </table>
+    <table class="roundedTable" width="180" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEEEDD">
+            <tbody>
+            <tr>
+              <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
+              <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
+              <td><img src="img/box_login_tr.gif" width="5" height="5"></td>
+            </tr>
+            <tr>
+              <td><img src="img/pixel.gif" width="5" height="1"></td>
+              <td width="170">
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;">Последние 4 канала...</div>
+                <?php foreach ($online_users as $iuser): $u = $iuser['login']; $vnum = $count_user_videos($u); $fnum = $count_user_favorites($u); $frnum = $count_user_friends($u); ?>
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php?user=<?=urlencode($u)?>"><?=htmlspecialchars($u)?></a></div>
+                  <div style="font-size: 12px; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 1px dashed #CCCC66;">
+                    <a href="channel.php?user=<?=urlencode($u)?>"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"></a> (<a href="channel.php?user=<?=urlencode($u)?>&tab=videos"><?=$vnum?></a>)
+                     | <a href="favourites.php?user=<?=urlencode($u)?>"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"></a> (<a href="favourites.php?user=<?=urlencode($u)?>"><?=$fnum?></a>)
+                     | <a href="friends.php?user=<?=urlencode($u)?>"><img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"></a> (<a href="friends.php?user=<?=urlencode($u)?>"><?=$frnum?></a>)
+                  </div>
+                <?php endforeach; ?>
+                <div style="font-weight: bold; margin-bottom: 5px;">Иконки означают:</div>
+                <div style="margin-bottom: 4px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Видео</div>
+                <div style="margin-bottom: 4px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Избранное</div>
+                <img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Друзья
+              </td>
+              <td><img src="img/pixel.gif" width="5" height="1"></td>
+            </tr>
+            <tr>
+              <td><img src="img/box_login_bl.gif" width="5" height="5"></td>
+              <td><img src="img/pixel.gif" width="1" height="5"></td>
+              <td><img src="img/box_login_br.gif" width="5" height="5"></td>
+            </tr>
+            </tbody>
+    </table>
+    <?php if (!empty($related_tags)): ?>
+      <div style="font-weight: bold; color: #333; margin: 4px 0px 5px 0px;">Похожие теги:</div>
+      <?php foreach ($related_tags as $rt): ?>
+        <div style="padding: 0px 0px 4px 0px; color: #999;">&raquo; <a href="results.php?search_type=tag&amp;search_query=<?=urlencode((string)$rt['tag'])?>"><?=htmlspecialchars((string)$rt['tag'])?></a></div>
+      <?php endforeach; ?>
+    <?php endif; ?>
     </td>
   </tr>
 </table>
