@@ -1827,10 +1827,14 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
       <div style="margin: 8px 0px;" class="smallText">
             <span class="smallLabel">Администрирование:</span>
             <br>
-            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Продвинуть это видео в блоке популярных?');"><input type="hidden" name="admin_action" value="promote"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Продвинуть видео</button></form> |
-            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Забанить автора и удалить канал вместе со всеми видео?');"><input type="hidden" name="admin_action" value="ban_author"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Забанить автора</button></form> |
-            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Включить теневой бан для канала автора?');"><input type="hidden" name="admin_action" value="shadow_ban"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Теневой бан</button></form> |
-            <form method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:inline; margin:0;" onsubmit="return confirm('Удалить это видео?');"><input type="hidden" name="admin_action" value="delete_video"><button type="submit" style="font-size:11px; color:#0033cc; text-decoration:underline; border:0; background:none; padding:0; margin:0; cursor:pointer;">Удалить видео</button></form>
+            <a href="#" onclick="if (confirm('Продвинуть это видео в блоке популярных?')) { document.getElementById('adminPromoteForm').submit(); } return false;">Продвинуть видео</a> |
+            <a href="#" onclick="if (confirm('Забанить автора и удалить канал вместе со всеми видео?')) { document.getElementById('adminBanAuthorForm').submit(); } return false;">Забанить автора</a> |
+            <a href="#" onclick="if (confirm('Включить теневой бан для канала автора?')) { document.getElementById('adminShadowBanForm').submit(); } return false;">Теневой бан</a> |
+            <a href="#" onclick="if (confirm('Удалить это видео?')) { document.getElementById('adminDeleteVideoForm').submit(); } return false;">Удалить видео</a>
+            <form id="adminPromoteForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="promote"></form>
+            <form id="adminBanAuthorForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="ban_author"></form>
+            <form id="adminShadowBanForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="shadow_ban"></form>
+            <form id="adminDeleteVideoForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="delete_video"></form>
       </div>
       <?php endif; ?>
       </div>
@@ -2035,7 +2039,7 @@ if (window.attachEvent) {
 
 
 <script type="text/javascript">
-function retroShowToggleCommentForm() {
+function toggleCommentForm() {
     var btn = document.getElementById ? document.getElementById('showCommentForm') : document.all['showCommentForm'];
     if (btn) {
         btn.onclick = function() {
@@ -2053,7 +2057,7 @@ function retroShowToggleCommentForm() {
         };
     }
 }
-function retroShowReplyLinks() {
+function replyLinks() {
     var links = document.getElementsByTagName('a');
     for (var i=0; i<links.length; i++) {
         if (links[i].className && links[i].className.indexOf('reply-link') !== -1) {
@@ -2065,15 +2069,15 @@ function retroShowReplyLinks() {
     }
 }
 if (window.attachEvent) {
-    window.attachEvent('onload', retroShowToggleCommentForm);
-    window.attachEvent('onload', retroShowReplyLinks);
+    window.attachEvent('onload', toggleCommentForm);
+    window.attachEvent('onload', replyLinks);
 } else if (window.addEventListener) {
-    window.addEventListener('load', retroShowToggleCommentForm, false);
-    window.addEventListener('load', retroShowReplyLinks, false);
+    window.addEventListener('load', toggleCommentForm, false);
+    window.addEventListener('load', replyLinks, false);
 } else {
     window.onload = function() {
-        retroShowToggleCommentForm();
-        retroShowReplyLinks();
+        toggleCommentForm();
+        replyLinks();
     };
 }
 </script>
