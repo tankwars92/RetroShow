@@ -46,6 +46,24 @@ function is_4_3_aspect_ratio($width, $height) {
     return abs($ratio - 4/3) < 0.1;
 }
 
+function notify_processing_worker(int $queue_id): bool {
+    $endpoint = processing_queue_url();
+    $payload = json_encode(['queue_id' => $queue_id], JSON_UNESCAPED_UNICODE);
+    if ($payload === false) {
+        return false;
+    }
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nConnection: close\r\n",
+            'content' => $payload,
+            'timeout' => 1.5,
+        ],
+    ]);
+    $res = @file_get_contents($endpoint, false, $ctx);
+    return $res !== false;
+}
+
 if (!isset($_SESSION['user'])) {
     header("Location: login.php");
     exit;
@@ -58,6 +76,7 @@ $ip_blocked = is_ip_banned($client_ip);
 
 $error = '';
 $success = '';
+$use_external_processing = processing_enabled();
 
 $p = isset($_GET['p']) ? intval($_GET['p']) : 1;
 
@@ -125,6 +144,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
         if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
             $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
         } else {
+            if ($use_external_processing) {
+                $queue_video = 'uploads/queue_' . $file_base . '.' . $video_ext;
+                if (!@rename($temp_video, $queue_video)) {
+                    if (!@copy($temp_video, $queue_video)) {
+                        $error = 'Ошибка постановки видео в очередь обработки.';
+                    } else {
+                        @unlink($temp_video);
+                    }
+                }
+
+                if (empty($error)) {
+                    try {
+                        $stQ = $db->prepare("
+                            INSERT INTO video_processing_queue
+                            (public_id, user, title, description, tags, broadcast, source_file, created_at, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                        ");
+                        $stQ->execute([
+                            $public_id,
+                            (string)$_SESSION['user'],
+                            (string)$title,
+                            (string)$description,
+                            (string)$tags,
+                            ($broadcast === 'private' ? 'private' : 'public'),
+                            (string)$queue_video,
+                            time()
+                        ]);
+                        $queue_id = (int)$db->lastInsertId();
+                        notify_processing_worker($queue_id);
+
+                        log_event('upload_video', [
+                            'upload_user' => (string)$_SESSION['user'],
+                            'video_public_id' => (string)$public_id,
+                            'queue_id' => $queue_id,
+                            'title' => (string)$title,
+                            'tags' => (string)$tags,
+                            'ip_detected' => (string)$client_ip,
+                            'ip_detected_source' => (string)$client_ip_source,
+                            'queued' => 1,
+                        ]);
+
+                        unset($_SESSION['upload_title'], $_SESSION['upload_description'], $_SESSION['upload_tags']);
+                        $success = "Видео добавлено в очередь обработки. Оно появится после завершения конвертации. <a href=\"index.php\">На главную</a>";
+                    } catch (Exception $e) {
+                        $error = 'Ошибка при постановке видео в очередь.';
+                    }
+                }
+            } else {
             $output = [];
             $return_var = 0;
 
@@ -265,6 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                     'ip_detected_source' => (string)$client_ip_source,
                 ]);
                 $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";
+            }
             }
         }
     }

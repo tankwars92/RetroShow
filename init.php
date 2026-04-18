@@ -1,6 +1,67 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+function processing_settings_read(): array {
+    global $db;
+    $defaults = [
+        'enabled' => true,
+        'url' => rtrim((string)RETROSHOW_PROCESSING_SERVER, '/'),
+    ];
+    if (!isset($db) || !($db instanceof PDO)) {
+        return $defaults;
+    }
+    try {
+        $st = $db->prepare('SELECT value FROM meta WHERE key = ? LIMIT 1');
+        $st->execute(['processing_enabled']);
+        $en = $st->fetchColumn();
+        $st->execute(['processing_server_url']);
+        $url = $st->fetchColumn();
+        $out = $defaults;
+        if ($en !== false && $en !== null && $en !== '') {
+            $out['enabled'] = ($en === '1' || $en === 1);
+        }
+        if (is_string($url) && trim($url) !== '') {
+            $out['url'] = rtrim(trim($url), '/');
+        }
+        return $out;
+    } catch (Exception $e) {
+        return $defaults;
+    }
+}
+
+function processing_enabled(): bool {
+    return processing_settings_read()['enabled'];
+}
+
+function processing_base_url(): string {
+    $u = processing_settings_read()['url'];
+    return $u !== '' ? $u : rtrim((string)RETROSHOW_PROCESSING_SERVER, '/');
+}
+
+function processing_queue_url(): string {
+    return processing_base_url() . '/queue';
+}
+
+function processing_health_url(): string {
+    return processing_base_url() . '/health';
+}
+
+function processing_health_probe(): array {
+    $url = processing_health_url();
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'timeout' => 1.5,
+            'ignore_errors' => true,
+        ],
+    ]);
+    $body = @file_get_contents($url, false, $ctx);
+    if ($body === false) {
+        return ['ok' => false, 'detail' => ''];
+    }
+    return ['ok' => true, 'detail' => trim((string)$body)];
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     $lifetime = 60 * 60 * 24 * 30;
     ini_set('session.gc_maxlifetime', (string)$lifetime);
@@ -385,6 +446,49 @@ $db->exec("CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
 )");
+
+try {
+    $has_en = $db->query("SELECT 1 FROM meta WHERE key = 'processing_enabled' LIMIT 1")->fetchColumn();
+    $has_url = $db->query("SELECT 1 FROM meta WHERE key = 'processing_server_url' LIMIT 1")->fetchColumn();
+    if ($has_en === false || $has_url === false) {
+        $en = '1';
+        $url = rtrim((string)RETROSHOW_PROCESSING_SERVER, '/');
+        $jsonPath = __DIR__ . DIRECTORY_SEPARATOR . 'processing_settings.json';
+        if (is_file($jsonPath)) {
+            $raw = @file_get_contents($jsonPath);
+            $j = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+            if (is_array($j)) {
+                $en = !empty($j['enabled']) ? '1' : '0';
+                if (!empty($j['url']) && is_string($j['url'])) {
+                    $url = rtrim(trim($j['url']), '/');
+                }
+            }
+        }
+        $ins = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
+        $ins->execute(['processing_enabled', $en]);
+        $ins->execute(['processing_server_url', $url]);
+    }
+} catch (Exception $e) {
+}
+
+$db->exec("CREATE TABLE IF NOT EXISTS video_processing_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    public_id TEXT NOT NULL,
+    user TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    tags TEXT NOT NULL,
+    broadcast TEXT NOT NULL DEFAULT 'public',
+    source_file TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    started_at INTEGER,
+    finished_at INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT
+)");
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_video_processing_queue_status ON video_processing_queue (status, created_at)"); } catch (Exception $e) {}
+try { $db->exec("CREATE INDEX IF NOT EXISTS idx_video_processing_queue_public_id ON video_processing_queue (public_id)"); } catch (Exception $e) {}
 
 $db->exec("CREATE TABLE IF NOT EXISTS ratings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

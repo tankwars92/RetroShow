@@ -255,6 +255,8 @@ if (file_exists($news_file)) {
     $current_news = trim(file_get_contents($news_file));
 }
 
+$processing_settings = processing_settings_read();
+
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'news_submit') {
     $news_text = trim($_POST['field_news_text'] ?? '');
     if (mb_strlen($news_text) > 500) {
@@ -263,6 +265,29 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'news_submit') 
         file_put_contents($news_file, $news_text, LOCK_EX);
         $current_news = $news_text;
         $message = 'Новость успешно добавлена!';
+    }
+}
+
+if (isset($_POST['field_command']) && $_POST['field_command'] === 'processing_submit') {
+    $en = isset($_POST['field_processing_enabled']) && $_POST['field_processing_enabled'] === '1';
+    $url = trim((string)($_POST['field_processing_url'] ?? ''));
+    if ($url === '') {
+        $url = rtrim((string)RETROSHOW_PROCESSING_SERVER, '/');
+    }
+    if (!preg_match('~^https?://~i', $url)) {
+        $error = 'Укажите адрес вида http://... или https://...';
+    } elseif (strlen($url) > 512) {
+        $error = 'Слишком длинный адрес.';
+    } else {
+        try {
+            $st = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
+            $st->execute(['processing_enabled', $en ? '1' : '0']);
+            $st->execute(['processing_server_url', rtrim($url, '/')]);
+            $processing_settings = processing_settings_read();
+            $message = 'Настройки конвертации сохранены.';
+        } catch (Exception $e) {
+            $error = 'Не удалось сохранить настройки.';
+        }
     }
 }
 
@@ -482,6 +507,38 @@ showHeader("Админ панель");
 </table>
 </form>
 
+<form method="post" action="admin.php">
+<input type="hidden" name="field_command" value="processing_submit">
+<table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin-top: 10px;">
+<tr>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Внешний сервер конвертации:</b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+        <label><input type="checkbox" name="field_processing_enabled" value="1" id="processingEnabled"<?= !empty($processing_settings['enabled']) ? ' checked' : '' ?>> включить</label>
+      </td>
+    </tr>
+    <tr id="processingUrlRow">
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Адрес:</b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+        <input type="text" name="field_processing_url" id="processingUrl" value="<?=htmlspecialchars($processing_settings['url'])?>" style="width:320px;">
+        <br>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+        <span class="smallText">Для использования внешнего сервера, запустите его при помощи скрипта по пути <b>converter/server.py</b> при помощи интерпретатора Python.</span>
+        <br>
+        <br>
+    </tr>
+    <tr>
+      <td></td>
+      <td style="padding-bottom:8px;" colspan="4">
+        <input type="submit" value="Сохранить">
+      </td>
+    </tr>
+</table>
+</form>
+
 <br>
 <div class="highlight">Бан IP.</div>
 <form method="post" action="admin.php" style="margin-top:8px;">
@@ -603,6 +660,17 @@ function adminToggle(id, el) {
     if (el) el.innerHTML = 'Показать баны';
   }
   return false;
+}
+function adminProcessingToggle() {
+  var cb = document.getElementById('processingEnabled');
+  var row = document.getElementById('processingUrlRow');
+  if (!cb || !row) return;
+  row.style.display = cb.checked ? '' : 'none';
+}
+var pe = document.getElementById ? document.getElementById('processingEnabled') : null;
+if (pe) {
+  pe.onchange = adminProcessingToggle;
+  adminProcessingToggle();
 }
 </script>
 <?php showFooter(); ?>
