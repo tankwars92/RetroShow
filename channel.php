@@ -1164,6 +1164,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 <html>
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= $filter_name ?> видео - RetroShow</title>
 <link rel="stylesheet" href="img/styles.css" type="text/css">
 <link rel="stylesheet" href="img/base.css" type="text/css">

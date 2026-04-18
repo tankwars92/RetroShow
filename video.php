@@ -1062,6 +1062,7 @@ function performOnLoadFunctions() {
 <script type="text/javascript" src="img/components.js"></script>
 <link href="img/styles.css" rel="stylesheet" type="text/css">
 <link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="title" content="<?=htmlspecialchars($video['title'])?>">
 <meta name="description" content="<?=htmlspecialchars($video['description'])?>">
 <meta name="keywords" content="<?=htmlspecialchars($video['tags'])?>">

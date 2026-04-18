@@ -11,6 +11,15 @@ $contest = false;
 if (isset($_SESSION['user'])) {
     $current_user = $_SESSION['user'];
     $home_block_type = 'recent_added';
+    $account_email = '';
+    $account_videos_watched = 0;
+    $account_videos_count = 0;
+    $account_favourites_count = 0;
+    $account_fans_count = 0;
+    $account_friends_videos_count = 0;
+    $account_friends_favourites_count = 0;
+    $account_unread_mail = 0;
+    $account_mail_icon = 'img/mail.gif';
 
     $stmt = $db->prepare("SELECT SUM(views) FROM videos WHERE user = ?");
     $stmt->execute([$current_user]);
@@ -51,6 +60,77 @@ if (isset($_SESSION['user'])) {
     } catch (Exception $e) {
         $home_block_type = 'recent_added';
     }
+    try {
+        $stmt = $db->prepare("SELECT email FROM users WHERE login = ? LIMIT 1");
+        $stmt->execute([$current_user]);
+        $account_email = (string)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_email = '';
+    }
+    try {
+        $stmt = $db->prepare("SELECT COUNT(DISTINCT video_id) FROM video_views WHERE user = ?");
+        $stmt->execute([$current_user]);
+        $account_videos_watched = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_videos_watched = 0;
+    }
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+        $stmt->execute([$current_user]);
+        $account_videos_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_videos_count = 0;
+    }
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE user = ?");
+        $stmt->execute([$current_user]);
+        $account_favourites_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_favourites_count = 0;
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(DISTINCT uf.user)
+            FROM user_favourites uf
+            INNER JOIN videos v ON v.id = uf.video_id
+            WHERE v.user = ?
+              AND v.private = 0
+              AND uf.user != ?
+        ");
+        $stmt->execute([$current_user, $current_user]);
+        $account_fans_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_fans_count = 0;
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM videos
+            WHERE user IN (SELECT friend FROM user_friends WHERE user = ?)
+              AND private = 0
+        ");
+        $stmt->execute([$current_user]);
+        $account_friends_videos_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_friends_videos_count = 0;
+    }
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM user_favourites
+            WHERE user IN (SELECT friend FROM user_friends WHERE user = ?)
+        ");
+        $stmt->execute([$current_user]);
+        $account_friends_favourites_count = (int)$stmt->fetchColumn();
+    } catch (Exception $e) {
+        $account_friends_favourites_count = 0;
+    }
+    try {
+        $account_unread_mail = count_unread_mail($db, $current_user);
+    } catch (Exception $e) {
+        $account_unread_mail = 0;
+    }
+    $account_mail_icon = $account_unread_mail > 0 ? 'img/mail_unread.gif' : 'img/mail.gif';
 
     $userStats = [
         'video_views' => $video_views,
@@ -224,10 +304,9 @@ foreach ($newest_pool as $v) {
 foreach ($views_pool as $v) {
     $merged[(int)$v['id']] = $v;
 }
-$all_videos = array_values($merged);
-$all_videos = array_values(array_filter($all_videos, function($v) {
+$all_videos = array_filter($merged, function($v) {
     return !is_user_shadow_banned($v['user'] ?? '');
-}));
+});
 
 $promoted_map = [];
 try {
@@ -251,14 +330,20 @@ if (!empty($promoted_map)) {
             if (is_user_shadow_banned($pv['user'] ?? '')) continue;
             $all_videos[(int)$pv['id']] = $pv;
         }
-        $all_videos = array_values($all_videos);
     } catch (Exception $e) {
     }
 }
 
 $featured_videos = [];
+$featured_seen = [];
 
 foreach ($all_videos as $video) {
+    $vid = (int)($video['id'] ?? 0);
+    if ($vid <= 0 || isset($featured_seen[$vid])) {
+        continue;
+    }
+    $featured_seen[$vid] = true;
+
     $video_time = strtotime($video['time']);
     if ($video_time === false) {
         continue;
@@ -454,8 +539,57 @@ if ($tags_mode === 'tags') {
 				<td><img src="img/pixel.gif" width="5" height="1"></td>
 				<td style="padding: 5px 0px 5px 0px;">
 				
-								
+        <?php if (isset($_SESSION['user'])): ?>
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+					<tbody><tr valign="top">
+					<td width="50%" style="border-right: 1px dashed #369; padding: 0px 10px 2px 10px; color: #444;">
+                    <div style="font-size: 16px; font-weight: bold; color: #3255AF; margin-bottom: 10px;">Мой аккаунт</div>
+                    <div style="margin-bottom: 5px; font-size: 13px;"><b>Имя пользователя:</b> <a href="channel.php?user=<?php echo urlencode($_SESSION['user']); ?>"><?php echo htmlspecialchars($_SESSION['user'], ENT_QUOTES, 'UTF-8'); ?></a></div>
+                    <div style="margin-bottom: 5px; font-size: 13px;"><b>Email:</b> <?php echo htmlspecialchars($account_email !== '' ? $account_email : '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                    <div style="margin-bottom: 5px; font-size: 13px;"><b>Видео просмотрено:</b> <?php echo (int)$account_videos_watched; ?></div>
+
+
+                    <table border="0" cellpadding="0" cellspacing="5" width="100%">
+                    <tr>
+                      <td width="33%" bgcolor="#FFFFFF" align="center" style="padding: 4px 3px;">
+                        <a href="channel.php?user=<?php echo urlencode($current_user); ?>&tab=videos" style="color: #0033CC; font-size: 14px;">Видео: <?php echo (int)$account_videos_count; ?></a><br>
+                        <font size="1" color="#555555">
+                          Просмотров: <?php echo (int)$video_views; ?><br>
+                          * Фанатов: <?php echo (int)$account_fans_count; ?>
+                        </font>
+                      </td>
+                      <td width="33%" bgcolor="#FFFFFF" align="center" valign="top" style="padding: 4px 3px;">
+                        <a href="favourites.php?user=<?php echo urlencode($current_user); ?>" style="color: #0033CC; font-size: 14px;">Избранных: <?php echo (int)$account_favourites_count; ?></a>
+                      </td>
+                      <td width="33%" bgcolor="#FFFFFF" align="center" style="padding: 4px 3px;">
+                        <a href="friends.php?user=<?php echo urlencode($current_user); ?>" style="color: #0033CC; font-size: 14px;">Друзей: <?php echo (int)$friends_count; ?></a><br>
+                        <font style="font-size: 10px;">
+                          <div style="margin-top: 1px;">
+                            <a href="friends.php?user=<?php echo urlencode($current_user); ?>">Видео</a> (<?php echo (int)$account_friends_videos_count; ?>)<br>
+                            <a href="friends.php?user=<?php echo urlencode($current_user); ?>">Избранные</a> (<?php echo (int)$account_friends_favourites_count; ?>)
+                          </div>
+                        </font>
+                      </td>
+
+                    </tr>
+                    </table>
+
+                    <div style="margin-top: 10px; margin-bottom: 0px; line-height: 1.0;"><span class="small">* Количество пользователей, добавивших ваши видео в избранное</span></div>
+					</td>
+					<td width="33%" style="padding: 0px 10px 10px 10px; color: #444;">
+					<img src="<?= htmlspecialchars($account_mail_icon, ENT_QUOTES, 'UTF-8') ?>" width="14" height="10" border="0"> У вас <a href="my_messages.php"><?= (int)$account_unread_mail ?> новых сообщений</a>.
+          <br>
+          <div style="margin-top: 5px; margin-bottom: 5px;"><span class="highlight">ToDo...</span></div>
+          - <a href="my_friends_invite.php">Пригласите своих друзей</a>
+          <br>
+          - <a href="account.php">Кастомизируйте свой профиль</a>
+					</td>
+					</tr>
+				</tbody></table>
+        <?php else: ?>
+
+        
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr valign="top">
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
 					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php">Смотрите</a></div>
@@ -471,6 +605,7 @@ if ($tags_mode === 'tags') {
 					</td>
 					</tr>
 				</tbody></table>
+        <?php endif; ?>
 
 									
 				</td>
@@ -711,111 +846,7 @@ echo time_ago($ago_ts);
 		</div>
     <?php endif; ?>
 
-        <div style="margin-top:20px;">
-          <table class="roundedTable" width="180" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC">
-            <tbody>
-              <tr>
-                <td><img src="img/box_login_tl.gif" width="5" height="5"></td>
-                <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
-                <td><img src="img/box_login_tr.gif" width="5" height="5"></td>
-              </tr>
-              <tr>
-                <td><img src="img/pixel.gif" width="5" height="1"></td>
-                <td width="170">
-          <div class="moduleTitleBar" style="border: 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td style="font-size: 13px; font-weight: bold; color: #444444; padding-bottom: 5px;">
-                  <?php if (isset($_SESSION['user'])): ?>
-                    Привет, <?=htmlspecialchars($_SESSION['user'])?>
-                  <?php else: ?>
-                    Что тут делать?
-                  <?php endif; ?>
-                </td>
-                <td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;"></td>
-              </tr>
-            </table>
-          </div>
-          
-          <table width="100%" cellpadding="6" cellspacing="0" border="0" style="background:#fff; border:0;">
-            <tr>
-              <td style="font-size:12px; color:#222;">
-                <?php if (isset($_SESSION['user'])): ?>
-                  <table width="90%" cellpadding="2" cellspacing="0" border="0" style="font-size:11px;">
-                    <tr>
-                      <td style="vertical-align:top;">
-                        <span class="hpStatsHeading">Статистика</span><br>
-                        <span class="smallLabel">Просмотров:</span> <?=$userStats['video_views']?><br>
-                        <span class="smallLabel">Просмотров канала:</span> <?=$userStats['channel_views']?><br>
-                        <span class="smallLabel">Подписчиков:</span> <?=$subscribers_count?><br>
-                        <span class="smallLabel"><a href="channel.php?user=<?=urlencode($_SESSION['user'])?>">Мой канал</a></span>
-                      </td>
-                    </tr>
-                  </table>
-                  <div style="font-size:11px; padding-top:6px;">
-                    <span class="hpStatsHeading">Ссылки</span><br>
-                    <a href="channel.php?user=<?=urlencode($_SESSION['user'])?>&tab=videos">Мои видео</a> |
-                    <a href="favourites.php">Избранное</a> |
-                    <a href="friends.php">Мои друзья</a>
-                  </div>
-                <?php else: ?>
-                <table class="hpAboutTable" width="90%">
-                  <tbody><tr>
-                    <td class="label"><font size="2"><a href="channel.php">Смотреть</a></font></td>
-                    <td class="desc">Находите и смотрите тысячи видео.</td>
-                  </tr>
-                  <tr>
-                    <td class="label"><font size="2"><a href="upload.php">Загружать</a></font></td>
-                    <td class="desc">Быстро загружайте видео практически в любом формате.</td>
-                  </tr>
-                  <tr>
-                    <td class="label"><font size="2"><a href="my_friends_invite.php">Делиться</a></font></td>
-                    <td>Легко делитесь своими видео с друзьями, семьёй или коллегами.</td>
-                  </tr>
-                  </tbody></table>
-                        
-				<div style="border-top: 1px solid #CCC; margin-top: 6px; padding-top: 6px;">
-				<b><font size="2" color="#000000">Войти в аккаунт:</font></b>
-				</div>
-
-                <form method="post" action="login.php" style="margin:0;">
-                  <table width="90%" cellpadding="2" cellspacing="0" border="0" style="font-size:12px;">
-                    <tr>
-                      <td style="padding:2px 0 2px 0;"><b>Имя:</b></td>
-                      <td style="padding:2px 0 2px 0;"><input type="text" name="login" style="width:100px; font-size:12px;"></td>
-                    </tr>
-                    <tr>
-                      <td style="padding:2px 0 2px 0;"><b>Пароль:</b></td>
-                      <td style="padding:2px 0 2px 0;"><input type="password" name="pass" style="width:100px; font-size:12px;"></td>
-                    </tr>
-                                      <tr>
-                    <td style="padding:0px 0 2px 0; width:50%;">
-                      <input type="submit" value="Войти" style="font-size:12px;">
-                    </td>
-                    <td style="padding:0px 0 2px 0; width:50%; text-align:right;">
-                      <a href="register.php" style="font-size:12px;"><b>Регистрация</b></a>
-                    </td>
-                  </tr>
-                  </table>
-                </form>
-                <div class="hpLoginForgot smallText">
-						<b>Забыли:</b> <a href="forgot_username.php">Имя</a> | <a href="forgot.php">Пароль</a>
-						</div>
-                <?php endif; ?>
-              </td>
-            </tr>
-          </table>
-                </td>
-                <td><img src="img/pixel.gif" width="5" height="1"></td>
-              </tr>
-              <tr>
-                <td><img src="img/box_login_bl.gif" width="5" height="5"></td>
-                <td width="100%"><img src="img/pixel.gif" width="1" height="5"></td>
-                <td><img src="img/box_login_br.gif" width="5" height="5"></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        
         
         <?php
         $tags_mode = isset($_GET['p']) ? (string)$_GET['p'] : '';
