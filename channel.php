@@ -900,19 +900,9 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $per_page = 20;
     $offset = ($page - 1) * $per_page;
-    $show_recs_block = true;
-    if (isset($_SESSION['user'])) {
-        try {
-            $stRecsEnabled = $db->prepare("SELECT recs_enabled FROM users WHERE login = ? LIMIT 1");
-            $stRecsEnabled->execute([$_SESSION['user']]);
-            $recsEnabledVal = $stRecsEnabled->fetchColumn();
-            if ($recsEnabledVal !== false && (string)$recsEnabledVal === '0') {
-                $show_recs_block = false;
-            }
-        } catch (Exception $e) {
-            $show_recs_block = true;
-        }
-    }
+    $show_recs_block = isset($_SESSION['user'])
+        ? user_recs_enabled($db, (string)$_SESSION['user'])
+        : recs_default_enabled();
     
     $filter = isset($_GET['filter']) ? $_GET['filter'] : 'recent';
     if ($filter === 'recs' && !(isset($_SESSION['user']) && $show_recs_block)) {

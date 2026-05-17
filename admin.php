@@ -261,6 +261,7 @@ if (file_exists($news_file)) {
 }
 
 $processing_settings = processing_settings_read();
+$recs_default_on = recs_default_enabled();
 
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'news_submit') {
     $news_text = trim($_POST['field_news_text'] ?? '');
@@ -310,6 +311,18 @@ if (isset($_POST['field_command']) && $_POST['field_command'] === 'processing_su
         } catch (Exception $e) {
             $error = 'Не удалось сохранить настройки.';
         }
+    }
+}
+
+if (isset($_POST['field_command']) && $_POST['field_command'] === 'recs_default_submit') {
+    $recsDefOn = isset($_POST['field_recs_default_enabled']) && $_POST['field_recs_default_enabled'] === '1';
+    try {
+        $st = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
+        $st->execute(['recs_default_enabled', $recsDefOn ? '1' : '0']);
+        $recs_default_on = recs_default_enabled();
+        $message = 'Настройки сохранены.';
+    } catch (Exception $e) {
+        $error = 'Не удалось сохранить настройку рекомендаций.';
     }
 }
 
@@ -586,6 +599,22 @@ showHeader("Администрирование");
         <input type="submit" value="Сохранить">
       </td>
     </tr>
+
+<form method="post" action="admin.php">
+<input type="hidden" name="field_command" value="recs_default_submit">
+
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Рекомендации:</b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+        <label><input type="checkbox" name="field_recs_default_enabled" value="1"<?= $recs_default_on ? ' checked' : '' ?>> включать персональные рекомендации у новых пользователей по умолчанию</label>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td style="padding-bottom:8px;" colspan="4">
+        <input type="submit" value="Сохранить">
+      </td>
+    </tr>
+
 </table>
 </form>
 

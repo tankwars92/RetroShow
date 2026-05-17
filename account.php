@@ -573,7 +573,7 @@ showHeader('Настройки аккаунта');
   <tr>
   <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Рекомендации:</b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
-    <input type="checkbox" name="recs_enabled" value="1" id="recs_enabled" <?= (($user_data['recs_enabled'] ?? '1') === '1') ? 'checked' : '' ?>>
+    <input type="checkbox" name="recs_enabled" value="1" id="recs_enabled" <?= user_recs_enabled($db, $user) ? 'checked' : '' ?>>
     <label for="recs_enabled">Включить персональные рекомендации</label>
   </td>
   </tr>

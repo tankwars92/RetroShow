@@ -71,12 +71,10 @@ if (isset($_SESSION['user'])) {
         if ($hbt === 'recent_viewed') {
             $home_block_type = 'recent_viewed';
         }
-        if (isset($settings_row['recs_enabled']) && (string)$settings_row['recs_enabled'] === '0') {
-            $show_recs_block = false;
-        }
+        $show_recs_block = user_recs_enabled($db, $current_user);
     } catch (Exception $e) {
         $home_block_type = 'recent_added';
-        $show_recs_block = true;
+        $show_recs_block = user_recs_enabled($db, $current_user);
     }
     try {
         $stmt = $db->prepare("SELECT email FROM users WHERE login = ? LIMIT 1");

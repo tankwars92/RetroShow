@@ -62,12 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['field_command'] ??
 		if ($error === '') {
 			try {
 				$now = time();
+				$recs_default = recs_default_enabled() ? '1' : '0';
 				$stmt = $db->prepare("
 					INSERT INTO users
-					(login, pass, email, country, gender, birthday_mon, birthday_day, birthday_yr, signup_time, last_login)
-					VALUES (?, ?, ?, '', '', '', '', '', ?, ?)
+					(login, pass, email, country, gender, birthday_mon, birthday_day, birthday_yr, signup_time, last_login, recs_enabled)
+					VALUES (?, ?, ?, '', '', '', '', '', ?, ?, ?)
 				");
-				$stmt->execute([$username, $password1, $email, $now, $now]);
+				$stmt->execute([$username, $password1, $email, $now, $now, $recs_default]);
 				$_SESSION['user'] = $username;
 				header('Location: index.php');
 				exit;

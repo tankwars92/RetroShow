@@ -46,6 +46,44 @@ function processing_health_url(): string {
     return processing_base_url() . '/health';
 }
 
+function recs_default_enabled(): bool {
+    global $db;
+    if (!isset($db) || !($db instanceof PDO)) {
+        return true;
+    }
+    try {
+        $st = $db->prepare('SELECT value FROM meta WHERE key = ? LIMIT 1');
+        $st->execute(['recs_default_enabled']);
+        $v = $st->fetchColumn();
+        if ($v !== false && $v !== null && $v !== '') {
+            return ($v === '1' || $v === 1);
+        }
+    } catch (Exception $e) {
+    }
+    return true;
+}
+
+function user_recs_enabled(PDO $db, ?string $login): bool {
+    if ($login === null || trim($login) === '') {
+        return recs_default_enabled();
+    }
+    try {
+        $st = $db->prepare('SELECT recs_enabled FROM users WHERE login = ? LIMIT 1');
+        $st->execute([trim($login)]);
+        $v = $st->fetchColumn();
+        if ($v === false) {
+            return recs_default_enabled();
+        }
+        $s = trim((string)$v);
+        if ($s === '') {
+            return recs_default_enabled();
+        }
+        return $s === '1';
+    } catch (Exception $e) {
+        return recs_default_enabled();
+    }
+}
+
 function processing_health_probe(): array {
     $url = processing_health_url();
     $ctx = stream_context_create([
@@ -504,6 +542,11 @@ try {
         $ins = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
         $ins->execute(['processing_enabled', $en]);
         $ins->execute(['processing_server_url', $url]);
+    }
+    $has_recs_def = $db->query("SELECT 1 FROM meta WHERE key = 'recs_default_enabled' LIMIT 1")->fetchColumn();
+    if ($has_recs_def === false) {
+        $ins = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
+        $ins->execute(['recs_default_enabled', '1']);
     }
 } catch (Exception $e) {
 }
