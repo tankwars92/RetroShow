@@ -6,7 +6,7 @@ RetroShow - это движок для создания видеосайта, с
 
 ## Требования.
 
-- **Python 3.8** (скачайте его с [python.org](https://python.org))
+- **Python 3.8+** (скачайте его с [python.org](https://python.org))
 - **FFmpeg** (скачайте его с [ffmpeg.org](https://ffmpeg.org/download.html))
 - **Сервер с поддержкой PHP** (например, [XAMPP](https://www.apachefriends.org/ru/index.html))
 
