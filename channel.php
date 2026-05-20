@@ -709,7 +709,21 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                   <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                     <table width="565" cellpadding="0" cellspacing="0" border="0">
                       <tr valign="top">
-                        <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a></td>
+                        <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a>
+<center>
+<br>
+
+<?php if (is_valid_video_public_id($row['public_id'] ?? '')): ?>
+    <button type="button" style="margin-bottom:15px;width:110px;" onclick="window.location.href='my_videos_edit.php?id=<?=urlencode((string)$row['public_id'])?>';">
+      Редактировать</button>
+    <?php endif; ?>
+
+<br>
+
+<button type="button" onclick="window.location.href='delete_video.php?id=<?=urlencode((string)$row['public_id'])?>';">
+      Удалить</button>
+</center>
+                        </td>
                         <td width="445" valign="top" style="padding-left:8px;">
                           <?php if ($show_owner_tools): ?>
                           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed;"><tr valign="top">
@@ -769,15 +783,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
 
                           <?php if ($show_owner_tools): ?>
                           </td>
-                          <td valign="top" width="133" style="padding-left:4px;">
-    <?php if (is_valid_video_public_id($row['public_id'] ?? '')): ?>
-    <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='my_videos_edit.php?id=<?=urlencode((string)$row['public_id'])?>';">
-      Редактировать видео</button>
-    <?php endif; ?>
-    <?php if ($can_choose_avatar): ?>
-    <button type="button" style="width:130px; display:block;margin-bottom:5px;font-size:11px" onclick="window.location.href='channel.php?user=<?=urlencode($user)?>&tab=videos&set_avatar=<?=intval($row['id'])?><?php if ($page > 1): ?>&page=<?=$page?><?php endif; ?>';">
-      Сделать аватаром</button>
-    <?php endif; ?>
+                          <td width="1">
                           </td>
                           </tr>
                           <?php endif; ?>
