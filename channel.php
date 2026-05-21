@@ -635,7 +635,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
     $sidebar_active = 'public';
   }
 
-  showHeader(($public_only_view ? 'Публичные видео // ' . htmlspecialchars($user) : 'Мои видео '));
+  showHeader(($show_owner_tools ? 'Мои видео ' : 'Публичные видео // ' . htmlspecialchars($user)));
     ?>
   <link rel="stylesheet" href="img/styles.css" type="text/css">
   <style>
@@ -710,19 +710,22 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                     <table width="565" cellpadding="0" cellspacing="0" border="0">
                       <tr valign="top">
                         <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a>
+
+<?php if (is_valid_video_public_id($row['public_id'] ?? '') && $show_owner_tools): ?>                  
 <center>
 <br>
 
-<?php if (is_valid_video_public_id($row['public_id'] ?? '')): ?>
     <button type="button" style="margin-bottom:15px;width:110px;" onclick="window.location.href='my_videos_edit.php?id=<?=urlencode((string)$row['public_id'])?>';">
       Редактировать</button>
-    <?php endif; ?>
+    
 
 <br>
 
 <button type="button" onclick="window.location.href='delete_video.php?id=<?=urlencode((string)$row['public_id'])?>';">
       Удалить</button>
 </center>
+<?php endif; ?>
+
                         </td>
                         <td width="445" valign="top" style="padding-left:8px;">
                           <?php if ($show_owner_tools): ?>
