@@ -76,6 +76,16 @@ Copyright © 2026 RetroShow, LLC
 .invite-message-label { font-size: 13px; color: #333; }
 .invite-textarea { width: 330px; height: 70px; font-size: 13px; }
 .invite-btn { font-size: 13px; }
+.formHighlight {
+	background-image: url(/img/table_results_selected_bg.gif);
+	background-repeat: repeat-x;
+	background-color: #FFFFCC;
+	background-position: left top;
+	border: 1px dashed #CCCC66;
+	padding: 7px;
+	padding-bottom: 10px;
+	margin-bottom: 5px;
+}
 </style>
 
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0" style="font-family:Tahoma,Arial,sans-serif; font-size:13px;">
@@ -115,7 +125,7 @@ Copyright © 2026 RetroShow, LLC
 <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;"><tr>
   <td style="vertical-align:top; font-weight:bold; font-size:13px;">Сообщение:</td>
   <td style="vertical-align:top; padding-left:8px;">
-    <div class="invite-message-box" style="width:500px; margin-top:0; padding-top:0;">
+    <div class="formHighlight" style="width:500px; margin-top:0; padding-top:0;">
       <br>
       Здравствуйте,<br>
       <br>

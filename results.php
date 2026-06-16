@@ -314,10 +314,10 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                 <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                   <table width="565" cellpadding="0" cellspacing="0" border="0">
                     <tr valign="top">
-                      <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a></td>
+                      <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>&search_query=<?=urlencode($search_query)?>"><img src="<?=htmlspecialchars($video['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a></td>
                       <td width="100%" style="padding-left:8px;">
                         <div class="moduleEntryTitle">
-                          <a href="video.php?id=<?=$vid_link?>"><?=htmlspecialchars($video['title'])?></a>
+                          <a href="video.php?id=<?=$vid_link?>&search_query=<?=urlencode($search_query)?>"><?=htmlspecialchars($video['title'])?></a>
                         </div>
                         <div class="moduleEntryDescription">
                         <span id="<?= $desc_id ?>-short">

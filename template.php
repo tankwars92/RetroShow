@@ -4,6 +4,7 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+
 function showHeader($title = "RetroShow") {
     global $show_menu, $db;
     if (!isset($show_menu)) $show_menu = true;
@@ -32,9 +33,9 @@ function showHeader($title = "RetroShow") {
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?php if ($title === "Главная"): ?>
-<title>RetroShow - Загружайте и делитесь видео по всему миру!</title>
+<title><?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?> - Загружайте и делитесь видео по всему миру!</title>
 <?php else: ?>
-<title><?= htmlspecialchars($title) ?> - RetroShow</title>
+<title><?= htmlspecialchars($title) ?> - <?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?></title>
 <?php endif; ?>
 		
 		<script language="javascript" type="text/javascript">
