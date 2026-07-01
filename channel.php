@@ -5,23 +5,6 @@ require_once __DIR__ . '/recs.php';
 
 $filter = isset($_GET['filter']) ? $_GET['filter'] : 'recent';
 
-function time_ago($time) {
-    $diff = time() - $time;
-    if ($diff < 60) return $diff.' секунд назад';
-    $mins = floor($diff/60);
-    if ($mins < 60) return $mins.' минут назад';
-    $hours = floor($mins/60);
-    if ($hours < 24) return $hours.' часов назад';
-    $days = floor($hours/24);
-    if ($days < 7) return $days.' дней назад';
-    $weeks = floor($days/7);
-    if ($weeks < 5) return $weeks.' недель назад';
-    $months = floor($days/30);
-    if ($months < 12) return $months.' месяцев назад';
-    $years = floor($days/365);
-    return $years.' лет назад';
-}
-
 function rus_date($time) {
     $months = [
         1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля', 5 => 'мая', 6 => 'июня',
@@ -264,18 +247,6 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
     $stmt_vw->execute([$user]);
     $videos_watched = (int)$stmt_vw->fetchColumn();
 
-    if (!function_exists('ago_ru')) {
-        function ago_ru($ts) {
-            $diff = time() - (int)$ts;
-            if ($diff < 60) return $diff.' секунд назад';
-            if ($diff < 3600) return floor($diff / 60).' минут назад';
-            if ($diff < 86400) return floor($diff / 3600).' часов назад';
-            if ($diff < 2592000) return floor($diff / 86400).' дней назад';
-            if ($diff < 31536000) return floor($diff / 2592000).' месяцев назад';
-            return floor($diff / 31536000).' лет назад';
-        }
-    }
-
     $public_count = 0;
     $private_count = 0;
     $friends_count = 0;
@@ -442,7 +413,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 
                     <tr>
                         <td align="right"><span class="label">Последний вход:</span></td>
-                        <td><?= htmlspecialchars(ago_ru($last_login_time), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars(time_ago($last_login_time), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     </tbody>
                 </table>
@@ -906,9 +877,17 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
 }
 
 if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
-    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $browse_max_videos = 300;
+    if ($filter == 'recs') {
+      $browse_max_videos = 20;
+    }
+    $browse_max_pages = 15;
     $per_page = 20;
-    $offset = ($page - 1) * $per_page;
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $offset = 0;
+    $total = 0;
+    $total_pages = 0;
+    $videos = [];
     $show_recs_block = isset($_SESSION['user'])
         ? user_recs_enabled($db, (string)$_SESSION['user'])
         : recs_default_enabled();
@@ -968,12 +947,16 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 LEFT JOIN ratings r ON r.video_id = v.id
                 WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
                 GROUP BY v.id
-                ORDER BY weighted_rating DESC, v.views DESC, v.id DESC");
+                ORDER BY weighted_rating DESC, v.views DESC, v.id DESC
+                LIMIT " . (int)$browse_max_videos);
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-			
             $total = count($all_videos);
-            $total_pages = ceil($total / $per_page);
+            $total_pages = $total > 0 ? min($browse_max_pages, (int)ceil($total / $per_page)) : 0;
+            if ($total_pages > 0) {
+                $page = min($page, $total_pages);
+            }
+            $offset = ($page - 1) * $per_page;
             $videos = array_slice($all_videos, $offset, $per_page);
             break;
 
@@ -989,12 +972,16 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 ) cc ON cc.video_id = v.id
                 WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
                 ORDER BY comments_count DESC, v.views DESC, v.id DESC
+                LIMIT " . (int)$browse_max_videos . "
             ");
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
             $total = count($all_videos);
-            $total_pages = ceil($total / $per_page);
+            $total_pages = $total > 0 ? min($browse_max_pages, (int)ceil($total / $per_page)) : 0;
+            if ($total_pages > 0) {
+                $page = min($page, $total_pages);
+            }
+            $offset = ($page - 1) * $per_page;
             $videos = array_slice($all_videos, $offset, $per_page);
             break;
         case 'favorites':
@@ -1009,33 +996,45 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 ) fv ON fv.video_id = v.id
                 WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
                 ORDER BY favorites_count DESC, v.views DESC, v.id DESC
+                LIMIT " . (int)$browse_max_videos . "
             ");
             $stmt->execute();
             $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
             $total = count($all_videos);
-            $total_pages = ceil($total / $per_page);
+            $total_pages = $total > 0 ? min($browse_max_pages, (int)ceil($total / $per_page)) : 0;
+            if ($total_pages > 0) {
+                $page = min($page, $total_pages);
+            }
+            $offset = ($page - 1) * $per_page;
             $videos = array_slice($all_videos, $offset, $per_page);
             break;
 
         case 'random':
-            $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user'));
+            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY RANDOM() LIMIT " . (int)$browse_max_videos);
             $stmt->execute();
-            $total = $stmt->fetchColumn();
-            $total_pages = ceil($total / $per_page);
-            $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY RANDOM() LIMIT $offset, $per_page");
-            $stmt->execute();
-            $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $all_videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $total = count($all_videos);
+            $total_pages = $total > 0 ? min($browse_max_pages, (int)ceil($total / $per_page)) : 0;
+            if ($total_pages > 0) {
+                $page = min($page, $total_pages);
+            }
+            $offset = ($page - 1) * $per_page;
+            $videos = array_slice($all_videos, $offset, $per_page);
             break;
         case 'recs':
             $videos = [];
             try {
                 $viewerUser = isset($_SESSION['user']) ? (string)$_SESSION['user'] : null;
                 $viewerIp = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
-                $all_recs = recs_get_home_recommendations($db, $viewerUser, $viewerIp, 100);
+                $all_recs = recs_get_home_recommendations($db, $viewerUser, $viewerIp, $browse_max_videos);
+                $all_recs = array_slice($all_recs, 0, $browse_max_videos);
                 $total = count($all_recs);
-                $total_pages = 1;
-                $videos = $all_recs;
+                $total_pages = $total > 0 ? min($browse_max_pages, (int)ceil($total / $per_page)) : 0;
+                if ($total_pages > 0) {
+                    $page = min($page, $total_pages);
+                }
+                $offset = ($page - 1) * $per_page;
+                $videos = array_slice($all_recs, $offset, $per_page);
             } catch (Exception $e) {
                 $videos = [];
                 $total = 0;
@@ -1047,10 +1046,15 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
     if ($filter !== 'discussed' && $filter !== 'favorites' && $filter !== 'rated' && $filter !== 'random' && $filter !== 'recs') {
         $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user'));
         $stmt->execute();
-        $total = $stmt->fetchColumn();
-        $total_pages = ceil($total / $per_page);
+        $raw_total = (int)$stmt->fetchColumn();
+        $total = min($raw_total, $browse_max_videos);
+        $total_pages = $total > 0 ? min($browse_max_pages, (int)ceil($total / $per_page)) : 0;
+        if ($total_pages > 0) {
+            $page = min($page, $total_pages);
+        }
+        $offset = ($page - 1) * $per_page;
         
-        $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY $order_by LIMIT $offset, $per_page");
+        $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file FROM videos WHERE private = 0 AND " . visible_video_sql_condition('videos', 'user') . " ORDER BY $order_by LIMIT $per_page OFFSET $offset");
         $stmt->execute();
         $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -1337,26 +1341,16 @@ foreach ($filters as $filter_key => $filter_label) {
         </div>
 
 				<?php if ($total_pages > 1): ?>
-				<div class="pagingDiv" style="background: #CCC; margin: 0px 0 0px 0; padding: 5px 0px; font-size: 13px; color: #333; font-weight: bold; text-align: right;">
-					Стр.
+				<div class="pagingDiv" style="background: #CCC; margin: 0px 0 0px 0; padding: 5px 0px; font-size: 13px; color: #333; font-weight: bold; text-align: right; border-top: 1px dashed #999;">
+					Страница:
 					<?php
-					$start_page = max(1, $page - 2);
-					$end_page = min($total_pages, $page + 2);
 					$filter_param = 'filter=' . urlencode($filter) . '&';
-					if ($start_page > 1) {
-						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=1" style="color: #03C; text-decoration: underline;">1</a></span>';
-						if ($start_page > 2) echo ' ... ';
-					}
-					for ($pi = $start_page; $pi <= $end_page; $pi++) {
+					for ($pi = 1; $pi <= $total_pages; $pi++) {
 						if ($pi == $page) {
 							echo '<span class="pagerCurrent" style="color: #333; background-color: #FFF; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; cursor: pointer;">' . $pi . '</span>';
 						} else {
 							echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . $pi . '" style="color: #03C; text-decoration: underline;">' . $pi . '</a></span>';
 						}
-					}
-					if ($end_page < $total_pages) {
-						if ($end_page < $total_pages - 1) echo ' ... ';
-						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . $total_pages . '" style="color: #03C; text-decoration: underline;">' . $total_pages . '</a></span>';
 					}
 					if ($page < $total_pages) {
 						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . ($page + 1) . '" style="color: #03C; text-decoration: underline;">Далее</a></span>';

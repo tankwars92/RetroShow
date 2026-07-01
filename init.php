@@ -84,6 +84,58 @@ function user_recs_enabled(PDO $db, ?string $login): bool {
     }
 }
 
+function rus_plural(int $n, string $one, string $few, string $many): string {
+    $n = abs($n) % 100;
+    $n1 = $n % 10;
+    if ($n > 10 && $n < 20) {
+        return $many;
+    }
+    if ($n1 === 1) {
+        return $one;
+    }
+    if ($n1 >= 2 && $n1 <= 4) {
+        return $few;
+    }
+    return $many;
+}
+
+function time_ago($time): string {
+    $time = (int)$time;
+    if ($time <= 0) {
+        return 'только что';
+    }
+    $diff = time() - $time;
+    if ($diff < 0) {
+        $diff = 0;
+    }
+    if ($diff < 60) {
+        $n = max(1, $diff);
+        return $n . ' ' . rus_plural($n, 'секунду', 'секунды', 'секунд') . ' назад';
+    }
+    $mins = (int)floor($diff / 60);
+    if ($mins < 60) {
+        return $mins . ' ' . rus_plural($mins, 'минуту', 'минуты', 'минут') . ' назад';
+    }
+    $hours = (int)floor($mins / 60);
+    if ($hours < 24) {
+        return $hours . ' ' . rus_plural($hours, 'час', 'часа', 'часов') . ' назад';
+    }
+    $days = (int)floor($hours / 24);
+    if ($days < 7) {
+        return $days . ' ' . rus_plural($days, 'день', 'дня', 'дней') . ' назад';
+    }
+    $weeks = (int)floor($days / 7);
+    if ($weeks < 5) {
+        return $weeks . ' ' . rus_plural($weeks, 'неделю', 'недели', 'недель') . ' назад';
+    }
+    $months = (int)floor($days / 30);
+    if ($months < 12) {
+        return $months . ' ' . rus_plural($months, 'месяц', 'месяца', 'месяцев') . ' назад';
+    }
+    $years = (int)floor($days / 365);
+    return $years . ' ' . rus_plural($years, 'год', 'года', 'лет') . ' назад';
+}
+
 function processing_health_probe(): array {
     $url = processing_health_url();
     $ctx = stream_context_create([

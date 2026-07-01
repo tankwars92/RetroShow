@@ -25,45 +25,6 @@ function get_profile_icon($username, $profile_icon_setting = '0') {
     return 'img/no_videos_140.jpg';
 }
 
-function time_ago($time) {
-    $diff = time() - $time;
-    if ($diff < 60) return $diff.' секунд назад';
-    $mins = floor($diff/60);
-    if ($mins < 60) {
-        $n = $mins;
-        $f = ($n%10==1 && $n%100!=11) ? 'минуту' : (($n%10>=2 && $n%10<=4 && ($n%100<10 || $n%100>=20)) ? 'минуты' : 'минут');
-        return "$n $f назад";
-    }
-    $hours = floor($mins/60);
-    if ($hours < 24) {
-        $n = $hours;
-        $f = ($n%10==1 && $n%100!=11) ? 'час' : (($n%10>=2 && $n%10<=4 && ($n%100<10 || $n%100>=20)) ? 'часа' : 'часов');
-        return "$n $f назад";
-    }
-    $days = floor($hours/24);
-    if ($days < 7) {
-        $n = $days;
-        $f = ($n%10==1 && $n%100!=11) ? 'день' : (($n%10>=2 && $n%10<=4 && ($n%100<10 || $n%100>=20)) ? 'дня' : 'дней');
-        return "$n $f назад";
-    }
-    $weeks = floor($days/7);
-    if ($weeks < 5) {
-        $n = $weeks;
-        $f = ($n%10==1 && $n%100!=11) ? 'неделю' : (($n%10>=2 && $n%10<=4 && ($n%100<10 || $n%100>=20)) ? 'недели' : 'недель');
-        return "$n $f назад";
-    }
-    $months = floor($days/30);
-    if ($months < 12) {
-        $n = $months;
-        $f = ($n%10==1 && $n%100!=11) ? 'месяц' : (($n%10>=2 && $n%10<=4 && ($n%100<10 || $n%100>=20)) ? 'месяца' : 'месяцев');
-        return "$n $f назад";
-    }
-    $years = floor($days/365);
-    $n = $years;
-    $f = ($n%10==1 && $n%100!=11) ? 'год' : (($n%10>=2 && $n%10<=4 && ($n%100<10 || $n%100>=20)) ? 'года' : 'лет');
-    return "$n $f назад";
-}
-
 function get_video_duration($file, $id, $public_id = '') {
     return get_video_duration_fast($file, $id, $public_id);
 }
