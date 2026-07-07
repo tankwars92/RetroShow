@@ -108,7 +108,7 @@ if ($fav_list) {
                       WHERE id IN ($in)");
     $stmt->execute($fav_list);
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-      if (empty($row['private']) && !is_user_shadow_banned($row['user'] ?? '')) {
+      if (empty($row['private']) && video_is_ready($row) && !is_user_shadow_banned($row['user'] ?? '')) {
           $row['public_id'] = !empty($row['public_id']) ? $row['public_id'] : $row['id'];
           $videos[$row['id']] = $row;
       }

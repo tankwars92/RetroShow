@@ -226,7 +226,7 @@ if (isset($_SESSION['user']) && isset($home_block_type) && $home_block_type === 
 
         if (!empty($ordered_ids)) {
             $in = implode(',', array_fill(0, count($ordered_ids), '?'));
-            $stmtV = $db->prepare("SELECT * FROM videos WHERE id IN ($in) AND (private = 0 OR private IS NULL)");
+            $stmtV = $db->prepare("SELECT * FROM videos WHERE id IN ($in) AND (private = 0 OR private IS NULL) AND " . ready_video_sql_condition('videos'));
             $stmtV->execute($ordered_ids);
             $videos_rows = $stmtV->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
@@ -252,13 +252,15 @@ if (isset($_SESSION['user']) && isset($home_block_type) && $home_block_type === 
     }
 }
 if (empty($recent_videos)) {
-    $stmt = $db->query("SELECT * FROM videos ORDER BY id DESC LIMIT 10");
+    $stmt = $db->query("SELECT * FROM videos WHERE private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT 10");
     $recent_videos = array_filter($stmt->fetchAll(), function($v) {
         if (!empty($v['private'])) return false;
+        if (!video_is_ready($v)) return false;
         return !is_user_shadow_banned($v['user'] ?? '');
     });
 }
 $recent_videos = array_values(array_filter($recent_videos, function($v) {
+    if (!video_is_ready($v)) return false;
     return !is_user_shadow_banned($v['user'] ?? '');
 }));
 
@@ -270,9 +272,9 @@ $stmt = $db->query("SELECT COUNT(*) FROM videos");
 $total = $stmt->fetchColumn();
 $total_pages = ceil($total / $per_page);
 
-$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY id DESC LIMIT 600");
+$stmt = $db->query("SELECT * FROM videos WHERE private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT 600");
 $newest_pool = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$stmt = $db->query("SELECT * FROM videos WHERE private = 0 ORDER BY views DESC LIMIT 150");
+$stmt = $db->query("SELECT * FROM videos WHERE private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY views DESC LIMIT 150");
 $views_pool = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $merged = [];
 foreach ($newest_pool as $v) {
@@ -282,6 +284,7 @@ foreach ($views_pool as $v) {
     $merged[(int)$v['id']] = $v;
 }
 $all_videos = array_filter($merged, function($v) {
+    if (!video_is_ready($v)) return false;
     return !is_user_shadow_banned($v['user'] ?? '');
 });
 
@@ -300,7 +303,7 @@ if (!empty($promoted_map)) {
     try {
         $ids = array_keys($promoted_map);
         $ph = implode(',', array_fill(0, count($ids), '?'));
-        $stProm = $db->prepare("SELECT * FROM videos WHERE id IN ($ph) AND private = 0");
+        $stProm = $db->prepare("SELECT * FROM videos WHERE id IN ($ph) AND private = 0 AND " . ready_video_sql_condition('videos'));
         $stProm->execute($ids);
         $promoted_rows = $stProm->fetchAll(PDO::FETCH_ASSOC) ?: [];
         foreach ($promoted_rows as $pv) {

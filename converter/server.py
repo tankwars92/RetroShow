@@ -72,6 +72,12 @@ class QueueWorker:
     def db(self):
         con = sqlite3.connect(self.db_path, timeout=30)
         con.row_factory = sqlite3.Row
+        try:
+            con.execute("PRAGMA busy_timeout = 30000")
+            con.execute("PRAGMA journal_mode = WAL")
+            con.execute("PRAGMA synchronous = NORMAL")
+        except Exception:
+            pass
         return con
 
     def _set_queue_status(
@@ -219,7 +225,7 @@ class QueueWorker:
         proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # ВАЖНО
+            stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
             universal_newlines=True,
@@ -335,10 +341,18 @@ class QueueWorker:
                 )
                 is_private = 1 if str(row["broadcast"]) == "private" else 0
 
+                orig_fn = None
+                try:
+                    v = row["original_filename"]
+                    if v is not None and str(v).strip() != "":
+                        orig_fn = str(v).strip()[:255]
+                except (KeyError, IndexError, TypeError):
+                    orig_fn = None
+
                 cur = con.execute(
                     """
-                    INSERT INTO videos (public_id, title, description, file, preview, user, time, private, tags)
-                    VALUES (?, ?, ?, '', '', ?, ?, ?, ?)
+                    INSERT INTO videos (public_id, title, description, file, preview, user, time, private, tags, original_filename)
+                    VALUES (?, ?, ?, '', '', ?, ?, ?, ?, ?)
                     """,
                     (
                         str(row["public_id"]),
@@ -348,6 +362,7 @@ class QueueWorker:
                         created,
                         is_private,
                         str(row["tags"]),
+                        orig_fn,
                     ),
                 )
                 video_id = int(cur.lastrowid)
@@ -358,11 +373,16 @@ class QueueWorker:
                 preview_abs = os.path.join(ROOT_DIR, preview_rel)
 
                 os.makedirs(UPLOADS_DIR, exist_ok=True)
+                con.commit()
+                con.close()
+                con = None
+
                 log_line(f"Queue {queue_id} started converting.")
                 self._ffmpeg_convert(source_abs, final_abs)
                 log_line(f"Queue {queue_id} started making preview.")
                 self._ffmpeg_preview(final_abs, preview_abs)
 
+                con = self.db()
                 con.execute(
                     "UPDATE videos SET file = ?, preview = ? WHERE id = ?",
                     (final_rel, preview_rel, video_id),
@@ -379,21 +399,36 @@ class QueueWorker:
             except Exception as exc:
                 msg = str(exc)[:4000]
                 log_line(f"Queue {queue_id} failed: {msg}")
-                try:
-                    con.execute(
-                        "DELETE FROM videos WHERE public_id = ? AND file = ''",
-                        (str(row["public_id"]) if row is not None else "",),
-                    )
-                except Exception:
-                    pass
-                try:
-                    self._set_queue_status(con, queue_id, "failed", last_error=msg, finished=True)
-                    con.commit()
-                except Exception:
-                    pass
+                err_con = con
+                if err_con is None:
+                    try:
+                        err_con = self.db()
+                    except Exception:
+                        err_con = None
+                if err_con is not None:
+                    try:
+                        err_con.execute(
+                            "DELETE FROM videos WHERE public_id = ? AND file = ''",
+                            (str(row["public_id"]) if row is not None else "",),
+                        )
+                    except Exception:
+                        pass
+                    try:
+                        self._set_queue_status(err_con, queue_id, "failed", last_error=msg, finished=True)
+                        err_con.commit()
+                    except Exception:
+                        pass
+                    try:
+                        err_con.close()
+                    except Exception:
+                        pass
                 return False
             finally:
-                con.close()
+                if con is not None:
+                    try:
+                        con.close()
+                    except Exception:
+                        pass
 
     def process_pending(self, limit: int = 3):
         con = self.db()

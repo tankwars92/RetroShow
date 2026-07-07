@@ -61,6 +61,18 @@ $admins = @unserialize(RETROSHOW_ADMINS);
 if (!is_array($admins)) $admins = [];
 $is_admin = $user && in_array($user, $admins, true);
 
+if (!video_is_ready($video)) {
+    $is_owner = $user && $user === (string)($video['user'] ?? '');
+    if (!$is_owner && !$is_admin) {
+        header('Location: index.php?error=video_not_found');
+        exit;
+    }
+    if ($is_owner && !$is_admin) {
+        header('Location: channel.php?user=' . urlencode((string)$video['user']) . '&tab=videos');
+        exit;
+    }
+}
+
 if (is_user_shadow_banned($video['user'] ?? '')) {
     $can_view_shadow = $is_admin || ($user && $user === ($video['user'] ?? ''));
     if (!$can_view_shadow) {
@@ -674,7 +686,7 @@ $attach_fav_videos = [];
 $attach_allowed_ids = [];
 if ($user) {
     try {
-        $stmtMyAttach = $db->prepare("SELECT id, public_id, title, preview FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT 200");
+        $stmtMyAttach = $db->prepare("SELECT id, public_id, title, preview FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT 200");
         $stmtMyAttach->execute([$user]);
         $attach_my_videos = $stmtMyAttach->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (Exception $e) {

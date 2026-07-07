@@ -315,7 +315,7 @@ try {
 
 function sqlite_configure(PDO $db): void {
     try {
-        $db->exec('PRAGMA busy_timeout = 10000');
+        $db->exec('PRAGMA busy_timeout = 30000');
         $db->exec('PRAGMA foreign_keys = ON');
         $db->exec('PRAGMA temp_store = MEMORY');
         $db->exec('PRAGMA cache_size = -64000');
@@ -330,6 +330,81 @@ function sqlite_configure(PDO $db): void {
         }
     } catch (Exception $e) {
     }
+}
+
+function pdo_sqlite_is_locked(PDOException $e): bool {
+    $msg = $e->getMessage();
+    if (stripos($msg, 'database is locked') !== false || stripos($msg, 'database is busy') !== false) {
+        return true;
+    }
+    $code = (int)($e->errorInfo[1] ?? 0);
+    return $code === 5 || $code === 6;
+}
+
+function pdo_retry(callable $fn, int $maxAttempts = 12, int $baseSleepMs = 75) {
+    $attempt = 0;
+    while (true) {
+        $attempt++;
+        try {
+            return $fn();
+        } catch (PDOException $e) {
+            if (!pdo_sqlite_is_locked($e) || $attempt >= $maxAttempts) {
+                throw $e;
+            }
+            usleep($baseSleepMs * $attempt * 1000);
+        }
+    }
+}
+
+function generate_public_video_id_for_upload(PDO $db): string {
+    return (string) pdo_retry(function () use ($db) {
+        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+        for ($try = 0; $try < 32; $try++) {
+            $id = '';
+            for ($i = 0; $i < 11; $i++) {
+                $id .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            $st = $db->prepare('SELECT 1 FROM videos WHERE public_id = ? LIMIT 1');
+            $st->execute([$id]);
+            if ($st->fetchColumn()) {
+                continue;
+            }
+            try {
+                $stQ = $db->prepare('SELECT 1 FROM video_processing_queue WHERE public_id = ? LIMIT 1');
+                $stQ->execute([$id]);
+                if ($stQ->fetchColumn()) {
+                    continue;
+                }
+            } catch (Exception $e) {
+            }
+            return $id;
+        }
+        throw new RuntimeException('Could not allocate public_id');
+    });
+}
+
+function enqueue_video_processing(PDO $db, array $row): int {
+    return (int) pdo_retry(function () use ($db, $row) {
+        $st = $db->prepare("
+            INSERT INTO video_processing_queue
+            (public_id, user, title, description, tags, broadcast, source_file, created_at, status, original_filename)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        ");
+        $st->execute([
+            (string)$row['public_id'],
+            (string)$row['user'],
+            (string)$row['title'],
+            (string)$row['description'],
+            (string)$row['tags'],
+            (string)$row['broadcast'],
+            (string)$row['source_file'],
+            (int)$row['created_at'],
+            isset($row['original_filename']) && $row['original_filename'] !== '' && $row['original_filename'] !== null
+                ? (string)$row['original_filename']
+                : null,
+        ]);
+        return (int)$db->lastInsertId();
+    });
 }
 
 sqlite_configure($db);
@@ -438,7 +513,20 @@ function visible_video_sql_condition($videos_alias = 'videos', $user_col = 'user
     $uc = trim((string)$user_col);
     if ($va === '') $va = 'videos';
     if ($uc === '') $uc = 'user';
-    return "NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = {$va}.{$uc} AND cm.shadow_banned = 1)";
+    return "NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = {$va}.{$uc} AND cm.shadow_banned = 1)"
+        . " AND TRIM(COALESCE({$va}.file, '')) != ''";
+}
+
+function video_is_ready(array $row): bool {
+    return trim((string)($row['file'] ?? '')) !== '';
+}
+
+function ready_video_sql_condition($videos_alias = 'videos'): string {
+    $va = trim((string)$videos_alias);
+    if ($va === '') {
+        $va = 'videos';
+    }
+    return "TRIM(COALESCE({$va}.file, '')) != ''";
 }
 
 function user_header_logo_src(PDO $db, $username) {

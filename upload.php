@@ -13,21 +13,6 @@
 include("init.php");
 include("template.php");
 
-function generate_public_video_id(PDO $db) {
-    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
-    while (true) {
-        $id = '';
-        for ($i = 0; $i < 11; $i++) {
-            $id .= $chars[random_int(0, strlen($chars) - 1)];
-        }
-        $stmt = $db->prepare('SELECT COUNT(*) FROM videos WHERE public_id = ?');
-        $stmt->execute([$id]);
-        if ($stmt->fetchColumn() == 0) {
-            return $id;
-        }
-    }
-}
-
 function get_video_dimensions($file) {
     $ffprobe = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 " . escapeshellarg($file);
     $output = trim(shell_exec($ffprobe));
@@ -129,9 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     } elseif ($_FILES['video']['size'] > 1048576000) { 
         $error = "Файл слишком большой! Максимальный размер: 1000 МБ.";
     } else {
-        $stmt = $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
+        $stmt = pdo_retry(function () use ($db) {
+            return $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
+        });
         $next_id = $stmt->fetch()['next_id'] ?? 1;
-        $public_id = generate_public_video_id($db);
+        $public_id = generate_public_video_id_for_upload($db);
         $file_base = video_uploads_file_base((int)$next_id, $public_id);
 
         $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
@@ -157,23 +144,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
 
                 if (empty($error)) {
                     try {
-                        $stQ = $db->prepare("
-                            INSERT INTO video_processing_queue
-                            (public_id, user, title, description, tags, broadcast, source_file, created_at, status, original_filename)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-                        ");
-                        $stQ->execute([
-                            $public_id,
-                            (string)$_SESSION['user'],
-                            (string)$title,
-                            (string)$description,
-                            (string)$tags,
-                            ($broadcast === 'private' ? 'private' : 'public'),
-                            (string)$queue_video,
-                            time(),
-                            $orig_upload_name !== '' ? $orig_upload_name : null,
+                        $queue_id = enqueue_video_processing($db, [
+                            'public_id' => $public_id,
+                            'user' => (string)$_SESSION['user'],
+                            'title' => (string)$title,
+                            'description' => (string)$description,
+                            'tags' => (string)$tags,
+                            'broadcast' => ($broadcast === 'private' ? 'private' : 'public'),
+                            'source_file' => (string)$queue_video,
+                            'created_at' => time(),
+                            'original_filename' => $orig_upload_name !== '' ? $orig_upload_name : null,
                         ]);
-                        $queue_id = (int)$db->lastInsertId();
                         notify_processing_worker($queue_id);
 
                         log_event('upload_video', [
@@ -190,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                         unset($_SESSION['upload_title'], $_SESSION['upload_description'], $_SESSION['upload_tags']);
                         $success = "Видео добавлено в очередь обработки. Оно появится после завершения конвертации. <a href=\"index.php\">На главную</a>";
                     } catch (Exception $e) {
-                        $error = 'Ошибка при постановке видео в очередь.';
+                        $error = 'Ошибка при добавлении видео в очередь. Попробуйте ещё раз.';
+                        @unlink($queue_video);
                     }
                 }
             } else {

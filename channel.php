@@ -123,7 +123,7 @@ function get_profile_icon($username, $profile_icon_setting = '0') {
     }
     
     global $db;
-    $stmt = $db->prepare("SELECT preview FROM videos WHERE user = ? ORDER BY id DESC LIMIT 1");
+    $stmt = $db->prepare("SELECT preview FROM videos WHERE user = ? AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT 1");
     $stmt->execute([$username]);
     $last_video = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -198,7 +198,7 @@ try {
     $subscribers_count = (int)$stmtSub->fetchColumn();
 } catch (Exception $e) {}
 
-$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos'));
 $stmt_total->execute([$user]);
 $total = $stmt_total->fetchColumn();
 
@@ -251,7 +251,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
     $private_count = 0;
     $friends_count = 0;
     try {
-        $stPub = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+        $stPub = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos'));
         $stPub->execute([$user]);
         $public_count = (int)$stPub->fetchColumn();
         if ($is_owner_profile) {
@@ -267,7 +267,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 
     $latest_public = null;
     try {
-        $stLatest = $db->prepare("SELECT id, public_id, title, preview, time, views FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT 1");
+        $stLatest = $db->prepare("SELECT id, public_id, title, preview, time, views FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT 1");
         $stLatest->execute([$user]);
         $latest_public = $stLatest->fetch(PDO::FETCH_ASSOC) ?: null;
     } catch (Exception $e) {
@@ -531,7 +531,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
   if ($show_owner_tools) {
     $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ?");
   } else {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+    $stmt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos'));
   }
   $stmt->execute([$user]);
   $total = $stmt->fetchColumn();
@@ -540,7 +540,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
   if ($show_owner_tools) {
     $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file, tags, private, original_filename FROM videos WHERE user = ? ORDER BY id DESC LIMIT $offset, $per_page");
   } else {
-    $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file, tags, private, original_filename FROM videos WHERE user = ? AND private = 0 ORDER BY id DESC LIMIT $offset, $per_page");
+    $stmt = $db->prepare("SELECT id, public_id, title, preview, description, time, views, user, file, tags, private, original_filename FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT $offset, $per_page");
   }
   $stmt->execute([$user]);
   $videos = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -591,7 +591,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
 
   $public_count_videos = 0;
   try {
-    $stmtPubCnt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+    $stmtPubCnt = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos'));
     $stmtPubCnt->execute([$user]);
     $public_count_videos = (int)$stmtPubCnt->fetchColumn();
   } catch (Exception $e) {
@@ -662,7 +662,12 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
 				</script>
                 <?php foreach ($videos as $row): ?>
                   <?php
+                  $is_ready = video_is_ready($row);
                   $vid_link = htmlspecialchars($row['public_id'] ?? $row['id']);
+                  $thumb_src = trim((string)($row['preview'] ?? ''));
+                  if ($thumb_src === '' || !$is_ready) {
+                      $thumb_src = 'img/no_videos_140.jpg';
+                  }
                   $desc = htmlspecialchars($row['description']);
                   $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
                   $desc_id = 'desc_chan_' . $row['id'];
@@ -680,7 +685,13 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                   <div style="background-color:#DDD; background-image:url('img/table_results_bg.gif'); background-position:left top; background-repeat:repeat-x; border-bottom:1px dashed #999999; padding:10px;">
                     <table width="565" cellpadding="0" cellspacing="0" border="0">
                       <tr valign="top">
-                        <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?=htmlspecialchars($row['preview'])?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a>
+                        <td width="120" valign="top"><a href="video.php?id=<?=$vid_link?>"><img src="<?php if ($is_ready): ?>
+<?=htmlspecialchars($row['preview'])?>
+<?php elseif (!empty($thumb_src)): ?>
+<?=htmlspecialchars($thumb_src)?>
+<?php else: ?>
+img/no_videos_140.jpg
+<?php endif; ?>" class="moduleFeaturedThumb" width="120" height="90" style="margin: 0px 2px 0px 0px; display:block;"></a>
 
 <?php if (is_valid_video_public_id($row['public_id'] ?? '') && $show_owner_tools): ?>                  
 <center>
@@ -791,8 +802,11 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                               $share_video_url = $scheme . '://' . $host . $videoPath . '?id=' . rawurlencode((string)($row['public_id'] ?? $row['id']));
                           }
                           ?>
-                          <div class="moduleEntryDetails">Файл: <?=htmlspecialchars($fn_disp)?>
+                          <div class="moduleEntryDetails">Файл: <?=htmlspecialchars($fn_disp)?></div>
                             <div class="moduleEntryDetails">Статус: <?php if ($row['private'] == 0): ?> <span style="color:#24692A;font-weight:bold">Публичное видео</span> <?php else: ?> <span style="color:#8C172A;font-weight:bold">Приватное видео</span> <?php endif; ?></div>
+                            <?php if (!$is_ready): ?>
+                              <div class="moduleEntryDetails">Идёт конвертация...</div>
+                            <?php endif; ?>
                             <input name="video_link" type="text" onclick="javascript:document.linkForm.video_link.focus();document.linkForm.video_link.select();" value="<?= htmlspecialchars($share_video_url, ENT_QUOTES, 'UTF-8') ?>" size="50" readonly="true" style="font-size: 10px; text-align: center;">
                             <div class="formFieldInfo">Поделитесь этим видео с друзьями! Скопируйте и вставьте ссылку выше в Email или на сайт.</div>
                           </div>
@@ -945,7 +959,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 (COALESCE(AVG(r.rating),0) * COUNT(r.id)) / (1 + COUNT(r.id)) AS weighted_rating
                 FROM videos v
                 LEFT JOIN ratings r ON r.video_id = v.id
-                WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
+                WHERE v.private = 0 AND " . visible_video_sql_condition('v', 'user') . "
                 GROUP BY v.id
                 ORDER BY weighted_rating DESC, v.views DESC, v.id DESC
                 LIMIT " . (int)$browse_max_videos);
@@ -970,7 +984,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                     FROM comments
                     GROUP BY video_id
                 ) cc ON cc.video_id = v.id
-                WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
+                WHERE v.private = 0 AND " . visible_video_sql_condition('v', 'user') . "
                 ORDER BY comments_count DESC, v.views DESC, v.id DESC
                 LIMIT " . (int)$browse_max_videos . "
             ");
@@ -994,7 +1008,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                     FROM user_favourites
                     GROUP BY video_id
                 ) fv ON fv.video_id = v.id
-                WHERE v.private = 0 AND NOT EXISTS (SELECT 1 FROM channel_moderation cm WHERE cm.user = v.user AND cm.shadow_banned = 1)
+                WHERE v.private = 0 AND " . visible_video_sql_condition('v', 'user') . "
                 ORDER BY favorites_count DESC, v.views DESC, v.id DESC
                 LIMIT " . (int)$browse_max_videos . "
             ");
@@ -1527,7 +1541,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 		$comments_count = (int)$stmtPc2->fetchColumn();
 	} catch (Exception $e) {}
 	
-	$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0");
+	$stmt_total = $db->prepare("SELECT COUNT(*) FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos'));
 	$stmt_total->execute([$user]);
 	$total = $stmt_total->fetchColumn();
 
