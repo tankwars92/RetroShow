@@ -315,7 +315,7 @@ try {
 
 function sqlite_configure(PDO $db): void {
     try {
-        $db->exec('PRAGMA busy_timeout = 30000');
+        $db->exec('PRAGMA busy_timeout = 60000');
         $db->exec('PRAGMA foreign_keys = ON');
         $db->exec('PRAGMA temp_store = MEMORY');
         $db->exec('PRAGMA cache_size = -64000');
@@ -324,6 +324,10 @@ function sqlite_configure(PDO $db): void {
         } catch (Exception $e) {
         }
         $db->exec('PRAGMA synchronous = NORMAL');
+        try {
+            $db->exec('PRAGMA wal_autocheckpoint = 1000');
+        } catch (Exception $e) {
+        }
         try {
             $db->exec('PRAGMA mmap_size = 67108864');
         } catch (Exception $e) {
@@ -341,7 +345,7 @@ function pdo_sqlite_is_locked(PDOException $e): bool {
     return $code === 5 || $code === 6;
 }
 
-function pdo_retry(callable $fn, int $maxAttempts = 12, int $baseSleepMs = 75) {
+function pdo_retry(callable $fn, int $maxAttempts = 24, int $baseSleepMs = 40) {
     $attempt = 0;
     while (true) {
         $attempt++;
@@ -351,9 +355,115 @@ function pdo_retry(callable $fn, int $maxAttempts = 12, int $baseSleepMs = 75) {
             if (!pdo_sqlite_is_locked($e) || $attempt >= $maxAttempts) {
                 throw $e;
             }
-            usleep($baseSleepMs * $attempt * 1000);
+            $exp = min(6, $attempt - 1);
+            $sleepMs = min(2500, (int)($baseSleepMs * (2 ** $exp)));
+            try {
+                $sleepMs += random_int(0, max(1, (int)($sleepMs / 3)));
+            } catch (Exception $e2) {
+                $sleepMs += mt_rand(0, max(1, (int)($sleepMs / 3)));
+            }
+            usleep($sleepMs * 1000);
         }
     }
+}
+
+function pdo_transaction_immediate(PDO $db, callable $fn) {
+    return pdo_retry(function () use ($db, $fn) {
+        $db->exec('BEGIN IMMEDIATE');
+        try {
+            $result = $fn();
+            $db->exec('COMMIT');
+            return $result;
+        } catch (Exception $e) {
+            try {
+                $db->exec('ROLLBACK');
+            } catch (Exception $e2) {
+            }
+            throw $e;
+        }
+    }, 32, 35);
+}
+
+function video_queue_source_stem(string $public_id): string {
+    $pid = trim($public_id);
+    if ($pid === '' || !is_valid_video_public_id($pid)) {
+        throw new InvalidArgumentException('Invalid public_id for queue file');
+    }
+    return 'queue_' . $pid;
+}
+
+function http_post_json(string $url, string $payload, float $timeoutSec): bool {
+    if ($payload === '') {
+        $payload = '{}';
+    }
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return false;
+        }
+        $timeoutSec = max(1.0, $timeoutSec);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Connection: close'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => (int)min(10, max(2, ceil($timeoutSec / 2))),
+            CURLOPT_TIMEOUT => (int)max(2, ceil($timeoutSec)),
+            CURLOPT_NOSIGNAL => true,
+        ]);
+        $body = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return $body !== false && $code >= 200 && $code < 300;
+    }
+    $ctx = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nConnection: close\r\n",
+            'content' => $payload,
+            'timeout' => max(1.0, $timeoutSec),
+            'ignore_errors' => true,
+        ],
+    ]);
+    $res = @file_get_contents($url, false, $ctx);
+    if ($res === false) {
+        return false;
+    }
+    if (isset($http_response_header) && is_array($http_response_header)) {
+        foreach ($http_response_header as $hdr) {
+            if (preg_match('/^HTTP\/\S+\s+(\d+)/', $hdr, $m)) {
+                $code = (int)$m[1];
+                return $code >= 200 && $code < 300;
+            }
+        }
+    }
+    return true;
+}
+
+function notify_processing_worker(?int $queue_id = null): bool {
+    if (!processing_enabled()) {
+        return false;
+    }
+    $endpoint = processing_queue_url();
+    $payload = ($queue_id !== null && $queue_id > 0)
+        ? json_encode(['queue_id' => $queue_id], JSON_UNESCAPED_UNICODE)
+        : '{}';
+    if ($payload === false) {
+        $payload = '{}';
+    }
+    $timeouts = [2.5, 4.0, 6.0, 8.0];
+    foreach ($timeouts as $i => $timeout) {
+        if (http_post_json($endpoint, $payload, (float)$timeout)) {
+            return true;
+        }
+        if ($i + 1 < count($timeouts)) {
+            usleep(150000 * ($i + 1));
+        }
+    }
+    if ($queue_id !== null && $queue_id > 0) {
+        return http_post_json($endpoint, '{}', 6.0);
+    }
+    return false;
 }
 
 function generate_public_video_id_for_upload(PDO $db): string {
@@ -384,7 +494,7 @@ function generate_public_video_id_for_upload(PDO $db): string {
 }
 
 function enqueue_video_processing(PDO $db, array $row): int {
-    return (int) pdo_retry(function () use ($db, $row) {
+    return (int) pdo_transaction_immediate($db, function () use ($db, $row) {
         $st = $db->prepare("
             INSERT INTO video_processing_queue
             (public_id, user, title, description, tags, broadcast, source_file, created_at, status, original_filename)

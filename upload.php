@@ -31,24 +31,6 @@ function is_4_3_aspect_ratio($width, $height) {
     return abs($ratio - 4/3) < 0.1;
 }
 
-function notify_processing_worker(int $queue_id): bool {
-    $endpoint = processing_queue_url();
-    $payload = json_encode(['queue_id' => $queue_id], JSON_UNESCAPED_UNICODE);
-    if ($payload === false) {
-        return false;
-    }
-    $ctx = stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => "Content-Type: application/json\r\nConnection: close\r\n",
-            'content' => $payload,
-            'timeout' => 1.5,
-        ],
-    ]);
-    $res = @file_get_contents($endpoint, false, $ctx);
-    return $res !== false;
-}
-
 if (!isset($_SESSION['user'])) {
     header("Location: login.php");
     exit;
@@ -114,29 +96,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     } elseif ($_FILES['video']['size'] > 1048576000) { 
         $error = "Файл слишком большой! Максимальный размер: 1000 МБ.";
     } else {
-        $stmt = pdo_retry(function () use ($db) {
-            return $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
-        });
-        $next_id = $stmt->fetch()['next_id'] ?? 1;
         $public_id = generate_public_video_id_for_upload($db);
-        $file_base = video_uploads_file_base((int)$next_id, $public_id);
-
         $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
+        if ($video_ext === '') {
+            $video_ext = 'bin';
+        }
         $preview_ext = 'jpg';
         $orig_upload_name = video_original_upload_name($_FILES['video']['name'] ?? '');
 
-        $temp_video = 'uploads/temp_' . $file_base . '.' . $video_ext;
-        $final_video = 'uploads/' . $file_base . '.mp4';
-        $preview_file = 'uploads/' . $file_base . '_preview.' . $preview_ext;
-        
-        if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
-            $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
-        } else {
-            if ($use_external_processing) {
-                $queue_video = 'uploads/queue_' . $file_base . '.' . $video_ext;
+        if ($use_external_processing) {
+            $queue_stem = video_queue_source_stem($public_id);
+            $temp_video = 'uploads/.tmp_' . bin2hex(random_bytes(8)) . '.' . $video_ext;
+            $queue_video = 'uploads/' . $queue_stem . '.' . $video_ext;
+
+            if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
+                $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
+            } else {
                 if (!@rename($temp_video, $queue_video)) {
                     if (!@copy($temp_video, $queue_video)) {
                         $error = 'Ошибка постановки видео в очередь обработки.';
+                        @unlink($temp_video);
                     } else {
                         @unlink($temp_video);
                     }
@@ -175,7 +154,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                         @unlink($queue_video);
                     }
                 }
-            } else {
+            }
+        } else {
+        $stmt = pdo_retry(function () use ($db) {
+            return $db->query("SELECT MAX(id) + 1 as next_id FROM videos");
+        });
+        $next_id = $stmt->fetch()['next_id'] ?? 1;
+        $file_base = video_uploads_file_base((int)$next_id, $public_id);
+
+        $temp_video = 'uploads/temp_' . $file_base . '.' . $video_ext;
+        $final_video = 'uploads/' . $file_base . '.mp4';
+        $preview_file = 'uploads/' . $file_base . '_preview.' . $preview_ext;
+        
+        if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
+            $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
+        } else {
             $output = [];
             $return_var = 0;
 

@@ -357,6 +357,268 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'rating' && isset($_POST['action_a
     exit;
 }
 
+$is_ajax_comment_request = isset($_POST['add_comment']) && isset($_GET['ajax']) && $_GET['ajax'] === 'comment';
+$is_del_comment_request = isset($_GET['del_comment']) && $user;
+$is_fav_action_request = $user && (
+    (isset($_GET['fav_add']) && (string)$_GET['fav_add'] === '1')
+    || (isset($_GET['fav_del']) && (string)$_GET['fav_del'] === '1')
+);
+$is_ajax_fav_request = $is_fav_action_request && isset($_GET['fav_ajax']) && (string)$_GET['fav_ajax'] === '1';
+$skip_heavy_video_work = $is_ajax_comment_request || $is_del_comment_request || $is_fav_action_request;
+$comment_error = '';
+
+function video_comment_text_len(string $text): int {
+    if (function_exists('mb_strlen')) {
+        return mb_strlen($text, 'UTF-8');
+    }
+    return strlen($text);
+}
+
+function video_load_attach_allowed_ids(PDO $db, ?string $user): array {
+    $attach_allowed_ids = [];
+    if (!$user) {
+        return $attach_allowed_ids;
+    }
+    try {
+        $stmtMyAttach = $db->prepare("SELECT id FROM videos WHERE user = ? AND private = 0 AND " . ready_video_sql_condition('videos') . " ORDER BY id DESC LIMIT 200");
+        $stmtMyAttach->execute([$user]);
+        foreach ($stmtMyAttach->fetchAll(PDO::FETCH_ASSOC) ?: [] as $vopt) {
+            $attach_allowed_ids[(int)$vopt['id']] = true;
+        }
+    } catch (Exception $e) {
+    }
+    try {
+        $stmtFavAttach = $db->prepare("SELECT v.id
+                                       FROM user_favourites uf
+                                       JOIN videos v ON v.id = uf.video_id
+                                       WHERE uf.user = ? AND v.private = 0
+                                       ORDER BY uf.created_at DESC
+                                       LIMIT 200");
+        $stmtFavAttach->execute([$user]);
+        foreach ($stmtFavAttach->fetchAll(PDO::FETCH_ASSOC) ?: [] as $vopt) {
+            $attach_allowed_ids[(int)$vopt['id']] = true;
+        }
+    } catch (Exception $e) {
+    }
+    return $attach_allowed_ids;
+}
+
+function render_video_fav_action_html($is_fav, $video_id_param, $user) {
+    $video_id_h = htmlspecialchars((string)$video_id_param, ENT_QUOTES, 'UTF-8');
+    if (!$user) {
+        return '<img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>';
+    }
+    if ($is_fav) {
+        return '<a href="video.php?id=' . $video_id_h . '&fav_del=1" onclick="return favToggle(\'del\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>';
+    }
+    return '<a href="video.php?id=' . $video_id_h . '&fav_add=1" onclick="return favToggle(\'add\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>';
+}
+
+function video_load_is_favourite(PDO $db, ?string $user, int $video_id): bool {
+    if (!$user || $video_id <= 0) {
+        return false;
+    }
+    try {
+        $qFav = $db->prepare('SELECT 1 FROM user_favourites WHERE user = ? AND video_id = ? LIMIT 1');
+        $qFav->execute([$user, $video_id]);
+        return (bool)$qFav->fetchColumn();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+function video_favourites_count(PDO $db, int $video_id): int {
+    if ($video_id <= 0) {
+        return 0;
+    }
+    try {
+        $stmtFavCount = $db->prepare('SELECT COUNT(*) FROM user_favourites WHERE video_id = ?');
+        $stmtFavCount->execute([$video_id]);
+        return (int)$stmtFavCount->fetchColumn();
+    } catch (Exception $e) {
+        return 0;
+    }
+}
+
+if (isset($_POST['add_comment'])) {
+    $is_ajax_comment = $is_ajax_comment_request;
+    if (!$user) {
+        if ($is_ajax_comment) {
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo "ERROR:Только для зарегистрированных пользователей!";
+            exit;
+        }
+        header("Location: register.php");
+        exit;
+    }
+    $comment_text = trim($_POST['comment_text'] ?? '');
+    $parent_id = isset($_POST['reply_parent_id']) ? intval($_POST['reply_parent_id']) : 0;
+    $selected_reference_video_id = isset($_POST['reference_video_id']) ? intval($_POST['reference_video_id']) : 0;
+    $reference_video_id = $selected_reference_video_id > 0 ? $selected_reference_video_id : null;
+    if ($parent_id > 0) {
+        $reference_video_id = null;
+        $selected_reference_video_id = 0;
+    }
+    if ($comment_text === '') {
+        $comment_error = 'Комментарий не может быть пустым!';
+    } elseif (video_comment_text_len($comment_text) > 500) {
+        $comment_error = 'Комментарий слишком длинный (макс. 500 символов)!';
+    } elseif ($reference_video_id !== null) {
+        $attach_allowed_ids = video_load_attach_allowed_ids($db, $user);
+        if (!isset($attach_allowed_ids[(int)$reference_video_id])) {
+            $comment_error = 'Нельзя прикрепить это видео.';
+        }
+    }
+    if ($comment_error === '') {
+        $comment_text = str_replace(["\r"], [' '], $comment_text);
+        try {
+            pdo_retry(function () use ($db, $id, $parent_id, $user, $comment_text, $reference_video_id) {
+                $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time, reference_video_id) VALUES (?, ?, ?, ?, ?, ?)")
+                   ->execute([$id, $parent_id > 0 ? $parent_id : null, $user, $comment_text, time(), $reference_video_id]);
+            });
+            $new_comment_id = (int)$db->lastInsertId();
+            $vid_owner = (string)($video['user'] ?? '');
+            $public_id_ref = (string)($video['public_id'] ?? $id);
+            $vid_title = (string)($video['title'] ?? '');
+            $snippet = function_exists('mb_strlen') && function_exists('mb_substr')
+                ? (mb_strlen($comment_text, 'UTF-8') > 120 ? mb_substr($comment_text, 0, 120, 'UTF-8') . '...' : $comment_text)
+                : (strlen($comment_text) > 120 ? substr($comment_text, 0, 120) . '...' : $comment_text);
+            if ($parent_id > 0) {
+                $pu = $db->prepare('SELECT user FROM comments WHERE id = ? AND video_id = ?');
+                $pu->execute([$parent_id, $id]);
+                $parent_author = $pu->fetchColumn();
+                if ($parent_author && (string)$parent_author !== $user) {
+                    $topic = 'Пользователь «' . $user . '» ответил в ветке под вашим комментарием к видео «' . $vid_title . '».';
+                    $body = $topic . "\n\n" . 'Текст ответа:' . "\n" . $snippet;
+                    add_mail($db, (string)$parent_author, 'system', $topic, $body, 'video_reply', $new_comment_id, $id, $public_id_ref, null);
+                }
+            } elseif ($vid_owner !== '' && $vid_owner !== $user) {
+                $topic = 'Пользователь «' . $user . '» прокомментировал ваше видео «' . $vid_title . '».';
+                $body = $topic . "\n\n" . 'Текст комментария:' . "\n" . $snippet;
+                add_mail($db, $vid_owner, 'system', $topic, $body, 'video_comment', $new_comment_id, $id, $public_id_ref, null);
+            }
+            log_event('comment_video', [
+                'comment_id' => (int)$new_comment_id,
+                'video_id' => (int)$id,
+                'video_public_id' => (string)$public_id_ref,
+                'video_title' => (string)$vid_title,
+                'video_owner' => (string)$vid_owner,
+                'parent_id' => (int)$parent_id,
+                'author' => (string)$user,
+                'reference_video_id' => $reference_video_id !== null ? (int)$reference_video_id : 0,
+            ]);
+            if ($is_ajax_comment) {
+                header('Content-Type: text/plain; charset=UTF-8');
+                echo "OK";
+                exit;
+            }
+            header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
+            exit;
+        } catch (Exception $e) {
+            $comment_error = 'Не удалось сохранить комментарий. Попробуйте ещё раз.';
+        }
+    }
+    if ($is_ajax_comment) {
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo "ERROR:" . (string)$comment_error;
+        exit;
+    }
+}
+
+if ($is_del_comment_request) {
+    $del_id = intval($_GET['del_comment']);
+    if ($del_id > 0) {
+        try {
+            $owner = $db->prepare('SELECT user FROM comments WHERE id = ? AND video_id = ?');
+            $owner->execute([$del_id, $id]);
+            $owner_user = $owner->fetchColumn();
+            if ($owner_user !== false && (string)$owner_user === (string)$user) {
+                $stmtAll = $db->prepare('SELECT id, parent_id FROM comments WHERE video_id = ?');
+                $stmtAll->execute([$id]);
+                $rows = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+                $children = [];
+                foreach ($rows as $r) {
+                    $pid = (int)($r['parent_id'] ?? 0);
+                    $cid = (int)$r['id'];
+                    if (!isset($children[$pid])) {
+                        $children[$pid] = [];
+                    }
+                    $children[$pid][] = $cid;
+                }
+                $to_delete = [];
+                $stack = [$del_id];
+                while ($stack) {
+                    $cur = array_pop($stack);
+                    if (isset($to_delete[$cur])) {
+                        continue;
+                    }
+                    $to_delete[$cur] = true;
+                    foreach (($children[$cur] ?? []) as $ch) {
+                        $stack[] = $ch;
+                    }
+                }
+                $ids = array_map('intval', array_keys($to_delete));
+                if ($ids) {
+                    pdo_retry(function () use ($db, $id, $ids) {
+                        $ph = implode(',', array_fill(0, count($ids), '?'));
+                        $db->prepare("DELETE FROM mail_inbox WHERE comment_id IN ($ph)")->execute($ids);
+                        $db->prepare("DELETE FROM comments WHERE video_id = ? AND id IN ($ph)")
+                           ->execute(array_merge([$id], $ids));
+                    });
+                    log_event('delete_comment', [
+                        'comment_id' => (int)$del_id,
+                        'video_id' => (int)$id,
+                        'video_public_id' => (string)($video['public_id'] ?? $id),
+                        'deleted_ids' => $ids,
+                        'author' => (string)$user,
+                    ]);
+                }
+            }
+        } catch (Exception $e) {
+        }
+    }
+    header('Location: video.php?id=' . urlencode($video['public_id'] ?? $id) . '#comments');
+    exit;
+}
+
+$is_fav = video_load_is_favourite($db, $user, (int)$id);
+if ($is_fav_action_request) {
+    $want_fav_add = (isset($_GET['fav_add']) && (string)$_GET['fav_add'] === '1');
+    $want_fav_del = (isset($_GET['fav_del']) && (string)$_GET['fav_del'] === '1');
+    $fav_error = '';
+    try {
+        if ($want_fav_add && !$is_fav) {
+            pdo_retry(function () use ($db, $user, $id) {
+                $db->prepare('INSERT OR IGNORE INTO user_favourites (user, video_id, created_at) VALUES (?, ?, ?)')
+                   ->execute([$user, $id, time()]);
+            });
+            $is_fav = true;
+        } elseif ($want_fav_del && $is_fav) {
+            pdo_retry(function () use ($db, $user, $id) {
+                $db->prepare('DELETE FROM user_favourites WHERE user = ? AND video_id = ?')
+                   ->execute([$user, $id]);
+            });
+            $is_fav = false;
+        }
+    } catch (Exception $e) {
+        $fav_error = 'Не удалось обновить избранное. Попробуйте ещё раз.';
+    }
+    $fav_count = video_favourites_count($db, (int)$id);
+    if ($is_ajax_fav_request) {
+        header('Content-Type: text/plain; charset=UTF-8');
+        $video_id_param_out = $video['public_id'] ?? $id;
+        $html = render_video_fav_action_html($is_fav, $video_id_param_out, $user);
+        if ($fav_error !== '') {
+            echo 'ERROR' . "\t" . (int)$fav_count . "\t" . $html;
+            exit;
+        }
+        echo ($is_fav ? '1' : '0') . "\t" . (int)$fav_count . "\t" . $html;
+        exit;
+    }
+    header('Location: video.php?id=' . urlencode($video['public_id'] ?? $id));
+    exit;
+}
+
 $is_friend = false;
 if ($user && $video['user'] && $user !== $video['user']) {
     $qf = $db->prepare("SELECT 1 FROM user_friends WHERE user = ? AND friend = ? LIMIT 1");
@@ -391,7 +653,7 @@ $ip = $_SERVER['REMOTE_ADDR'];
 $now = time();
 $timeout = 2 * 3600;
 
-if (!$is_private) {
+if (!$is_private && !$skip_heavy_video_work) {
     $last_view = null;
 
     try {
@@ -492,6 +754,7 @@ function related_reorder_spread_authors(array $items): array {
 
 $recommended = [];
 $related_tag_match_total = 0;
+if (!$skip_heavy_video_work) {
 try {
     $current_tags = isset($video['tags']) ? trim((string)$video['tags']) : '';
     $tag_words = [];
@@ -669,8 +932,8 @@ try {
         $related_tag_match_total = count($recommended);
     } catch (Exception $e2) {}
 }
+}
 
-$comment_error = '';
 $comments_count = 0;
 $selected_reference_video_id = 0;
 try {
@@ -709,120 +972,6 @@ if ($user) {
     }
     foreach ($attach_fav_videos as $vopt) {
         $attach_allowed_ids[(int)$vopt['id']] = true;
-    }
-}
-
-if (isset($_GET['del_comment']) && $user) {
-    $del_id = intval($_GET['del_comment']);
-    if ($del_id > 0) {
-        $owner = $db->prepare("SELECT user FROM comments WHERE id = ? AND video_id = ?");
-        $owner->execute([$del_id, $id]);
-        $owner_user = $owner->fetchColumn();
-        if ($owner_user === $user) {
-            $stmtAll = $db->prepare("SELECT id, parent_id FROM comments WHERE video_id = ?");
-            $stmtAll->execute([$id]);
-            $rows = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
-            $children = [];
-            foreach ($rows as $r) {
-                $pid = (int)($r['parent_id'] ?? 0);
-                $cid = (int)$r['id'];
-                if (!isset($children[$pid])) $children[$pid] = [];
-                $children[$pid][] = $cid;
-            }
-            $to_delete = [];
-            $stack = [$del_id];
-            while ($stack) {
-                $cur = array_pop($stack);
-                if (isset($to_delete[$cur])) continue;
-                $to_delete[$cur] = true;
-                foreach (($children[$cur] ?? []) as $ch) $stack[] = $ch;
-            }
-            $ids = array_keys($to_delete);
-            if ($ids) {
-                $ph = implode(',', array_fill(0, count($ids), '?'));
-                $params = $ids;
-                $db->prepare("DELETE FROM comments WHERE video_id = ? AND id IN ($ph)")
-                   ->execute(array_merge([$id], $params));
-            }
-        }
-    }
-    header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
-    exit;
-}
-
-if (isset($_POST['add_comment'])) {
-    $is_ajax_comment = (isset($_GET['ajax']) && $_GET['ajax'] === 'comment');
-    if (!$user) {
-        if ($is_ajax_comment) {
-            header('Content-Type: text/plain; charset=UTF-8');
-            echo "ERROR:Только для зарегистрированных пользователей!";
-            exit;
-        }
-        header("Location: register.php");
-        exit;
-    } else {
-        $comment_text = trim($_POST['comment_text'] ?? '');
-        $parent_id = isset($_POST['reply_parent_id']) ? intval($_POST['reply_parent_id']) : 0;
-        $selected_reference_video_id = isset($_POST['reference_video_id']) ? intval($_POST['reference_video_id']) : 0;
-        $reference_video_id = $selected_reference_video_id > 0 ? $selected_reference_video_id : null;
-        if ($parent_id > 0) {
-            $reference_video_id = null;
-            $selected_reference_video_id = 0;
-        }
-        if ($comment_text == '') {
-            $comment_error = 'Комментарий не может быть пустым!';
-        } elseif (mb_strlen($comment_text) > 500) {
-            $comment_error = 'Комментарий слишком длинный (макс. 500 символов)!';
-        } elseif ($reference_video_id !== null && !isset($attach_allowed_ids[(int)$reference_video_id])) {
-            $comment_error = 'Нельзя прикрепить это видео.';
-        } else {
-            $comment_text = str_replace(["\r"], [' '], $comment_text);
-            $db->prepare("INSERT INTO comments (video_id, parent_id, user, text, time, reference_video_id) VALUES (?, ?, ?, ?, ?, ?)")
-               ->execute([$id, $parent_id > 0 ? $parent_id : null, $user, $comment_text, time(), $reference_video_id]);
-            $new_comment_id = (int) $db->lastInsertId();
-            $vid_owner = (string) ($video['user'] ?? '');
-            $public_id_ref = (string) ($video['public_id'] ?? $id);
-            $vid_title = (string) ($video['title'] ?? '');
-            $snippet = function_exists('mb_strlen') && function_exists('mb_substr')
-                ? (mb_strlen($comment_text, 'UTF-8') > 120 ? mb_substr($comment_text, 0, 120, 'UTF-8') . '...' : $comment_text)
-                : (strlen($comment_text) > 120 ? substr($comment_text, 0, 120) . '...' : $comment_text);
-            if ($parent_id > 0) {
-                $pu = $db->prepare('SELECT user FROM comments WHERE id = ? AND video_id = ?');
-                $pu->execute([$parent_id, $id]);
-                $parent_author = $pu->fetchColumn();
-                if ($parent_author && (string) $parent_author !== $user) {
-                    $topic = 'Пользователь «' . $user . '» ответил в ветке под вашим комментарием к видео «' . $vid_title . '».';
-                    $body = $topic . "\n\n" . 'Текст ответа:' . "\n" . $snippet;
-                    add_mail($db, (string) $parent_author, 'system', $topic, $body, 'video_reply', $new_comment_id, $id, $public_id_ref, null);
-                }
-            } elseif ($vid_owner !== '' && $vid_owner !== $user) {
-                $topic = 'Пользователь «' . $user . '» прокомментировал ваше видео «' . $vid_title . '».';
-                $body = $topic . "\n\n" . 'Текст комментария:' . "\n" . $snippet;
-                add_mail($db, $vid_owner, 'system', $topic, $body, 'video_comment', $new_comment_id, $id, $public_id_ref, null);
-            }
-            log_event('comment_video', [
-                'comment_id' => (int)$new_comment_id,
-                'video_id' => (int)$id,
-                'video_public_id' => (string)$public_id_ref,
-                'video_title' => (string)$vid_title,
-                'video_owner' => (string)$vid_owner,
-                'parent_id' => (int)$parent_id,
-                'author' => (string)$user,
-                'reference_video_id' => $reference_video_id !== null ? (int)$reference_video_id : 0,
-            ]);
-            if ($is_ajax_comment) {
-                header('Content-Type: text/plain; charset=UTF-8');
-                echo "OK";
-                exit;
-            }
-            header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
-            exit;
-        }
-    }
-    if ($is_ajax_comment) {
-        header('Content-Type: text/plain; charset=UTF-8');
-        echo "ERROR:" . (string)$comment_error;
-        exit;
     }
 }
 
@@ -953,66 +1102,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'comments') {
     exit;
 }
 
-$user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
-$is_fav = false;
-if ($user) {
-    $qFav = $db->prepare("SELECT 1 FROM user_favourites WHERE user = ? AND video_id = ? LIMIT 1");
-    $qFav->execute([$user, $id]);
-    $is_fav = (bool)$qFav->fetchColumn();
-}
-
-function render_video_fav_action_html($is_fav, $video_id_param, $user) {
-    $video_id_h = htmlspecialchars((string)$video_id_param, ENT_QUOTES, 'UTF-8');
-    if (!$user) {
-        return '<img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>';
-    }
-    if ($is_fav) {
-        return '<a href="video.php?id=' . $video_id_h . '&fav_del=1" onclick="return favToggle(\'del\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>';
-    }
-    return '<a href="video.php?id=' . $video_id_h . '&fav_add=1" onclick="return favToggle(\'add\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>';
-}
-
-$want_fav_add = ($user && isset($_GET['fav_add']) && (string)$_GET['fav_add'] === '1');
-$want_fav_del = ($user && isset($_GET['fav_del']) && (string)$_GET['fav_del'] === '1');
-$is_ajax_fav = isset($_GET['fav_ajax']) && (string)$_GET['fav_ajax'] === '1';
-
-if ($want_fav_add) {
-    if (!$is_fav) {
-        $db->prepare("INSERT OR IGNORE INTO user_favourites (user, video_id, created_at) VALUES (?, ?, ?)")
-           ->execute([$user, $id, time()]);
-        $is_fav = true;
-    }
-    if (!$is_ajax_fav) {
-        header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
-        exit;
-    }
-}
-if ($want_fav_del) {
-    if ($is_fav) {
-        $db->prepare("DELETE FROM user_favourites WHERE user = ? AND video_id = ?")->execute([$user, $id]);
-        $is_fav = false;
-    }
-    if (!$is_ajax_fav) {
-        header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
-        exit;
-    }
-}
-$fav_count = 0;
-try {
-    $stmtFavCount = $db->prepare("SELECT COUNT(*) FROM user_favourites WHERE video_id = ?");
-    $stmtFavCount->execute([$id]);
-    $fav_count = (int)$stmtFavCount->fetchColumn();
-} catch (Exception $e) {
-    $fav_count = 0;
-}
-
-if ($is_ajax_fav && ($want_fav_add || $want_fav_del)) {
-    header('Content-Type: text/plain; charset=UTF-8');
-    $video_id_param_out = $video['public_id'] ?? $id;
-    $html = render_video_fav_action_html($is_fav, $video_id_param_out, $user);
-    echo ($is_fav ? '1' : '0') . "\t" . (int)$fav_count . "\t" . $html;
-    exit;
-}
+$fav_count = video_favourites_count($db, (int)$id);
 
 list($ratings_count, $avg_rating) = get_video_rating_stats($db, $id);
 $ip = $_SERVER['REMOTE_ADDR'];
@@ -1036,9 +1126,14 @@ function favCreateXHR() {
 }
 
 function favToggle(action) {
+    if (window.favToggleBusy) {
+        return false;
+    }
+    window.favToggleBusy = true;
     var xid = "<?=htmlspecialchars((string)($video['public_id'] ?? $id), ENT_QUOTES, 'UTF-8')?>";
     var xhr = favCreateXHR();
     if (!xhr) {
+        window.favToggleBusy = false;
         if (action === 'add') { window.location = "video.php?id=" + escape(xid) + "&fav_add=1"; }
         else { window.location = "video.php?id=" + escape(xid) + "&fav_del=1"; }
         return false;
@@ -1050,17 +1145,26 @@ function favToggle(action) {
 
     xhr.onreadystatechange = function () {
         if (xhr.readyState !== 4) return;
+        window.favToggleBusy = false;
         if (xhr.status && xhr.status !== 200) {
-            if (action === 'add') { window.location = "video.php?id=" + escape(xid) + "&fav_add=1"; }
-            else { window.location = "video.php?id=" + escape(xid) + "&fav_del=1"; }
+            alert('Не удалось обновить избранное. Попробуйте ещё раз.');
             return;
         }
         var t = xhr.responseText || "";
         var p = t.split("\t");
-        if (p.length < 3) return;
+        if (p.length < 3) {
+            alert('Не удалось обновить избранное. Попробуйте ещё раз.');
+            return;
+        }
+        if (p[0] === 'ERROR') {
+            alert('Не удалось обновить избранное. Попробуйте ещё раз.');
+            return;
+        }
         var favHtml = p.slice(2).join("\t");
         var a = document.getElementById("favAction");
         if (a) a.innerHTML = favHtml;
+        var a2 = document.getElementById("favAction2");
+        if (a2) a2.innerHTML = favHtml;
         var c = document.getElementById("favCount");
         if (c) c.innerHTML = p[1];
         var c2 = document.getElementById("favCount2");
@@ -1068,7 +1172,10 @@ function favToggle(action) {
         if (action === 'add') alert('Добавлено в избранное.');
         else alert('Убрано из избранного.');
     };
-    try { xhr.open("GET", url, true); xhr.send(null); } catch (e3) {}
+    try { xhr.open("GET", url, true); xhr.send(null); } catch (e3) {
+        window.favToggleBusy = false;
+        alert('Не удалось обновить избранное. Попробуйте ещё раз.');
+    }
     return false;
 }
 </script>
@@ -1630,6 +1737,7 @@ function submitCommentAjax(form) {
                     if (form.reference_video_id) form.reference_video_id.selectedIndex = 0;
                     if (form.reply_parent_id) form.reply_parent_id.value = '';
                 } catch (eclr) {}
+                refreshCommentsAjax();
                 return;
             }
             var msg = t;
