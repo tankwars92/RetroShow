@@ -70,12 +70,13 @@ class QueueWorker:
         self._lock = threading.Lock()
 
     def db(self):
-        con = sqlite3.connect(self.db_path, timeout=30)
+        con = sqlite3.connect(self.db_path, timeout=60, check_same_thread=False)
         con.row_factory = sqlite3.Row
         try:
-            con.execute("PRAGMA busy_timeout = 30000")
+            con.execute("PRAGMA busy_timeout = 60000")
             con.execute("PRAGMA journal_mode = WAL")
             con.execute("PRAGMA synchronous = NORMAL")
+            con.execute("PRAGMA wal_autocheckpoint = 1000")
         except Exception:
             pass
         return con
@@ -118,7 +119,7 @@ class QueueWorker:
                 "-nostats",
                 "-i",
                 source_abs,
-                "-vsync",
+                "-fps_mode",
                 "cfr",
                 "-r",
                 "30",
@@ -161,7 +162,7 @@ class QueueWorker:
                 "-i",
                 "color=c=black:s=640x360",
                 "-shortest",
-                "-vsync",
+                "-fps_mode",
                 "cfr",
                 "-r",
                 "30",
@@ -310,6 +311,14 @@ class QueueWorker:
         return proc.stdout.strip() == "video"
 
     def process_one(self, queue_id: int):
+        row = None
+        source_abs = None
+        final_abs = None
+        preview_abs = None
+        final_rel = None
+        preview_rel = None
+        video_id = None
+
         with self._lock:
             con = self.db()
             try:
@@ -328,7 +337,6 @@ class QueueWorker:
                     f"Queue {queue_id} accepted: public_id: {row['public_id']}, user: {row['user']}, source: {row['source_file']}."
                 )
                 self._set_queue_status(con, queue_id, "processing", started=True)
-                con.commit()
 
                 source_rel = str(row["source_file"])
                 source_abs = os.path.normpath(os.path.join(ROOT_DIR, source_rel))
@@ -374,61 +382,69 @@ class QueueWorker:
 
                 os.makedirs(UPLOADS_DIR, exist_ok=True)
                 con.commit()
-                con.close()
-                con = None
+            except Exception as exc:
+                msg = str(exc)[:4000]
+                log_line(f"Queue {queue_id} failed: {msg}")
+                try:
+                    self._set_queue_status(con, queue_id, "failed", last_error=msg, finished=True)
+                    con.commit()
+                except Exception:
+                    pass
+                try:
+                    con.close()
+                except Exception:
+                    pass
+                return False
+            finally:
+                try:
+                    con.close()
+                except Exception:
+                    pass
 
-                log_line(f"Queue {queue_id} started converting.")
-                self._ffmpeg_convert(source_abs, final_abs)
-                log_line(f"Queue {queue_id} started making preview.")
-                self._ffmpeg_preview(final_abs, preview_abs)
+        try:
+            log_line(f"Queue {queue_id} started converting.")
+            self._ffmpeg_convert(source_abs, final_abs)
+            log_line(f"Queue {queue_id} started making preview.")
+            self._ffmpeg_preview(final_abs, preview_abs)
 
-                con = self.db()
+            con = self.db()
+            try:
                 con.execute(
                     "UPDATE videos SET file = ?, preview = ? WHERE id = ?",
                     (final_rel, preview_rel, video_id),
                 )
                 self._set_queue_status(con, queue_id, "done", finished=True)
                 con.commit()
-                log_line(f"Queue {queue_id} completed successfully.")
+            finally:
+                con.close()
+            log_line(f"Queue {queue_id} completed successfully.")
 
-                try:
-                    os.remove(source_abs)
-                except OSError:
-                    pass
-                return True
-            except Exception as exc:
-                msg = str(exc)[:4000]
-                log_line(f"Queue {queue_id} failed: {msg}")
-                err_con = con
-                if err_con is None:
-                    try:
-                        err_con = self.db()
-                    except Exception:
-                        err_con = None
+            try:
+                os.remove(source_abs)
+            except OSError:
+                pass
+            return True
+        except Exception as exc:
+            msg = str(exc)[:4000]
+            log_line(f"Queue {queue_id} failed: {msg}")
+            err_con = None
+            try:
+                err_con = self.db()
+                err_con.execute(
+                    "DELETE FROM videos WHERE public_id = ? AND file = ''",
+                    (str(row["public_id"]) if row is not None else "",),
+                )
+                self._set_queue_status(err_con, queue_id, "failed", last_error=msg, finished=True)
+                err_con.commit()
+            except Exception:
+                pass
+            finally:
                 if err_con is not None:
-                    try:
-                        err_con.execute(
-                            "DELETE FROM videos WHERE public_id = ? AND file = ''",
-                            (str(row["public_id"]) if row is not None else "",),
-                        )
-                    except Exception:
-                        pass
-                    try:
-                        self._set_queue_status(err_con, queue_id, "failed", last_error=msg, finished=True)
-                        err_con.commit()
-                    except Exception:
-                        pass
                     try:
                         err_con.close()
                     except Exception:
                         pass
-                return False
-            finally:
-                if con is not None:
-                    try:
-                        con.close()
-                    except Exception:
-                        pass
+            return False
 
     def process_pending(self, limit: int = 3):
         con = self.db()
@@ -455,7 +471,7 @@ def run_background_loop():
             worker.process_pending(limit=5)
         except Exception:
             pass
-        time.sleep(2.0)
+        time.sleep(1.5)
 
 
 class Handler(BaseHTTPRequestHandler):

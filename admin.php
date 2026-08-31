@@ -546,6 +546,7 @@ showHeader("Администрирование");
     <a href="admin.php">Главная</a> // <a href="admin.php?p=blog">Управление блогом</a>
 </div>
 
+
 <?php if ($p == 'blog'): ?>
 </div>
 <div class="highlight">Опубликовать новый пост</div>
@@ -557,7 +558,6 @@ showHeader("Администрирование");
 </form>
 
 <?php else: ?>
-    
 <tr>
       <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Текст новости:</b></td>
       <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
@@ -599,6 +599,7 @@ showHeader("Администрирование");
         <input type="submit" value="Сохранить">
       </td>
     </tr>
+</form>
 
 <form method="post" action="admin.php">
 <input type="hidden" name="field_command" value="recs_default_submit">

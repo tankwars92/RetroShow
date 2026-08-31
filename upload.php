@@ -197,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                 if (!$has_video) {
                     $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
                              " -f lavfi -i color=c=black:s=640x360 -shortest " .
-                             " -vsync cfr -r 30 " .
+                             " -fps_mode cfr -r 30 " .
                              " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast -threads 0 " .
                              " -c:a aac -b:a 96k -ar 44100 -ac 2 " .
                              " -movflags +faststart " .
@@ -205,11 +205,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                              " -y " .
                              " -loglevel error " .
                              escapeshellarg($final_video) .
-                             " 2>" . escapeshellarg($log_file);
+                             " 2>&1";
                 } else {
                     $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) .
                              " -vf \"" . $vf_filter . "\" " .
-                             " -vsync cfr -r 30 " .
+                             " -fps_mode cfr -r 30 " .
                              " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast -threads 0 " .
                              " -c:a aac -b:a 96k -ar 44100 -ac 2 " .
                              " -movflags +faststart " .
@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                              " -y " .
                              " -loglevel error " .
                              escapeshellarg($final_video) .
-                             " 2>" . escapeshellarg($log_file);
+                             " 2>&1";
                 }
                 
                 exec($ffmpeg, $output, $return_var);
@@ -244,7 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                 $log_file = 'uploads/ffmpeg_' . $file_base . '.log';
 
                 $ffmpeg = "ffmpeg -i " . escapeshellarg($temp_video) . 
-                         " -vsync cfr -r 30 " .
+                         " -fps_mode cfr -r 30 " .
                          " -c:v libx264 -profile:v baseline -level 3.0 -crf 25 -preset veryfast " .
                          " -c:a aac -b:a 96k -ar 44100 -ac 2 " .
                          " -vf \"" . $vf_filter . "\" " .
@@ -253,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                          " -y " .
                          " -loglevel debug " .
                          escapeshellarg($final_video) . 
-                         " 2>" . escapeshellarg($log_file);
+                         " 2>&1";
                 
                 exec($ffmpeg, $output, $return_var);
                 
