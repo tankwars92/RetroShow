@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $birthday_mon = $_POST['birthday_mon'] ?? '';
     $birthday_day = $_POST['birthday_day'] ?? '';
     $birthday_yr = $_POST['birthday_yr'] ?? '';
-    $country = $_POST['country'] ?? '';
+    $country = profile_sanitize_country($_POST['country'] ?? '');
     $name = trim($_POST['name'] ?? '');
     $last_n = trim($_POST['last_n'] ?? '');
     $relationship = $_POST['relationship'] ?? '';

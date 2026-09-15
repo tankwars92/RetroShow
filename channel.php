@@ -401,10 +401,10 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                         <td><?= htmlspecialchars((string)$user_data['city'], ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
-                    <?php if (!empty($user_data['country'])): ?>
+                    <?php $country_label = profile_country_label($user_data['country'] ?? ''); if ($country_label !== ''): ?>
                     <tr>
                         <td align="right"><span class="label">Текущая страна:</span></td>
-                        <td><?= htmlspecialchars((string)$user_data['country'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($country_label, ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <tr>

@@ -104,36 +104,90 @@ function time_ago($time): string {
     if ($time <= 0) {
         return 'только что';
     }
-    $diff = time() - $time;
+    $nowTs = time();
+    $diff = $nowTs - $time;
     if ($diff < 0) {
-        $diff = 0;
+        return 'только что';
     }
     if ($diff < 60) {
         $n = max(1, $diff);
         return $n . ' ' . rus_plural($n, 'секунду', 'секунды', 'секунд') . ' назад';
     }
-    $mins = (int)floor($diff / 60);
-    if ($mins < 60) {
-        return $mins . ' ' . rus_plural($mins, 'минуту', 'минуты', 'минут') . ' назад';
+
+    $then = DateTime::createFromFormat('U', (string)$time);
+    $now = DateTime::createFromFormat('U', (string)$nowTs);
+    if (!$then || !$now) {
+        return 'только что';
     }
-    $hours = (int)floor($mins / 60);
-    if ($hours < 24) {
-        return $hours . ' ' . rus_plural($hours, 'час', 'часа', 'часов') . ' назад';
+    $interval = $then->diff($now);
+
+    $years = (int)$interval->y;
+    if ($years >= 1) {
+        return $years . ' ' . rus_plural($years, 'год', 'года', 'лет') . ' назад';
     }
-    $days = (int)floor($hours / 24);
-    if ($days < 7) {
-        return $days . ' ' . rus_plural($days, 'день', 'дня', 'дней') . ' назад';
-    }
-    $weeks = (int)floor($days / 7);
-    if ($weeks < 5) {
-        return $weeks . ' ' . rus_plural($weeks, 'неделю', 'недели', 'недель') . ' назад';
-    }
-    $months = (int)floor($days / 30);
-    if ($months < 12) {
+    $months = (int)$interval->m;
+    if ($months >= 1) {
         return $months . ' ' . rus_plural($months, 'месяц', 'месяца', 'месяцев') . ' назад';
     }
-    $years = (int)floor($days / 365);
-    return $years . ' ' . rus_plural($years, 'год', 'года', 'лет') . ' назад';
+    $days = (int)$interval->d;
+    if ($days >= 7) {
+        $weeks = (int)floor($days / 7);
+        return $weeks . ' ' . rus_plural($weeks, 'неделю', 'недели', 'недель') . ' назад';
+    }
+    if ($days >= 1) {
+        return $days . ' ' . rus_plural($days, 'день', 'дня', 'дней') . ' назад';
+    }
+
+    $hours = (int)floor($diff / 3600);
+    if ($hours >= 1) {
+        return $hours . ' ' . rus_plural($hours, 'час', 'часа', 'часов') . ' назад';
+    }
+    $mins = (int)floor($diff / 60);
+    return $mins . ' ' . rus_plural($mins, 'минуту', 'минуты', 'минут') . ' назад';
+}
+
+function profile_country_options(): array {
+    static $options = null;
+    if (is_array($options)) {
+        return $options;
+    }
+    $options = [];
+    $path = __DIR__ . '/account.php';
+    if (!is_file($path)) {
+        return $options;
+    }
+    $html = @file_get_contents($path);
+    if (!is_string($html) || $html === '') {
+        return $options;
+    }
+    if (preg_match_all('/<option value="([A-Z]{2})"[^>]*>([^<]+)<\/option>/', $html, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            $code = (string)$match[1];
+            $label = trim(html_entity_decode(strip_tags((string)$match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($code !== '' && $label !== '') {
+                $options[$code] = $label;
+            }
+        }
+    }
+    return $options;
+}
+
+function profile_sanitize_country($value): string {
+    $value = strtoupper(trim((string)$value));
+    if ($value === '') {
+        return '';
+    }
+    $options = profile_country_options();
+    return isset($options[$value]) ? $value : '';
+}
+
+function profile_country_label($code): string {
+    $code = strtoupper(trim((string)$code));
+    if ($code === '') {
+        return '';
+    }
+    $options = profile_country_options();
+    return $options[$code] ?? '';
 }
 
 function processing_health_probe(): array {
