@@ -404,7 +404,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                     <?php $country_label = profile_country_label($user_data['country'] ?? ''); if ($country_label !== ''): ?>
                     <tr>
                         <td align="right"><span class="label">Текущая страна:</span></td>
-                        <td><?= htmlspecialchars($country_label, ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars(substr($country_label, 1), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <tr>
