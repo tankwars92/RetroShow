@@ -1,22 +1,22 @@
-# RetroShow - движок для создания видеосайта.
+# RetroShow
 
-<img src="screenshots/1.png" alt="Скриншот.">
+<img src="screenshots/1.png" alt="Screenshot.">
 
-RetroShow - это движок для создания видеосайта, стилизованного под YouTube образца августа 2005-го года. Движок прекрасно работает в старых браузерах вроде **Internet Explorer 5**. Для установки вам потребуется веб-сервер с PHP, FFmpeg и Python для использования внешнего сервера конвертации.
+RetroShow is an engine for creating a video website styled after YouTube as it looked in August 2005. The engine works well in old browsers such as **Internet Explorer 5**. To run it, you will need a web server with PHP, FFmpeg, and Python for the external conversion server.
 
-## Требования.
+## Requirements
 
-- **Python 3.8+** (скачайте его с [python.org](https://python.org))
-- **FFmpeg** (скачайте его с [ffmpeg.org](https://ffmpeg.org/download.html))
-- **Сервер с поддержкой PHP** (например, [XAMPP](https://www.apachefriends.org/ru/index.html))
+* **Python 3.8+** (download it from [python.org](https://python.org))
+* **FFmpeg** (download it from [ffmpeg.org](https://ffmpeg.org/download.html))
+* **A server with PHP support** (for example, [XAMPP](https://www.apachefriends.org/))
 
-## Установка.
+## Installation
 
-1. Скачайте и распакуйте архив с репозиторием в пустую папку на вашем сервере.
-2. Запустите внешний сервер конвертации при помощи следующей команды:
+1. Download and extract the repository into an empty folder on your server.
+2. Start the external conversion server with the following command:
 
-```
+```bash
 python3 converter/server.py
 ```
 
-3. Готово!
+3. That's it!
