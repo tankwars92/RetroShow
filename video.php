@@ -651,7 +651,7 @@ $related_tag_match_total = 0;
 $user = isset($_SESSION['user']) ? $_SESSION['user'] : null;
 $ip = $_SERVER['REMOTE_ADDR'];
 $now = time();
-$timeout = 2 * 3600;
+$timeout = 3600;
 
 if (!$is_private && !$skip_heavy_video_work) {
     $last_view = null;
@@ -1432,7 +1432,7 @@ if ($admin_confirm !== ''):
             </div>
         </div>
 
-        <div id="flashPlayerBox" style="display:none; font-size:14px; font-weight: bold;"></div>
+        <div id="flashPlayerBox" style="display:none; width:425px; height:350px; overflow:hidden; margin:0 auto; font-size:14px; font-weight: bold;"></div>
 
         <div class="player" id="playerBox">
             <div class="mainContainer">
@@ -1529,7 +1529,7 @@ if ($admin_confirm !== ''):
         var html5Box = document.getElementById('playerBox');
         var html5Video = document.getElementById('video');
         var fallback = document.getElementById('noJsFlashFallback');
-        var flashEmbedHtml = '<embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '', ENT_QUOTES, 'UTF-8')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350">';
+        var flashEmbedHtml = '<embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '', ENT_QUOTES, 'UTF-8')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350" wmode="opaque" quality="high" allowscriptaccess="always" type="application/x-shockwave-flash">';
         function setFlashEnabled(enabled) {
             if (!flashBox) return;
             if (enabled) {

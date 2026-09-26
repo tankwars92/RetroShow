@@ -25,6 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $about_me = trim($_POST['about'] ?? '');
     $gender = $_POST['gender'] ?? '';
+    if ($gender !== 'm' && $gender !== 'f') {
+        $gender = '0';
+    }
     $birthday_mon = $_POST['birthday_mon'] ?? '';
     $birthday_day = $_POST['birthday_day'] ?? '';
     $birthday_yr = $_POST['birthday_yr'] ?? '';
@@ -32,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $last_n = trim($_POST['last_n'] ?? '');
     $relationship = $_POST['relationship'] ?? '';
+    if (!in_array($relationship, ['0', '1', '2'], true)) {
+        $relationship = '0';
+    }
     $website = trim($_POST['website'] ?? '');
     
     if (!empty($website) && !preg_match('/^https?:\/\//', $website)) {
@@ -39,6 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $profile_bull = $_POST['profile_bull'] ?? '1';
     $player_type = $_POST['player_type'] ?? 'auto';
+    if ($player_type !== 'flash' && $player_type !== 'html5') {
+        $player_type = 'auto';
+    }
     $home_block_type = $_POST['home_block_type'] ?? 'recent_added';
     $recs_enabled = isset($_POST['recs_enabled']) ? '1' : '0';
     $hometown = trim($_POST['hometown'] ?? '');
