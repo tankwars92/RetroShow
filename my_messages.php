@@ -11,11 +11,11 @@ $me = $_SESSION['user'];
 showHeader('Сообщения');
 
 $months_ru = [
-    1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
-    5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
-    9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря',
+    1 => t('января'), 2 => t('февраля'), 3 => t('марта'), 4 => t('апреля'),
+    5 => t('мая'), 6 => t('июня'), 7 => t('июля'), 8 => t('августа'),
+    9 => t('сентября'), 10 => t('октября'), 11 => t('ноября'), 12 => t('декабря'),
 ];
-$days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+$days_ru = [t('Воскресенье'), t('Понедельник'), t('Вторник'), t('Среда'), t('Четверг'), t('Пятница'), t('Суббота')];
 
 $total = 0;
 try {
@@ -51,11 +51,11 @@ try {
 </style>
 <table width="600px" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC">
 <tbody>
-<div class="tableSubTitle">Входящие сообщения</div>
+<div class="tableSubTitle"><?= t('Входящие сообщения') ?></div>
 <table width="45%" align="center" cellpadding="5" cellspacing="0" border="0">
          <tbody><tr align="center">
 		 <td align="center" colspan="3">
-                <a href="my_messages.php" class="bold">Входящие</a> | <a href="outbox.php">Исходящие</a>
+                <a href="my_messages.php" class="bold"><?= t('Входящие') ?></a> | <a href="outbox.php"><?= t('Исходящие') ?></a>
             </td></tr>
             </tbody></table>
 <table width="91%" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#CCCCCC">
@@ -69,8 +69,8 @@ try {
 	<td><img src="img/pixel.gif" width="5" height="1" alt=""></td>
 	<td>
 	<div class="moduleTitleBar">
-	<div class="moduleTitle"><div style="float: right; padding: 1px 5px 0px 0px; font-size: 12px;">Сообщения <?= $total ? ($offset + 1) . '-' . min($offset + $per_page, $total) . ' из ' . $total : '0 из 0' ?></div>
-		Сообщения // Входящие
+	<div class="moduleTitle"><div style="float: right; padding: 1px 5px 0px 0px; font-size: 12px;"><?= t('Сообщения') ?> <?= $total ? ($offset + 1) . '-' . min($offset + $per_page, $total) . ' ' . t('из') . ' ' . $total : '0 ' . t('из') . ' 0' ?></div>
+		<?= t('Сообщения // Входящие') ?>
 	</div>
 	</div>
 
@@ -79,10 +79,10 @@ try {
 	<tr><td colspan="5" height="10"></td></tr>
 	<tr>
 		<td width="20">&nbsp;</td>
-		<td><b>Сообщение</b></td>
+		<td><b><?= t('Сообщение') ?></b></td>
 		<td width="20">&nbsp;</td>
-		<td width="70"><b>От</b></td>
-		<td width="160"><b>Дата</b></td>
+		<td width="70"><b><?= t('От') ?></b></td>
+		<td width="160"><b><?= t('Дата') ?></b></td>
 	</tr>
 <?php foreach ($rows as $row):
     $mid = (int) $row['id'];
@@ -112,7 +112,7 @@ try {
 
 <?php if ($total_pages > 1): ?>
 	<div class="channelPagingDiv pagingDiv">
-		Стр.
+		<?= t('Стр.') ?>
 		<?php
 		$start_page = max(1, $page - 2);
 		$end_page = min($total_pages, $page + 2);
@@ -136,7 +136,7 @@ try {
 			echo '<span class="pagerNotCurrent"><a href="?page=' . $total_pages . '">' . $total_pages . '</a></span>';
 		}
 		if ($page < $total_pages) {
-			echo '<span class="pagerNotCurrent"><a href="?page=' . ($page + 1) . '">Далее</a></span>';
+			echo '<span class="pagerNotCurrent"><a href="?page=' . ($page + 1) . '">'.t('Далее').'</a></span>';
 		}
 		?>
 	</div>

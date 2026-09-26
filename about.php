@@ -36,53 +36,65 @@ showHeader($title);
 <?php
 $posts = [];
 try {
-    $st = $db->query('SELECT title, body FROM blog_posts ORDER BY created_at DESC, id DESC');
+    $st = $db->query('SELECT title, body, title_en, body_en FROM blog_posts ORDER BY created_at DESC, id DESC');
     $posts = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
 } catch (Exception $e) {
     $posts = [];
 }
 if ($posts !== []):
     foreach ($posts as $post):
+        $title_ru = trim((string)($post['title'] ?? ''));
+        $body_ru = trim((string)($post['body'] ?? ''));
+        $title_en = trim((string)($post['title_en'] ?? ''));
+        $body_en = trim((string)($post['body_en'] ?? ''));
 ?>
-<div class="tableSubTitle"><?=htmlspecialchars((string)($post['title'] ?? ''), ENT_QUOTES, 'UTF-8')?></div>
-<?=about_blog_body_html((string)($post['body'] ?? ''))?>
-<br><br>
+<?php if ($title_ru !== '' || $body_ru !== ''): ?>
+<div class="tableSubTitle"><?= $title_ru !== '' ? htmlspecialchars($title_ru, ENT_QUOTES, 'UTF-8') : 'RU' ?></div>
+<?= about_blog_body_html($body_ru) ?>
+<br>
+<?php endif; ?>
+<?php if ($title_en !== '' || $body_en !== ''): ?>
+<div class="tableSubTitle"><?= $title_en !== '' ? htmlspecialchars($title_en, ENT_QUOTES, 'UTF-8') : 'EN' ?></div>
+<?= about_blog_body_html($body_en) ?>
+<br>
+<?php endif; ?>
+<br>
 <?php
     endforeach;
 else:
 ?>
-Пока нет новостей. Загляните позже!
+<?= t('Пока нет новостей. Загляните позже!') ?>
 <?php endif; ?>
 
 <?php } else { ?>
 
-<div class="tableSubTitle">О нас</div>
+<div class="tableSubTitle"><?= t('О нас') ?></div>
 
-<span class="highlight">Про RetroShow</span>
+<span class="highlight"><?= t('Про RetroShow') ?></span>
 <br><br>
-RetroShow - это небольшой сайт, который стилизован под YouTube образца августа 2005 года, хотя и не повторяет его полностью (поскольку наша конечная цель - не воспроизведение YouTube один в один).
+<?= t('RetroShow - это небольшой сайт, который стилизован под YouTube образца августа 2005 года, хотя и не повторяет его полностью (поскольку наша конечная цель - не воспроизведение YouTube один в один).') ?>
 <br><br>
-<span class="highlight">Что такое RetroShow?</span>
+<span class="highlight"><?= t('Что такое RetroShow?') ?></span>
 
 <br><br>
-RetroShow - это способ поделиться своими видео с теми, кто вам дорог. С RetroShow вы можете:
+<?= t('RetroShow - это способ поделиться своими видео с теми, кто вам дорог. С RetroShow вы можете:') ?>
 
 <ul>
-<li> Демонстрировать свои любимые видео всему миру
-</li><li> Снимать на видео своих собак, кошек и других домашних животных
-</li><li> Публиковать в блоге видео, снятые на цифровую камеру или мобильный телефон
-</li><li> Безопасно и конфиденциально показывать видео своим друзьям и близким по всему миру
-</li><li> ... и многое, многое другое!
+<li> <?= t('Демонстрировать свои любимые видео всему миру') ?>
+</li><li> <?= t('Снимать на видео своих собак, кошек и других домашних животных') ?>
+</li><li> <?= t('Публиковать в блоге видео, снятые на цифровую камеру или мобильный телефон') ?>
+</li><li> <?= t('Безопасно и конфиденциально показывать видео своим друзьям и близким по всему миру') ?>
+</li><li> <?= t('... и многое, многое другое!') ?>
 </li></ul>
-<br><span class="highlight"><a href="register.php">Зарегистрируйтесь сейчас</a> и создайте бесплатный аккаунт.</span>
+<br><span class="highlight"><a href="register.php"><?= t('Зарегистрируйтесь сейчас') ?></a> <?= t('и создайте бесплатный аккаунт.') ?></span>
 <br><br> <br>
 
-Чтобы узнать больше о нашем сервисе, посетите раздел <a href="help.php">Помощь</a>.<br>
+<?= t('Чтобы узнать больше о нашем сервисе, посетите раздел') ?> <a href="help.php"><?= t('Помощь') ?></a>.<br>
 
-<br><span class="highlight">Спасибо!</span>
+<br><span class="highlight"><?= t('Спасибо!') ?></span>
 <ul>
-<li><strong><a href="channel.php?user=BitByByte">BitByByte</a></strong> - разработчик движка сайта.</li>
-<li><strong><a href="channel.php?user=dsalin">dsalin</a></strong> - первый пользователь сайта, который занимался тестированием.</li>
+<li><strong><a href="channel.php?user=BitByByte">BitByByte</a></strong> - <?= t('разработчик движка сайта.') ?></li>
+<li><strong><a href="channel.php?user=dsalin">dsalin</a></strong> - <?= t('первый пользователь сайта, который занимался тестированием.') ?></li>
 </ul>
 
 <?php } ?>

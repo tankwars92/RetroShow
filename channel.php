@@ -7,8 +7,8 @@ $filter = isset($_GET['filter']) ? $_GET['filter'] : 'recent';
 
 function rus_date($time) {
     $months = [
-        1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля', 5 => 'мая', 6 => 'июня',
-        7 => 'июля', 8 => 'августа', 9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
+        1 => t('января'), 2 => t('февраля'), 3 => t('марта'), 4 => t('апреля'), 5 => t('мая'), 6 => t('июня'),
+        7 => t('июля'), 8 => t('августа'), 9 => t('сентября'), 10 => t('октября'), 11 => t('ноября'), 12 => t('декабря')
     ];
     $d = date('j', $time);
     $m = $months[intval(date('n', $time))];
@@ -77,7 +77,7 @@ function channel_render_avg_stars_html($avg, $count, $show_count_rating = true) 
         <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
       </nobr>
       <?php if ($show_count_rating): ?>
-        <span style="color:#666666; font-size:smaller;">(<?=intval($count)?> оценок)</span>
+        <span style="color:#666666; font-size:smaller;">(<?= t_ratings_count($count) ?>)</span>
       <?php endif; ?>
     </div>
     <?php
@@ -148,8 +148,8 @@ if ($user) {
 }
 
 if ($user && !$user_data) {
-    showHeader('Канал не найден');
-    echo '<div class="errorBox">Канал не найден!</div>';
+    showHeader(t('Канал не найден'));
+    echo '<div class="errorBox">'.t('Канал не найден!').'</div>';
     showFooter();
     exit;
 }
@@ -301,7 +301,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
         $website_href = 'http://' . $website_href;
     }
 
-    showHeader('Профиль ' . htmlspecialchars($user));
+    showHeader(t('Профиль') . ' ' . htmlspecialchars($user));
     ?>
     <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
         <tr valign="top">
@@ -316,31 +316,31 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                         <td><img src="img/pixel.gif" width="5" height="1" alt=""></td>
                         <td align="center" style="padding:5px;">
                             <div style="font-size:14px;font-weight:bold;color:#003366;margin-bottom:5px;">
-                                Вы знаете <?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?>?
+                                <?= t('Вы знаете') ?> <?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?>?
                             </div>
                             <?php if ($is_owner_profile): ?>
                                 <div style="font-size:12px;color:#666;">
-                                    Это ваш профиль
+                                    <?= t('Это ваш профиль') ?>
                                 </div>
                             <?php elseif (isset($_SESSION['user']) && $are_friends): ?>
                                 <div style="font-size:12px;color:#666;">
-                                    Вы уже друзья.
+                                    <?= t('Вы уже друзья.') ?>
                                 </div>
                             <?php elseif (isset($_SESSION['user'])): ?>
                                 <form method="post" action="channel.php?user=<?= urlencode($user) ?>" style="margin:0;">
                                     <input type="hidden" name="add_friend" value="1">
-                                    <input type="submit" value="Добавить друга">
+                                    <input type="submit" value="<?= htmlspecialchars(t('Добавить друга'), ENT_QUOTES, 'UTF-8') ?>">
                                 </form>
                             <?php else: ?>
-                              <a href="register.php">Зарегистрируйтесь</a> или <a href="login.php">войдите</a>, чтобы добавить друга
+                              <a href="register.php"><?= t('Зарегистрируйтесь') ?></a> <?= t('или') ?> <a href="login.php"><?= t('войдите') ?></a>, <?= t('чтобы добавить друга') ?>
                             <?php endif; ?>
                             <br><br>
                             <div style="font-size:14px;font-weight:bold;color:#003366;margin-bottom:5px;">
-                                Хотите связаться?
+                                <?= t('Хотите связаться?') ?>
                             </div>
                             <form method="get" action="outbox.php" style="margin:0;">
                                 <input type="hidden" name="user" value="<?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?>">
-                                <input type="submit" value="Пишите мне!">
+                                <input type="submit" value="<?= htmlspecialchars(t('Пишите мне!'), ENT_QUOTES, 'UTF-8') ?>">
                             </form>
                         </td>
                         <td><img src="img/pixel.gif" width="5" height="1" alt=""></td>
@@ -357,31 +357,31 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 <table width="100%" cellpadding="5" cellspacing="0" border="0">
                     <tbody>
                     <tr>
-                        <td width="120" align="right"><span class="label">Имя пользователя:</span></td>
+                        <td width="120" align="right"><span class="label"><?= t('Имя пользователя:') ?></span></td>
                         <td><?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     
                     <?php if ($name_text !== ''): ?>
                     <tr>
-                        <td align="right"><span class="label">Имя:</span></td>
+                        <td align="right"><span class="label"><?= t('Имя:') ?></span></td>
                         <td><?= htmlspecialchars($name_text, ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if ($age_text !== ''): ?>
                     <tr>
-                        <td align="right"><span class="label">Возраст:</span></td>
+                        <td align="right"><span class="label"><?= t('Возраст:') ?></span></td>
                         <td><?= htmlspecialchars($age_text, ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if ($about_text !== ''): ?>
                     <tr>
-                        <td align="right" valign="top"><span class="label">Обо мне:</span></td>
+                        <td align="right" valign="top"><span class="label"><?= t('Обо мне:') ?></span></td>
                         <td><?= nl2br(htmlspecialchars($about_text, ENT_QUOTES, 'UTF-8')) ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if ($website_raw !== ''): ?>
                     <tr>
-                        <td align="right"><span class="label">Веб-сайт:</span></td>
+                        <td align="right"><span class="label"><?= t('Веб-сайт:') ?></span></td>
                         <td><a href="<?= htmlspecialchars($website_href, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($website_raw, ENT_QUOTES, 'UTF-8') ?></a></td>
                     </tr>
                     <?php endif; ?>
@@ -391,20 +391,20 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 
                     <?php if (!empty($user_data['hometown'])): ?>
                     <tr>
-                        <td align="right"><span class="label">Родной город:</span></td>
+                        <td align="right"><span class="label"><?= t('Родной город:') ?></span></td>
                         <td><?= htmlspecialchars((string)$user_data['hometown'], ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php if (!empty($user_data['city'])): ?>
                     <tr>
-                        <td align="right"><span class="label">Текущий город:</span></td>
+                        <td align="right"><span class="label"><?= t('Текущий город:') ?></span></td>
                         <td><?= htmlspecialchars((string)$user_data['city'], ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <?php $country_label = profile_country_label($user_data['country'] ?? ''); if ($country_label !== ''): ?>
                     <tr>
-                        <td align="right"><span class="label">Текущая страна:</span></td>
-                        <td><?= htmlspecialchars(substr($country_label, 1), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td align="right"><span class="label"><?= t('Текущая страна:') ?></span></td>
+                        <td><?= htmlspecialchars($country_label, ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     <?php endif; ?>
                     <tr>
@@ -412,7 +412,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                     </tr>
 
                     <tr>
-                        <td align="right"><span class="label">Последний вход:</span></td>
+                        <td align="right"><span class="label"><?= t('Последний вход:') ?></span></td>
                         <td><?= htmlspecialchars(time_ago($last_login_time), ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                     </tbody>
@@ -439,7 +439,7 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                         <td>
                             <div class="moduleTitleBar">
                                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                                    <tr><td><div class="moduleTitle">Последнее видео</div></td></tr>
+                                    <tr><td><div class="moduleTitle"><?= t('Последнее видео') ?></div></td></tr>
                                 </table>
                             </div>
                             <div class="moduleFeatured">
@@ -453,10 +453,10 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                                                 <a href="video.php?id=<?= urlencode((string)($latest_public['public_id'] ?? $latest_public['id'])) ?>"><?= htmlspecialchars((string)($latest_public['title'] ?? ''), ENT_QUOTES, 'UTF-8') ?></a>
                                             </div>
                                             <div class="moduleFeaturedDetails">
-                                                Добавлено: <?= htmlspecialchars(channel_video_rus_date_from_db($latest_public['time'] ?? null), ENT_QUOTES, 'UTF-8') ?><br>
-                                                от <a href="channel.php?user=<?= urlencode($user) ?>"><?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?></a>
+                                                <?= t('Добавлено:') ?> <?= htmlspecialchars(channel_video_rus_date_from_db($latest_public['time'] ?? null), ENT_QUOTES, 'UTF-8') ?><br>
+                                                <?= t('от') ?> <a href="channel.php?user=<?= urlencode($user) ?>"><?= htmlspecialchars($user, ENT_QUOTES, 'UTF-8') ?></a>
                                             </div>
-                                            <div class="moduleFeaturedDetails">Просмотров: <?= (int)($latest_public['views'] ?? 0) ?></div>
+                                            <div class="moduleFeaturedDetails"><?= t('Просмотров:') ?> <?= (int)($latest_public['views'] ?? 0) ?></div>
                                         </td>
                                     </tr>
                                 </table>
@@ -473,8 +473,8 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
                 <?php endif; ?>
 
                 <div style="font-size:12px;color:#444;margin-top:10px;text-align:center;">
-                    <strong>Нравятся мои видео?</strong><br>
-                    <a href="rss.php?user=<?= urlencode($user) ?>">Подпишитесь на RSS.</a>
+                    <strong><?= t('Нравятся мои видео?') ?></strong><br>
+                    <a href="rss.php?user=<?= urlencode($user) ?>"><?= t('Подпишитесь на RSS.') ?></a>
                 </div>
             </td>
         </tr>
@@ -606,7 +606,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
     $sidebar_active = 'public';
   }
 
-  showHeader(($show_owner_tools ? 'Мои видео ' : 'Публичные видео // ' . htmlspecialchars($user)));
+  showHeader(($show_owner_tools ? t('Мои видео ') : t('Публичные видео // ') . htmlspecialchars($user)));
     ?>
   <link rel="stylesheet" href="img/styles.css" type="text/css">
   <style>
@@ -634,11 +634,11 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'videos') {
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
-                      <?= $show_owner_tools ? 'Мои видео' : 'Публичные видео // '  . htmlspecialchars($user) ?>
+                      <?= $show_owner_tools ? t('Мои видео') : t('Публичные видео // ')  . htmlspecialchars($user) ?>
                     </td>
                     <?php if (!$show_owner_tools || (int)$total > 0): ?>
                     <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-                      Видео <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> из <?= $total ?>
+                      <?= t('Видео') ?> <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> <?= t('из') ?> <?= $total ?>
                     </td>
                     <?php endif; ?>
                   </tr>
@@ -698,13 +698,13 @@ img/no_videos_140.jpg
 <br>
 
     <button type="button" style="margin-bottom:15px;width:110px;" onclick="window.location.href='my_videos_edit.php?id=<?=urlencode((string)$row['public_id'])?>';">
-      Редактировать</button>
+      <?= t('Редактировать') ?></button>
     
 
 <br>
 
 <button type="button" onclick="window.location.href='delete_video.php?id=<?=urlencode((string)$row['public_id'])?>';">
-      Удалить</button>
+      <?= t('Удалить') ?></button>
 </center>
 <?php endif; ?>
 
@@ -719,14 +719,14 @@ img/no_videos_140.jpg
                           </div>
                           <div class="moduleEntryDescription">
                           <span id="<?= $desc_id ?>-short">
-                            <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
+                            <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('ещё') ?>)</a><?php endif; ?>
                           </span>
                           <span id="<?= $desc_id ?>-full" style="display:none;">
-                            <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
+                            <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('меньше') ?>)</a>
                           </span>
                           <?php if (!empty($row['tags'])): ?>
                           <div class="vfacets">
-                              <div class="moduleEntryTags">Теги //
+                              <div class="moduleEntryTags"><?= t('Теги //') ?>
                                 <span class="vidTagsBegin-<?=$row['id']?>">
                                       <?php
                                       $tags = preg_split('/\s+/', trim($row['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
@@ -751,17 +751,17 @@ img/no_videos_140.jpg
                                         ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> : <?php
                                           endif;
                                         endforeach;
-                                        ?></span>&nbsp;<span id="vidTagsMore-<?=$row['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$row['id']?>'); hideInline('vidTagsMore-<?=$row['id']?>'); showInline('vidTagsLess-<?=$row['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$row['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$row['id']?>'); hideInline('vidTagsLess-<?=$row['id']?>'); showInline('vidTagsMore-<?=$row['id']?>'); return false;">меньше</a>)</span>
+                                        ?></span>&nbsp;<span id="vidTagsMore-<?=$row['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$row['id']?>'); hideInline('vidTagsMore-<?=$row['id']?>'); showInline('vidTagsLess-<?=$row['id']?>'); return false;"><?= t('ещё') ?></a>)</span><span id="vidTagsLess-<?=$row['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$row['id']?>'); hideInline('vidTagsLess-<?=$row['id']?>'); showInline('vidTagsMore-<?=$row['id']?>'); return false;"><?= t('меньше') ?></a>)</span>
                                       <?php endif; ?>
                                   </span>
                               </div>
                           </div>
                           <?php endif; ?>
                           <div class="moduleEntryDetails">
-                            Добавлено: <?= time_ago(strtotime($row['time'])) ?> от <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($row['user']) ?></a>
+                            <?= t('Добавлено:') ?> <?= time_ago(strtotime($row['time'])) ?> <?= t('от') ?> <a href="channel.php?user=<?= htmlspecialchars($row['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($row['user']) ?></a>
                           </div>
                           <div class="moduleEntryDetails">
-                            Время: <?=get_video_duration_fast($row['file'], $row['id'], $row['public_id'] ?? '')?> | Просмотров: <?= intval($row['views']) ?> | Комментариев: <?= intval($comments_count) ?>
+                            <?= t('Время:') ?> <?=get_video_duration_fast($row['file'], $row['id'], $row['public_id'] ?? '')?> | <?= t('Просмотров:') ?> <?= intval($row['views']) ?> | <?= t('Комментариев:') ?> <?= intval($comments_count) ?>
                           </div>
                           <?= channel_render_avg_stars_html($ra, $rc) ?>
                           </div>
@@ -802,13 +802,13 @@ img/no_videos_140.jpg
                               $share_video_url = $scheme . '://' . $host . $videoPath . '?id=' . rawurlencode((string)($row['public_id'] ?? $row['id']));
                           }
                           ?>
-                          <div class="moduleEntryDetails">Файл: <?=htmlspecialchars($fn_disp)?></div>
-                            <div class="moduleEntryDetails">Статус: <?php if ($row['private'] == 0): ?> <span style="color:#24692A;font-weight:bold">Публичное видео</span> <?php else: ?> <span style="color:#8C172A;font-weight:bold">Приватное видео</span> <?php endif; ?></div>
+                          <div class="moduleEntryDetails"><?= t('Файл:') ?> <?=htmlspecialchars($fn_disp)?></div>
+                            <div class="moduleEntryDetails"><?= t('Статус:') ?> <?php if ($row['private'] == 0): ?> <span style="color:#24692A;font-weight:bold"><?= t('Публичное видео') ?></span> <?php else: ?> <span style="color:#8C172A;font-weight:bold"><?= t('Приватное видео') ?></span> <?php endif; ?></div>
                             <?php if (!$is_ready): ?>
-                              <div class="moduleEntryDetails">Идёт конвертация...</div>
+                              <div class="moduleEntryDetails"><?= t('Идёт конвертация...') ?></div>
                             <?php endif; ?>
                             <input name="video_link" type="text" onclick="javascript:document.linkForm.video_link.focus();document.linkForm.video_link.select();" value="<?= htmlspecialchars($share_video_url, ENT_QUOTES, 'UTF-8') ?>" size="50" readonly="true" style="font-size: 10px; text-align: center;">
-                            <div class="formFieldInfo">Поделитесь этим видео с друзьями! Скопируйте и вставьте ссылку выше в Email или на сайт.</div>
+                            <div class="formFieldInfo"><?= t('Поделитесь этим видео с друзьями! Скопируйте и вставьте ссылку выше в Email или на сайт.') ?></div>
                           </div>
                             
                           
@@ -824,7 +824,7 @@ img/no_videos_140.jpg
               <?php endif; ?>
               <?php if ($total_pages > 1): ?>
                 <div class="pagingDiv" style="margin: 0px 0 0px 0;">
-                  Стр.
+                  <?= t('Стр.') ?>
                   <?php
                   $start_page = max(1, $page - 2);
                   $end_page = min($total_pages, $page + 2);
@@ -849,7 +849,7 @@ img/no_videos_140.jpg
                   }
                   
                   if ($page < $total_pages) {
-                      echo '<span class="pagerNotCurrent"><a href="?user='.urlencode($user).'&tab=videos'.$vf.'&page='.($page + 1).'">Далее</a></span>';
+                      echo '<span class="pagerNotCurrent"><a href="?user='.urlencode($user).'&tab=videos'.$vf.'&page='.($page + 1).'">'.t('Далее').'</a></span>';
                   }
                   ?>
                 </div>
@@ -866,13 +866,13 @@ img/no_videos_140.jpg
       </td>
       <td width="180">
         <?php if ($show_owner_tools): ?>
-          <div style="font-weight: bold; color: #333; margin: 0px 0px 5px 0px;">Мои теги:</div>
+          <div style="font-weight: bold; color: #333; margin: 0px 0px 5px 0px;"><?= t('Мои теги:') ?></div>
           <?php if (!empty($my_tags)): ?>
             <?php foreach ($my_tags as $rt): ?>
               <div style="padding: 0px 0px 4px 0px; color: #999;">&raquo; <a href="results.php?search_type=tag&amp;search_query=<?=urlencode((string)$rt['tag'])?>"><?=htmlspecialchars((string)$rt['tag'])?></a></div>
             <?php endforeach; ?>
           <?php else: ?>
-            <div style="font-size:12px;color:#666;">Тегов пока нет.</div>
+            <div style="font-size:12px;color:#666;"><?= t('Тегов пока нет.') ?></div>
           <?php endif; ?>
         <?php else: ?>
           <?= channel_sidebar_nav_html($user, $sidebar_active, [
@@ -1078,7 +1078,7 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $filter_name ?> видео - <?= (user_header_logo_src($db, $_SESSION['user']) === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?></title>
+<title><?= t($filter_name) ?> <?= t('видео') ?> - <?= (user_header_logo_src($db, $_SESSION['user']) === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?></title>
 <link rel="stylesheet" href="img/styles.css" type="text/css">
 <link rel="stylesheet" href="img/base.css" type="text/css">
 <link rel="stylesheet" href="img/watch.css" type="text/css">
@@ -1119,6 +1119,7 @@ html, body {
 }
 </style>
 <![endif]-->
+<?= site_lang_switcher_script() ?>
 </head>
 <body onload="performOnLoadFunctions();">
 <table width="800" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-top:0; border-collapse:collapse;">
@@ -1133,26 +1134,27 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
 <td valign="top">
 <table width="670" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
-<td style="padding: 0px 5px 0px 5px; font-style: italic;">Загружайте и делитесь видео по всему миру!</td>
+<td style="padding: 0px 5px 0px 5px; font-style: italic;"><?= t('Загружайте и делитесь видео по всему миру!') ?></td>
 <td align="right">
 <table cellpadding="0" cellspacing="0" border="0"><tr>
     <?php if (!isset($_SESSION['user'])): ?>
-<td><a href="register.php"><strong>Регистрация</strong></a></td>
+<td><a href="register.php"><strong><?= t('Регистрация') ?></strong></a></td>
 <td style="padding: 0px 5px 0px 5px;">|</td>
-<td><a href="login.php">Вход</a></td>
+<td><a href="login.php"><?= t('Вход') ?></a></td>
 <td style="padding: 0px 5px 0px 5px;">|</td>
-<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
+<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
+<?= site_lang_switcher_html() ?>
     <?php else: ?>
 <?php $mail_unread = count_unread_mail($db, $_SESSION['user']); $mail_icon = $mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
-<td>Привет, <a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
+<td><?= t('Привет, ') ?><a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|&nbsp;
 							<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
-								<td><a href="admin.php" style="font-weight: bold;color: #24692A">Админ-панель</a></td>
+								<td><a href="admin.php" style="font-weight: bold;color: #24692A"><?= t('Админ-панель') ?></a></td>
 								<td style="padding: 0px 5px 0px 5px;">|</td>
 							<?php } ?>
-							<td><a href="logout.php">Выйти</a></td>
+							<td><a href="logout.php"><?= t('Выйти') ?></a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
+							<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
 							
     <?php endif; ?>
 </tr></table>
@@ -1198,7 +1200,7 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
 						<tr>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 							<td style="padding: 0px 20px 5px 20px; font-size: 13px; font-weight: bold;">
-								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= $t['label'] ?></a>
+								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= t($t['label']) ?></a>
 							</td>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 						</tr>
@@ -1244,9 +1246,9 @@ foreach ($filters as $filter_key => $filter_label) {
     $is_active = ($filter === $filter_key);
     echo '<td style="  ">';
     if ($is_active) {
-        echo '<b><a href="channel.php?filter=' . $filter_key . '">' . $filter_label . '</a></b>';
+        echo '<b><a href="channel.php?filter=' . $filter_key . '">' . t($filter_label) . '</a></b>';
     } else {
-        echo '<a href="channel.php?filter=' . $filter_key . '">' . $filter_label . '</a>';
+        echo '<a href="channel.php?filter=' . $filter_key . '">' . t($filter_label) . '</a>';
     }
     echo '</td>';
     $first = false;
@@ -1270,7 +1272,7 @@ foreach ($filters as $filter_key => $filter_label) {
 <table align="center" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
 	<tbody><tr>
 		<td style="padding-right: 5px;"><input tabindex="1" type="text" value="<?=htmlspecialchars($_GET['search_query'] ?? '')?>" name="search_query" maxlength="128" style="color:#ff3333; font-size: 12px; width: 293px;"></td>
-		<td><input type="submit" value="Искать видео"></td>
+		<td><input type="submit" value="<?= htmlspecialchars(t('Искать видео'), ENT_QUOTES, 'UTF-8') ?>"></td>
 	</tr></tbody></table>
 </form>
 
@@ -1294,9 +1296,9 @@ foreach ($filters as $filter_key => $filter_label) {
 			<div class="moduleTitleBar">
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tr>
-						<td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;"><?= $filter_name ?> видео</td>
+						<td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;"><?= t($filter_name) ?> <?= t('видео') ?></td>
 						<td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-							Видео <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> из <?= $total ?>
+							<?= t('Видео') ?> <?= ($offset + 1) ?>-<?= min($offset + $per_page, $total) ?> <?= t('из') ?> <?= $total ?>
 						</td>
 					</tr>
 				</table>
@@ -1332,9 +1334,9 @@ foreach ($filters as $filter_key => $filter_label) {
 								<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $video['id'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($title_display)?></a>
 							</div>
 							<div class="moduleFeaturedDetails" style="text-align:center; clear: left;">
-								Добавлено: <?=time_ago(strtotime($video['time']))?><br>
-								от <a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['user'])?></a><br>
-								Просмотров: <?=intval($video['views'])?> | Комм. <?=intval($card_comments)?>
+								<?= t('Добавлено:') ?> <?=time_ago(strtotime($video['time']))?><br>
+								<?= t('от') ?> <a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($video['user'])?></a><br>
+								<?= t('Просмотров:') ?> <?=intval($video['views'])?> | <?= t('Комм.') ?> <?=intval($card_comments)?>
                 </div>
                 <?php if ($ra > 0): ?>
                   <center><?= channel_render_avg_stars_html($ra, $rc, false) ?></center>
@@ -1356,7 +1358,7 @@ foreach ($filters as $filter_key => $filter_label) {
 
 				<?php if ($total_pages > 1): ?>
 				<div class="pagingDiv" style="background: #CCC; margin: 0px 0 0px 0; padding: 5px 0px; font-size: 13px; color: #333; font-weight: bold; text-align: right; border-top: 1px dashed #999;">
-					Страница:
+					<?= t('Страница:') ?>
 					<?php
 					$filter_param = 'filter=' . urlencode($filter) . '&';
 					for ($pi = 1; $pi <= $total_pages; $pi++) {
@@ -1367,7 +1369,7 @@ foreach ($filters as $filter_key => $filter_label) {
 						}
 					}
 					if ($page < $total_pages) {
-						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . ($page + 1) . '" style="color: #03C; text-decoration: underline;">Далее</a></span>';
+						echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?' . $filter_param . 'page=' . ($page + 1) . '" style="color: #03C; text-decoration: underline;">' . t('Далее') . '</a></span>';
 					}
 					?>
 				</div>
@@ -1395,9 +1397,9 @@ foreach ($filters as $filter_key => $filter_label) {
                 <table cellpadding="0" cellspacing="0" border="0" width="400" align="center">
                 <tr>
                     <td align="center">
-                        <a href="about.php?p=whats_new">Что нового?</a> |
-                        <a href="about.php">О сайте</a> | 
-                        <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | 
+                        <a href="about.php?p=whats_new"><?= t('Что нового?') ?></a> |
+                        <a href="about.php"><?= t('О сайте') ?></a> | 
+                        <a href="http://github.com/tankwars92/RetroShow"><?= t('Исходный код') ?></a> | 
                         <a href="http://downgrade-net.ru/">Downgrade Net</a>
                     </td>
                 </tr>
@@ -1447,7 +1449,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
     if (isset($_POST['submit_comment'])) {
         $comment = trim($_POST['comment'] ?? '');
         if ($comment === '') {
-            $comment_error = 'Комментарий не может быть пустым!';
+            $comment_error = t('Комментарий не может быть пустым!');
         } else {
             $comment_clean = str_replace(["|", "\n", "\r"], [' ', ' ', ' '], $comment);
             $db->prepare("INSERT INTO profile_comments (profile_user, user, text, time) VALUES (?, ?, ?, ?)")
@@ -1470,16 +1472,16 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
             exit;
         }
     }
-    showHeader('Оставить комментарий');
+    showHeader(t('Оставить комментарий'));
     $now = time();
 ?>
 <form method="post" action="channel.php?user=<?=urlencode($user)?>&tab=comments&action=new">
 <table width="550" align="center" cellpadding="0" cellspacing="0" border="1" style="border-collapse:collapse; margin-top:30px; border-color:#999999;">
   <tr>
-    <td colspan="2" style="background:#999999; color:#fff; font-weight:bold; padding:3px;">Оставить новый комментарий</td>
+    <td colspan="2" style="background:#999999; color:#fff; font-weight:bold; padding:3px;"><?= t('Оставить новый комментарий') ?></td>
   </tr>
   <tr>
-    <td width="110" style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;">От:</td>
+    <td width="110" style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;"><?= t('От:') ?></td>
     <td style="padding:8px;">
       <table cellpadding="0" cellspacing="0" border="0"><tr>
         <td><img src="<?= get_profile_icon($_SESSION['user'], get_user_profile_icon_setting($_SESSION['user'])) ?>" width="140" height="108" style="border:1px solid #bbb; background:#eee;">
@@ -1494,13 +1496,13 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
     </td>
   </tr>
   <tr>
-    <td style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;">Дата:</td>
+    <td style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;"><?= t('Дата:') ?></td>
     <td style="padding:8px; font-weight:bold; color:#666;">
       <?=rus_date($now)?>, <?=date('H:i', $now)?>
     </td>
   </tr>
   <tr>
-    <td style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;">Текст:</td>
+    <td style="background:#f8f8f8; text-align:right; padding:8px; border-right:1px solid #bbb; font-weight:bold; color:#666;"><?= t('Текст:') ?></td>
     <td style="padding:8px;">
       <textarea tabindex="2" maxlength="255" name="comment" cols="55" rows="30"></textarea>
       <?php if ($comment_error): ?><div style="color:red; font-size:12px; margin-top:4px;"><?=htmlspecialchars($comment_error)?></div><?php endif; ?>
@@ -1510,7 +1512,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && isset($_GET['
 </table>
 <center>
 	<br>
-	<input type="submit" name="submit_comment" value="Отправить комментарий" style="font-size:13px;">
+	<input type="submit" name="submit_comment" value="<?= htmlspecialchars(t('Отправить комментарий'), ENT_QUOTES, 'UTF-8') ?>" style="font-size:13px;">
 </center>
 <?php
 showFooter();
@@ -1518,7 +1520,7 @@ exit;
 }
 
 if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET['action'])) {
-    showHeader('Комментарии о пользователе');
+    showHeader(t('Комментарии о пользователе'));
     $comments = [];
     try {
         $stmtPc = $db->prepare("SELECT time, user, text FROM profile_comments WHERE profile_user = ? ORDER BY time ASC, id ASC");
@@ -1547,41 +1549,41 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 
 	echo '<div style="padding:8px 0 12px 0; text-align:center; font-size:13px;">';
 	echo (!isset($_GET['tab']) || $_GET['tab'] == '') 
-		? '<b>Профиль</b>' : '<a href="channel.php?user='.urlencode($user).'">Профиль</a>';
+		? '<b>'.t('Профиль').'</b>' : '<a href="channel.php?user='.urlencode($user).'">'.t('Профиль').'</a>';
 	echo ' | ';
 	echo (isset($_GET['tab']) && $_GET['tab'] === 'videos')
-		? '<b>Видео ('.$total.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=videos&amp;view=public">Видео ('.$total.')</a>';
+		? '<b>'.t('Видео').' ('.$total.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=videos&amp;view=public">'.t('Видео').' ('.$total.')</a>';
 	echo ' | ';
-	echo '<a href="favourites.php?user='.urlencode($user).'&from=channel">Избранное ('.$fav_count.')</a> | ';
+	echo '<a href="favourites.php?user='.urlencode($user).'&from=channel">'.t('Избранное').' ('.$fav_count.')</a> | ';
 	$fr_count = 0;
 	try {
 		$stmtFr = $db->prepare("SELECT COUNT(*) FROM user_friends WHERE user = ?");
 		$stmtFr->execute([$user]);
 		$fr_count = (int)$stmtFr->fetchColumn();
 	} catch (Exception $e) {}
-	echo '<a href="friends.php?user='.urlencode($user).'">Друзья ('.$fr_count.')</a> | ';
+	echo '<a href="friends.php?user='.urlencode($user).'">'.t('Друзья').' ('.$fr_count.')</a> | ';
 	echo (isset($_GET['tab']) && $_GET['tab'] === 'comments')
-		? '<b>Комментарии ('.$comments_count.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=comments">Комментарии ('.$comments_count.')</a>';
+		? '<b>'.t('Комментарии').' ('.$comments_count.')</b>' : '<a href="channel.php?user='.urlencode($user).'&tab=comments">'.t('Комментарии').' ('.$comments_count.')</a>';
 	echo '</div>';
     ?>
     <?php if (isset($_SESSION['user']) && $_SESSION['user'] === $user): ?>
     <div style="width:550px; margin:0 auto 8px auto; text-align:right; font-size:12px;">
-      <a href="dl_comments.php?user=<?=urlencode($user)?>" style="color:#0033cc; text-decoration:underline;">Скачать комментарии (.txt)</a>
+      <a href="dl_comments.php?user=<?=urlencode($user)?>" style="color:#0033cc; text-decoration:underline;"><?= t('Скачать комментарии (.txt)') ?></a>
     </div>
     <?php endif; ?>
     <table width="550" align="center" cellpadding="0" cellspacing="0" border="1" bordercolor="#666666" style="border-collapse:collapse; border:1px solid #666666; border-color:#666666;">
       <tr>
         <td colspan="2" style="background:#999999; color:#fff; font-weight:bold; padding:3px; border-right:1px solid #666666;">
-          Комментарии <?=htmlspecialchars($user)?>
+          <?= t('Комментарии') ?> <?=htmlspecialchars($user)?>
         </td>
       </tr>
       <?php if ($user_data && isset($user_data['profile_comm']) && $user_data['profile_comm'] === '2'): ?>
       <tr>
-        <td colspan="2" style="padding:5px; text-align:center; background:#F4F4F4; border-right:1px solid #666666;">Этот пользователь отключил возможность комментирования своего профиля.</td>
+        <td colspan="2" style="padding:5px; text-align:center; background:#F4F4F4; border-right:1px solid #666666;"><?= t('Этот пользователь отключил возможность комментирования своего профиля.') ?></td>
       </tr>
       <?php elseif (count($comments) == 0): ?>
       <tr>
-        <td colspan="2" style="padding:20px; text-align:center; color:#888; border-right:1px solid #666666;">Нет комментариев.</td>
+        <td colspan="2" style="padding:20px; text-align:center; color:#888; border-right:1px solid #666666;"><?= t('Нет комментариев.') ?></td>
       </tr>
       <?php else: foreach (array_reverse($comments) as $c): ?>
       <tr>
@@ -1603,8 +1605,8 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
           <?php else: ?>
             <tr>
         <td colspan="2" style="padding:10px; background:#f8f8f8; text-align:center; border-right:1px solid #666666;">
-            <a href="channel.php?user=<?=urlencode($user)?>&tab=comments&action=new" style="color:#0033cc; text-decoration:underline;">Оставить комментарий</a> для <?=htmlspecialchars($user)?>.
-            <span style="color:#666; font-size:12px;">Публикуемые вами комментарии будут видны всем, кто просматривает профиль пользователя <?=htmlspecialchars($user)?>.</span>
+            <a href="channel.php?user=<?=urlencode($user)?>&tab=comments&action=new" style="color:#0033cc; text-decoration:underline;"><?= t('Оставить комментарий') ?></a> <?= t('для') ?> <?=htmlspecialchars($user)?>.
+            <span style="color:#666; font-size:12px;"><?= t('Публикуемые вами комментарии будут видны всем, кто просматривает профиль пользователя') ?> <?=htmlspecialchars($user)?>.</span>
           <?php endif; ?>
         </td>
       </tr>
@@ -1636,6 +1638,7 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 .pageText { font-size: 12px; margin-bottom: 15px; color: #333; line-height: 1.4; }
 .codeArea { background-color: #F5F5F5; border: 1px solid #CCCCCC; padding: 10px; margin: 10px 0px; font-family: monospace; font-size: 11px; color: #333; }
 </style>
+<?= site_lang_switcher_script() ?>
 </head>
 <body onload="performOnLoadFunctions();" style="margin:0; padding:0;">
 <table width="800" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-top:0; border-collapse:collapse;">
@@ -1650,26 +1653,27 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
 <td valign="top">
 <table width="670" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
-<td style="padding: 0px 5px 0px 5px; font-style: italic;">Загружайте и делитесь видео по всему миру!</td>
+<td style="padding: 0px 5px 0px 5px; font-style: italic;"><?= t('Загружайте и делитесь видео по всему миру!') ?></td>
 <td align="right">
 <table cellpadding="0" cellspacing="0" border="0"><tr>
     <?php if (!isset($_SESSION['user'])): ?>
-<td><a href="register.php"><strong>Регистрация</strong></a></td>
+<td><a href="register.php"><strong><?= t('Регистрация') ?></strong></a></td>
 <td style="padding: 0px 5px 0px 5px;">|</td>
-<td><a href="login.php">Вход</a></td>x`
+<td><a href="login.php"><?= t('Вход') ?></a></td>
 <td style="padding: 0px 5px 0px 5px;">|</td>
-<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
+<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
+<?= site_lang_switcher_html() ?>
     <?php else: ?>
 <?php $mail_unread = count_unread_mail($db, $_SESSION['user']); $mail_icon = $mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
-<td>Привет, <a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
+<td><?= t('Привет, ') ?><a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|&nbsp;
 							<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
-								<td><a href="admin.php" style="font-weight: bold;color: #24692A">Админ-панель</a></td>
+								<td><a href="admin.php" style="font-weight: bold;color: #24692A"><?= t('Админ-панель') ?></a></td>
 								<td style="padding: 0px 5px 0px 5px;">|</td>
 							<?php } ?>
-							<td><a href="logout.php">Выйти</a></td>
+							<td><a href="logout.php"><?= t('Выйти') ?></a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
+							<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
     <?php endif; ?>
 </tr></table>
 </td></tr></table>
@@ -1714,7 +1718,7 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
 						<tr>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 							<td style="padding: 0px 20px 5px 20px; font-size: 13px; font-weight: bold;">
-								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= $t['label'] ?></a>
+								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= t($t['label']) ?></a>
 							</td>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 						</tr>
@@ -1739,15 +1743,15 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
 <table cellpadding="0" cellspacing="0" border="0">
 <tr>
 <td style="font-size: 10px;">&nbsp;</td>
-<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos'; } else { echo 'login.php'; } ?>">Мои видео</a></td>
+<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos'; } else { echo 'login.php'; } ?>"><?= t('Мои видео') ?></a></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>">Мой канал</a></td>
+<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>"><?= t('Мой канал') ?></a></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'favourites.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>">Избранное</a></td>
+<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'favourites.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>"><?= t('Избранное') ?></a></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'friends.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>">Мои друзья</a></td>
+				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'friends.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>"><?= t('Мои друзья') ?></a></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'account.php'; } else { echo 'login.php'; } ?>">Настройки</a></td>
+<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'account.php'; } else { echo 'login.php'; } ?>"><?= t('Настройки') ?></a></td>
 <td style="font-size: 10px;">&nbsp;</td>
 </tr>
 </table>
@@ -1775,7 +1779,7 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
 				<td><img src="img/pixel.gif" width="5" height="1"></td>
 				<td style="padding: 5px 0px 5px 0px;">
     <div class="moduleTitleBar">
-      <div class="moduleTitle"><?=( $user ? 'Видео от ' . htmlspecialchars($user) : $filter_name . ' видео' )?></div>
+      <div class="moduleTitle"><?=( $user ? t('Видео от ') . htmlspecialchars($user) : t($filter_name) . ' ' . t('видео') )?></div>
     </div>
     <?php if (count($videos) == 0): ?>
     <?php else: ?>
@@ -1793,13 +1797,13 @@ $__ch_alt = ($__ch_logo === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow';
                 $desc_full = nl2br($desc);
                 ?>
                 <span id="<?= $desc_id ?>-short" style="font-size:12px; color:#222; margin:2px 0 2px 0;">
-                  <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
+                  <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('ещё') ?>)</a><?php endif; ?>
                 </span>
                 <span id="<?= $desc_id ?>-full" style="display:none; font-size:12px; color:#222; margin:2px 0 2px 0;">
-                  <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
+                  <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('меньше') ?>)</a>
                 </span>
-                <div class="moduleEntryDetails">Добавлено: <?=time_ago(strtotime($row['time']))?> пользователем <a href="channel.php?user=<?=urlencode($row['user'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['user'])?></a></div>
-                <div class="moduleEntryDetails">Просмотров: <?=intval($row['views'])?> | Комментариев: <?php
+                <div class="moduleEntryDetails"><?= t('Добавлено:') ?> <?=time_ago(strtotime($row['time']))?> <?= t('пользователем') ?> <a href="channel.php?user=<?=urlencode($row['user'])?>" style="color:#0033cc; text-decoration:underline;"><?=htmlspecialchars($row['user'])?></a></div>
+                <div class="moduleEntryDetails"><?= t('Просмотров:') ?> <?=intval($row['views'])?> | <?= t('Комментариев:') ?> <?php
                   try {
                       $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
                       $stmtCc->execute([intval($row['id'])]);
@@ -1855,7 +1859,7 @@ function showDescless(id) {
 				<td width="170">
 		
 								
-				<div style="font-size: 16px; font-weight: bold; text-align: center; padding: 5px 5px 10px 5px;"><a href="register.php">Зарегистрируйтесь бесплатно!</a></div>
+				<div style="font-size: 16px; font-weight: bold; text-align: center; padding: 5px 5px 10px 5px;"><a href="register.php"><?= t('Зарегистрируйтесь бесплатно!') ?></a></div>
 				
 								
 				</td>
@@ -1874,7 +1878,7 @@ function showDescless(id) {
 
 <table cellpadding="10" cellspacing="0" border="0" align="center">
 <tr>
-<td align="center" valign="center"><span class="footer"><a href="about.php?p=whats_new">Что нового?</a> | <a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/retroshow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a>
+<td align="center" valign="center"><span class="footer"><a href="about.php?p=whats_new"><?= t('Что нового?') ?></a> | <a href="about.php"><?= t('О сайте') ?></a> | <a href="http://github.com/tankwars92/retroshow"><?= t('Исходный код') ?></a> | <a href="http://downgrade-net.ru/">Downgrade Net</a>
 <br><br>Copyright © 2026 RetroShow | <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span></td>
 </tr>
 </table>

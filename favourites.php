@@ -73,7 +73,7 @@ function favourites_render_avg_stars_html($avg, $count) {
         <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
         <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
       </nobr>
-      <span style="color:#666666; font-size:smaller;">(<?=intval($count)?> оценок)</span>
+      <span style="color:#666666; font-size:smaller;">(<?= t_ratings_count($count) ?>)</span>
     </div>
     <?php
     return ob_get_clean();
@@ -211,11 +211,11 @@ try {
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
-                    <?=($is_own ? 'Мои избранные видео' : 'Избранные // '.$user_disp)?>
+                  <?=($is_own ? t('Мои избранные видео') : t('Избранные // ').$user_disp)?>
                   </td>
                   <?php if (!$is_own || (int)$fav_total > 0): ?>
                   <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-                    Видео <?= $fav_total ? ($offset + 1) . '-' . min($offset + $per_page, $fav_total) . ' из ' . $fav_total : '0 из 0' ?>
+                    <?= t('Видео') ?> <?= $fav_total ? ($offset + 1) . '-' . min($offset + $per_page, $fav_total) . ' ' . t('из') . ' ' . $fav_total : '0 ' . t('из') . ' 0' ?>
                   </td>
                   <?php endif; ?>
                 </tr>
@@ -224,7 +224,7 @@ try {
             <?php if (!$fav_list): ?>
               <?php if (!$is_own): ?>
                 <div style="padding:10px;font-size:13px;color:#666;">
-                Этот пользователь не добавил ничего в избранное.
+                <?= t('Этот пользователь не добавил ничего в избранное.') ?>
                 </div>
               <?php endif; ?>
             <?php else: ?>
@@ -251,10 +251,10 @@ try {
                       <div style="margin-top: 5px; align: center">
                       <center>
                       <?php if ($is_own): ?>
-                      <form method="post" action="favourites.php?user=<?=urlencode($user)?><?php if ($from_channel): ?>&amp;from=channel<?php endif; ?>" onsubmit="return confirm('Убрать это видео из избранного?');" style="margin:0;">
+                      <form method="post" action="favourites.php?user=<?=urlencode($user)?><?php if ($from_channel): ?>&amp;from=channel<?php endif; ?>" onsubmit="return confirm(<?= t_js_attr('Убрать это видео из избранного?') ?>);" style="margin:0;">
                         <input type="hidden" name="remove_fav" value="1">
                         <input type="hidden" name="video_id" value="<?=intval($video['id'])?>">
-                        <input type="submit" value="Удалить видео">
+                        <input type="submit" value="<?= htmlspecialchars(t('Удалить видео'), ENT_QUOTES, 'UTF-8') ?>">
                       </form>
                       <?php endif; ?>
                       </center>
@@ -266,14 +266,14 @@ try {
                         </div>
                         <div class="moduleEntryDescription">
                         <span id="<?= $desc_id ?>-short">
-                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
+                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('ещё') ?>)</a><?php endif; ?>
                         </span>
                         <span id="<?= $desc_id ?>-full" style="display:none;">
-                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
+                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('меньше') ?>)</a>
                         </span>
                         <?php if (!empty($video['tags'])): ?>
                         <div class="vfacets">
-                            <div class="moduleEntryTags">Теги //
+                            <div class="moduleEntryTags"><?= t('Теги //') ?>
                               <span class="vidTagsBegin-<?=$video['id']?>">
                                     <?php
                                     $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
@@ -298,17 +298,17 @@ try {
                                       ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> : <?php
                                         endif;
                                       endforeach;
-                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;">меньше</a>)</span>
+                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;"><?= t('ещё') ?></a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;"><?= t('меньше') ?></a>)</span>
                                     <?php endif; ?>
                                 </span>
                             </div>
                         </div>
                         <?php endif; ?>
                         <div class="moduleEntryDetails">
-                          Добавлено: <?= time_ago(strtotime($video['time'])) ?> от <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
+                          <?= t('Добавлено:') ?> <?= time_ago(strtotime($video['time'])) ?> <?= t('от') ?> <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
                         </div>
                         <div class="moduleEntryDetails">
-                          Время: <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | Просмотров: <?= intval($video['views']) ?> | Комментариев: <?= intval($comments_count) ?>
+                          <?= t('Время:') ?> <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | <?= t('Просмотров:') ?> <?= intval($video['views']) ?> | <?= t('Комментариев:') ?> <?= intval($comments_count) ?>
                         </div>
                         <?= favourites_render_avg_stars_html($ra, $rc) ?>
                         </div>
@@ -319,7 +319,7 @@ try {
               <?php endforeach; ?>
               <?php if ($total_pages > 1): ?>
                 <div class="channelPagingDiv pagingDiv">
-                  Стр.
+                  <?= t('Стр.') ?>
                   <?php
                   $start_page = max(1, $page - 2);
                   $end_page = min($total_pages, $page + 2);
@@ -340,7 +340,7 @@ try {
                       echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.$total_pages.'">'.$total_pages.'</a></span>';
                   }
                   if ($page < $total_pages) {
-                      echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.($page + 1).'">Далее</a></span>';
+                      echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.($page + 1).'">'.t('Далее').'</a></span>';
                   }
                   ?>
                 </div>
@@ -364,7 +364,7 @@ try {
           'friends' => (int)$fr_count,
       ]) ?>
       <?php if ($is_own && !$from_channel): ?>
-      <div style="font-weight: bold; color: #333; margin: 0px 0px 5px 0px;">Любимые теги:</div>
+      <div style="font-weight: bold; color: #333; margin: 0px 0px 5px 0px;"><?= t('Любимые теги:') ?></div>
       <?php if (!empty($my_tags)): ?>
       <?php foreach ($my_tags as $rt): ?>
       <div style="padding: 0px 0px 4px 0px; color: #999;">&raquo; <a href="results.php?search_type=tag&amp;search_query=<?=urlencode((string)$rt['tag'])?>"><?=htmlspecialchars((string)$rt['tag'])?></a></div>

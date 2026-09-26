@@ -122,11 +122,11 @@ try {
             <table width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
-                  Друзья // <?=htmlspecialchars($view_user)?>
+                  <?= t('Друзья // ') ?><?=htmlspecialchars($view_user)?>
                 </td>
                 <?php if (!$is_own || (int)$total_friends > 0): ?>
                 <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-                  Друзья <?= $total_friends ? ($offset + 1) . '-' . min($offset + $per_page, $total_friends) . ' из ' . $total_friends : '0 из 0' ?>
+                  <?= t('Друзья') ?> <?= $total_friends ? ($offset + 1) . '-' . min($offset + $per_page, $total_friends) . ' ' . t('из') . ' ' . $total_friends : '0 ' . t('из') . ' 0' ?>
                 </td>
                 <?php endif; ?>
               </tr>
@@ -134,11 +134,11 @@ try {
           </div>
 <?php
 if (!$view_user) {
-    echo '<div style="padding:20px; text-align:center; color:#888; font-size:14px; background:#fff;">Войдите или выберите пользователя для просмотра друзей.</div>';
+    echo '<div style="padding:20px; text-align:center; color:#888; font-size:14px; background:#fff;">'.t('Войдите или выберите пользователя для просмотра друзей.').'</div>';
 
 } else {
     if (!$is_own && (int)$total_friends === 0) {
-        echo '<div style="padding:10px;font-size:13px;color:#666;">Этот пользователь не добавил ни одного друга.</div>';
+        echo '<div style="padding:10px;font-size:13px;color:#666;">'.t('Этот пользователь не добавил ни одного друга.').'</div>';
     }
     foreach ($paged_friends as $friend) {
         $videos_count = 0;
@@ -175,7 +175,7 @@ if (!$view_user) {
             echo '<form method="post" action="friends.php?user='.urlencode($view_user).'" style="margin:0;">';
             echo '<input type="hidden" name="remove_friend" value="1">';
             echo '<input type="hidden" name="friend" value="'.htmlspecialchars($friend, ENT_QUOTES, 'UTF-8').'">';
-            echo '<input type="submit" value="Удалить из друзей" style="margin-top:5px;">';
+            echo '<input type="submit" value="'.htmlspecialchars(t('Удалить из друзей'), ENT_QUOTES, 'UTF-8').'" style="margin-top:5px;">';
             echo '</form>';
             echo '</td>';
         } elseif ($is_own) {
@@ -183,7 +183,7 @@ if (!$view_user) {
             echo '<form method="post" action="friends.php?user='.urlencode($view_user).'" style="margin:0;">';
             echo '<input type="hidden" name="remove_friend" value="1">';
             echo '<input type="hidden" name="friend" value="'.htmlspecialchars($friend, ENT_QUOTES, 'UTF-8').'">';
-            echo '<input type="submit" value="Удалить из друзей" style="margin-top:5px;">';
+            echo '<input type="submit" value="'.htmlspecialchars(t('Удалить из друзей'), ENT_QUOTES, 'UTF-8').'" style="margin-top:5px;">';
             echo '</form>';
             echo '</td>';
         } else {
@@ -199,19 +199,19 @@ if (!$view_user) {
         echo '<div class="moduleEntryTitle">';
         echo '<a href="channel.php?user='.urlencode($friend).'">'.htmlspecialchars($friend, ENT_QUOTES, 'UTF-8').'</a>';
         if ($is_own) {
-            echo '<span style="color:#777;font-size:11px;"> (Друзья)</span>';
+            echo '<span style="color:#777;font-size:11px;"> ('.t('Друзья').')</span>';
         }
         echo '</div>';
 
         echo '<div class="moduleEntryDescription">';
         if ($is_own) {
-            echo '<a href="channel.php?user='.urlencode($friend).'&tab=videos">Видео</a> ('.$videos_count.') | ';
-            echo '<a href="favourites.php?user='.urlencode($friend).'">Избранное</a> ('.$favs_count.') | ';
-            echo '<a href="friends.php?user='.urlencode($friend).'">Друзья</a> ('.$fr_count.')';
+            echo '<a href="channel.php?user='.urlencode($friend).'&tab=videos">'.t('Видео').'</a> ('.$videos_count.') | ';
+            echo '<a href="favourites.php?user='.urlencode($friend).'">'.t('Избранное').'</a> ('.$favs_count.') | ';
+            echo '<a href="friends.php?user='.urlencode($friend).'">'.t('Друзья').'</a> ('.$fr_count.')';
         } else {
-            echo '<a href="channel.php?user='.urlencode($friend).'&tab=videos&view=public">Видео</a> ('.$videos_count.') | ';
-            echo '<a href="favourites.php?user='.urlencode($friend).'">Избранное</a> ('.$favs_count.') | ';
-            echo '<a href="friends.php?user='.urlencode($friend).'">Друзья</a> ('.$fr_count.')';
+            echo '<a href="channel.php?user='.urlencode($friend).'&tab=videos&view=public">'.t('Видео').'</a> ('.$videos_count.') | ';
+            echo '<a href="favourites.php?user='.urlencode($friend).'">'.t('Избранное').'</a> ('.$favs_count.') | ';
+            echo '<a href="friends.php?user='.urlencode($friend).'">'.t('Друзья').'</a> ('.$fr_count.')';
         }
         echo '</div>';
         echo '</td>';
@@ -243,7 +243,7 @@ if (!$view_user) {
           echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.$total_pages.'">'.$total_pages.'</a></span>';
       }
       if ($page < $total_pages) {
-          echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.($page + 1).'">Далее</a></span>';
+          echo '<span class="pagerNotCurrent"><a href="?'.$user_param.'page='.($page + 1).'">'.t('Далее').'</a></span>';
       }
       ?>
     </div>

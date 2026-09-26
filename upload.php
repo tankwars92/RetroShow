@@ -55,15 +55,15 @@ function normalize_tags($tags) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 1) {
     if ($ip_blocked) {
-        $error = 'Загрузка видео для вашего IP адреса запрещена.';
+        $error = t('Загрузка видео для вашего IP адреса запрещена.');
     } else {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $tags = normalize_tags($_POST['tags'] ?? '');
     if ($title === '') {
-        $error = 'Введите название видео.';
+        $error = t('Введите название видео.');
     } elseif ($tags === '') {
-        $error = 'Введите хотя бы один тег!';
+        $error = t('Введите хотя бы один тег!');
     } else {
         $_SESSION['upload_title'] = $title;
         $_SESSION['upload_description'] = $description;
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 1) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     if ($ip_blocked) {
-        $error = 'Загрузка видео для вашего IP адреса запрещена.';
+        $error = t('Загрузка видео для вашего IP адреса запрещена.');
     } else {
     $title = $_SESSION['upload_title'] ?? '';
     $description = $_SESSION['upload_description'] ?? '';
@@ -88,13 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
     $broadcast = $_POST['broadcast'] ?? 'public';
   
     if (empty($title)) {
-        $error = "Введите название видео.";
+        $error = t('Введите название видео.');
     } elseif (strlen($description) > 5000) {
-        $error = "Описание не должно превышать 5000 символов.";
+        $error = t('Описание не должно превышать 5000 символов.');
     } elseif (!isset($_FILES['video']) || $_FILES['video']['error'] !== UPLOAD_ERR_OK) {
-        $error = "Ошибка при загрузке видео. Возможно, файл превышает лимит?";
+        $error = t('Ошибка при загрузке видео. Возможно, файл превышает лимит?');
     } elseif ($_FILES['video']['size'] > 1048576000) { 
-        $error = "Файл слишком большой! Максимальный размер: 1000 МБ.";
+        $error = t('Файл слишком большой! Максимальный размер: 1000 МБ.');
     } else {
         $public_id = generate_public_video_id_for_upload($db);
         $video_ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
@@ -110,11 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
             $queue_video = 'uploads/' . $queue_stem . '.' . $video_ext;
 
             if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
-                $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
+                $error = t('Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?');
             } else {
                 if (!@rename($temp_video, $queue_video)) {
                     if (!@copy($temp_video, $queue_video)) {
-                        $error = 'Ошибка постановки видео в очередь обработки.';
+                        $error = t('Ошибка постановки видео в очередь обработки.');
                         @unlink($temp_video);
                     } else {
                         @unlink($temp_video);
@@ -148,9 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                         ]);
 
                         unset($_SESSION['upload_title'], $_SESSION['upload_description'], $_SESSION['upload_tags']);
-                        $success = "Видео добавлено в очередь обработки. Оно появится после завершения конвертации. <a href=\"index.php\">На главную</a>";
+                        $success = t('Видео добавлено в очередь обработки. Оно появится после завершения конвертации. <a href="index.php">На главную</a>');
                     } catch (Exception $e) {
-                        $error = 'Ошибка при добавлении видео в очередь. Попробуйте ещё раз.';
+                        $error = t('Ошибка при добавлении видео в очередь. Попробуйте ещё раз.');
                         @unlink($queue_video);
                     }
                 }
@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
         $preview_file = 'uploads/' . $file_base . '_preview.' . $preview_ext;
         
         if (!move_uploaded_file($_FILES['video']['tmp_name'], $temp_video)) {
-            $error = "Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?";
+            $error = t('Ошибка при сохранении видео. Существует ли папка uploads и есть ли права на её запись?');
         } else {
             $output = [];
             $return_var = 0;
@@ -308,7 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $p === 2) {
                     'ip_detected' => (string)$client_ip,
                     'ip_detected_source' => (string)$client_ip_source,
                 ]);
-                $success = "Видео успешно загружено! <a href=\"index.php\">На главную</a>";
+                $success = t('Видео успешно загружено!') . ' <a href="index.php">' . t('На главную') . '</a>';
             }
             }
         }
@@ -353,71 +353,71 @@ showHeader("Загрузка видео");
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0">
 <tr valign="top">
 <?php if ($p === 1): ?>
-  <div class="tableSubTitle">Загрузка видео (Шаг 1 из 2)</div>
+  <div class="tableSubTitle"><?= t('Загрузка видео (Шаг 1 из 2)') ?></div>
   <?php if ($error): ?><div class="errorBox"><?=$error?></div><?php endif; ?>
   <?php if ($success): ?><div class="confirmBox"><?=$success?></div><?php endif; ?>
   <form method="post" action="upload.php?p=1">
     <table class="upload-step-table" width="100%">
       <tr>
-        <td class="upload-label" width="200"><b>Название:</b></td>
+        <td class="upload-label" width="200"><b><?= t('Название:') ?></b></td>
         <td class="upload-input"><input type="text" name="title" value="<?=htmlspecialchars($title)?>" style="width: 250px; font-size: 13px;"></td>
       </tr>
       <tr>
-        <td class="upload-label" valign="top"><b>Описание:</b></td>
+        <td class="upload-label" valign="top"><b><?= t('Описание:') ?></b></td>
         <td class="upload-input"><textarea name="description" rows="4" style="width: 250px; font-size: 13px;"><?=htmlspecialchars($description)?></textarea></td>
       </tr>
       <tr>
-        <td class="upload-label" valign="top"><b>Теги:</b></td>
+        <td class="upload-label" valign="top"><b><?= t('Теги:') ?></b></td>
         <td class="upload-input">
           <input type="text" name="tags" value="<?=htmlspecialchars($tags)?>" style="width: 250px; font-size: 13px;">
         </td>
       </tr>
       <tr align="left">
 		<td></td>
-	    <td><div class="formFieldInfo"><strong>Введите один или несколько тегов, описывающих ваше видео, через пробел.</strong><br>Лучше использовать релевантные ключевые слова, чтобы другие пользователи могли найти ваше видео!</div></td>
+	    <td><div class="formFieldInfo"><strong><?= t('Введите один или несколько тегов, описывающих ваше видео, через пробел.') ?></strong><br><?= t('Лучше использовать релевантные ключевые слова, чтобы другие пользователи могли найти ваше видео!') ?></div></td>
 	  </tr>
       <tr>
         <td></td>
-        <td class="upload-btn"><input type="submit" value="Далее ->" style="font-size: 13px;"></td>
+        <td class="upload-btn"><input type="submit" value="<?= htmlspecialchars(t('Далее ->'), ENT_QUOTES, 'UTF-8') ?>" style="font-size: 13px;"></td>
       </tr>
   </table>
   </form>
 <?php elseif ($p === 2): ?>
-  <div class="tableSubTitle">Загрузка видео (Шаг 2 из 2)</div>
+  <div class="tableSubTitle"><?= t('Загрузка видео (Шаг 2 из 2)') ?></div>
   <?php if ($error): ?><div class="errorBox"><?=$error?></div><?php endif; ?>
   <?php if ($success): ?><div class="confirmBox"><?=$success?></div><?php endif; ?>
-  <form method="post" enctype="multipart/form-data" action="upload.php?p=2" onsubmit="var b=document.getElementById('uploadBtn'); if(b){b.disabled=true; b.value='Загрузка...';}">
+  <form method="post" enctype="multipart/form-data" action="upload.php?p=2" onsubmit="var b=document.getElementById('uploadBtn'); if(b){b.disabled=true; b.value='<?= htmlspecialchars(t('Загрузка...'), ENT_QUOTES, 'UTF-8') ?>';}">
     <input type="hidden" name="title" value="<?=htmlspecialchars($title)?>">
     <input type="hidden" name="description" value="<?=htmlspecialchars($description)?>">
     <input type="hidden" name="MAX_FILE_SIZE" value="1048576000">
     <table class="upload-step-table" width="100%">
       <tr>
-        <td class="upload-label" width="200"><b>Файл:</b></td>
+        <td class="upload-label" width="200"><b><?= t('Файл:') ?></b></td>
         <td class="upload-input">
         <div width="595" height="20" cellpadding="0" border="0" bgcolor="#E5ECF9" class="formHighlight">
 			<input type="file" style="margin-bottom: 3px" id="fileToUpload" name="video" accept="video/*,audio/*"><br>
-			<span class="formHighlightText"><b>Макс. размер файла: 1000 МБ. Не загружайте материалы, нарущающие авторские права.</b></span><br>
-			<span class="formHighlightText">После загрузки, вы можете редактировать или удалить это видео в любое время в разделе "Мои видео".</span>
+			<span class="formHighlightText"><b><?= t('Макс. размер файла: 1000 МБ. Не загружайте материалы, нарущающие авторские права.') ?></b></span><br>
+			<span class="formHighlightText"><?= t('После загрузки, вы можете редактировать или удалить это видео в любое время в разделе "Мои видео".') ?></span>
 		</div>
         </td>
       </tr>
       <tr>
-        <td class="upload-label"><b>Показ:</b></td>
+        <td class="upload-label"><b><?= t('Показ:') ?></b></td>
         <td class="upload-input">
-          <label><input type="radio" name="broadcast" value="public" class="upload-radio" checked><b>Публично</b>: видео будет доступно всем.</label><br>
-          <label><input type="radio" name="broadcast" value="private" class="upload-radio"><b>Приватно</b>: видео будет доступно только по ссылке.</label>
+          <label><input type="radio" name="broadcast" value="public" class="upload-radio" checked><b><?= t('Публично') ?></b>: <?= t('видео будет доступно всем.') ?></label><br>
+          <label><input type="radio" name="broadcast" value="private" class="upload-radio"><b><?= t('Приватно') ?></b>: <?= t('видео будет доступно только по ссылке.') ?></label>
         </td>
       </tr>
       <tr>
         <td></td>
         <td>
         <br>
-        <b>ПОЖАЛУЙСТА, ПОДОЖДИТЕ, ЭТО МОЖЕТ ЗАНЯТЬ НЕСКОЛЬКО МИНУТ.<br>
-        ДАЖЕ ЕСЛИ СТРАНИЦА ОБНОВИЛАСЬ БЕЗ ПОДТВЕРЖДЕНИЯ, ВАШЕ<br> ВИДЕО БУДЕТ ОТПРАВЛЕНО НА ОБРАБОТКУ.</b></td>
+        <b><?= t('ПОЖАЛУЙСТА, ПОДОЖДИТЕ, ЭТО МОЖЕТ ЗАНЯТЬ НЕСКОЛЬКО МИНУТ.') ?><br>
+        <?= t('ДАЖЕ ЕСЛИ СТРАНИЦА ОБНОВИЛАСЬ БЕЗ ПОДТВЕРЖДЕНИЯ, ВАШЕ') ?><br> <?= t('ВИДЕО БУДЕТ ОТПРАВЛЕНО НА ОБРАБОТКУ.') ?></b></td>
       </tr>
       <tr>
         <td></td>
-        <td class="upload-btn"><br><input type="submit" value="Загрузить видео" id="uploadBtn"></td>
+        <td class="upload-btn"><br><input type="submit" value="<?= htmlspecialchars(t('Загрузить видео'), ENT_QUOTES, 'UTF-8') ?>" id="uploadBtn"></td>
       </tr>
     </table>
   </form>

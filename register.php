@@ -27,24 +27,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['field_command'] ??
 	$user_prefill = $username;
 
 	if ($captcha_answer === '' || $expected === '' || (string)intval($captcha_answer) !== $expected) {
-		$error = 'Неверный ответ на проверочный вопрос.';
+		$error = t('Неверный ответ на проверочный вопрос.');
 	} elseif ($email === '' || $username === '' || $password1 === '' || $password2 === '') {
-		$error = 'Пожалуйста, заполните все обязательные поля.';
+		$error = t('Пожалуйста, заполните все обязательные поля.');
 	} elseif ($password1 !== $password2) {
-		$error = 'Пароли не совпадают.';
+		$error = t('Пароли не совпадают.');
 	} elseif (strlen($password1) < 6) {
-		$error = 'Пароль должен содержать минимум 6 символов.';
+		$error = t('Пароль должен содержать минимум 6 символов.');
 	} elseif (mb_strtolower($username, 'UTF-8') === 'system') {
-		$error = 'Пользователь с таким именем уже существует.';
+		$error = t('Пользователь с таким именем уже существует.');
 	} else {
 		try {
 			$stmt = $db->prepare('SELECT 1 FROM users WHERE login = ? LIMIT 1');
 			$stmt->execute([$username]);
 			if ($stmt->fetchColumn()) {
-				$error = 'Пользователь с таким именем уже существует.';
+				$error = t('Пользователь с таким именем уже существует.');
 			}
 		} catch (Exception $e) {
-			$error = 'Ошибка базы данных.';
+			$error = t('Ошибка базы данных.');
 		}
 
 		if ($error === '') {
@@ -52,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['field_command'] ??
 				$stmt = $db->prepare('SELECT 1 FROM users WHERE email = ? LIMIT 1');
 				$stmt->execute([$email]);
 				if ($stmt->fetchColumn()) {
-					$error = 'Пользователь с таким email уже существует.';
+					$error = t('Пользователь с таким email уже существует.');
 				}
 			} catch (Exception $e) {
-				$error = 'Ошибка базы данных.';
+				$error = t('Ошибка базы данных.');
 			}
 		}
 
@@ -63,17 +63,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['field_command'] ??
 			try {
 				$now = time();
 				$recs_default = recs_default_enabled() ? '1' : '0';
+				$lang_default = site_lang_default();
 				$stmt = $db->prepare("
 					INSERT INTO users
-					(login, pass, email, country, gender, birthday_mon, birthday_day, birthday_yr, signup_time, last_login, recs_enabled)
-					VALUES (?, ?, ?, '', '', '', '', '', ?, ?, ?)
+					(login, pass, email, country, gender, birthday_mon, birthday_day, birthday_yr, signup_time, last_login, recs_enabled, ui_lang)
+					VALUES (?, ?, ?, '', '', '', '', '', ?, ?, ?, ?)
 				");
-				$stmt->execute([$username, $password1, $email, $now, $now, $recs_default]);
+				$stmt->execute([$username, $password1, $email, $now, $now, $recs_default, $lang_default]);
 				$_SESSION['user'] = $username;
+				site_lang_set($lang_default);
 				header('Location: index.php');
 				exit;
 			} catch (Exception $e) {
-				$error = 'Не удалось создать аккаунт.';
+				$error = t('Не удалось создать аккаунт.');
 			}
 		}
 	}
@@ -110,13 +112,13 @@ function formValidator()
 	var signup_button = document.theForm.signup_button;
 
 	signup_button.disabled='true';
-	signup_button.value='Пожалуйста, подождите...';
+	signup_button.value='<?= htmlspecialchars(t('Пожалуйста, подождите...'), ENT_QUOTES, 'UTF-8') ?>';
 }
 </script>
 
-<div class="tableSubTitle">Регистрация</div>
+<div class="tableSubTitle"><?= t('Регистрация') ?></div>
 
-Пожалуйста, введите данные вашего аккаунта ниже. Все поля обязательны.<br><br>
+<?= t('Пожалуйста, введите данные вашего аккаунта ниже. Все поля обязательны.') ?><br><br>
 <table width="100%" cellpadding="5" cellspacing="0" border="0">
 <form method="post" name="theForm" id="theForm" onsubmit="return formValidator();" action="register.php">
 
@@ -124,42 +126,42 @@ function formValidator()
 <input type="hidden" name="field_command" value="signup_submit">
 
 	<tbody><tr>
-		<td width="200" align="right"><span class="label">Email адрес:</span></td>
+		<td width="200" align="right"><span class="label"><?= t('Email адрес:') ?></span></td>
 		<td><input type="text" size="30" maxlength="60" name="field_signup_email" value="<?=htmlspecialchars($email_prefill, ENT_QUOTES, 'UTF-8')?>"></td>
 	</tr>
 	<tr>
-		<td align="right"><span class="label">Имя пользователя:</span></td>
+		<td align="right"><span class="label"><?= t('Имя пользователя:') ?></span></td>
 		<td><input type="text" size="20" maxlength="20" name="field_signup_username" value="<?=htmlspecialchars($user_prefill, ENT_QUOTES, 'UTF-8')?>"></td>
 	</tr>
 	<tr>
-		<td align="right"><span class="label">Пароль:</span></td>
+		<td align="right"><span class="label"><?= t('Пароль:') ?></span></td>
 		<td><input type="password" size="20" maxlength="20" name="field_signup_password_1" value=""></td>
 	</tr>
 	<tr>
-		<td align="right"><span class="label">Повторите пароль:</span></td>
+		<td align="right"><span class="label"><?= t('Повторите пароль:') ?></span></td>
 		<td><input type="password" size="20" maxlength="20" name="field_signup_password_2" value=""></td>
 	</tr>
 	<tr>
-		<td align="right"><span class="label">Проверка:</span></td>
+		<td align="right"><span class="label"><?= t('Проверка:') ?></span></td>
 		<td>
 			<span style="font-size:12px;"><?= (int)$captcha_a ?> + <?= (int)$captcha_b ?> = </span>
 			<input type="text" size="4" maxlength="2" name="captcha" value="<?= htmlspecialchars((string)($_POST['captcha'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
-			<br><i>(защита от спам-ботов)</i>
+			<br><i><?= t('(защита от спам-ботов)') ?></i>
 		</td>
 	</tr>
 	<tr>
 		<td>&nbsp;</td>
-		<td><br>- Я подтверждаю, что мне больше 13 лет.
-		<br>- Я согласен с <a href="help.php?p=terms" target="_blank">условиями использования</a> и <a href="help.php?p=privacy" target="_blank">политикой конфиденциальности</a>.</td>
+		<td><br><?= t('- Я подтверждаю, что мне больше 13 лет.') ?>
+		<br><?= t('- Я согласен с') ?> <a href="help.php?p=terms" target="_blank"><?= t('условиями использования') ?></a> <?= t('и') ?> <a href="help.php?p=privacy" target="_blank"><?= t('политикой конфиденциальности') ?></a>.</td>
 	</tr>
 	<tr>
 		<td>&nbsp;</td>
-		<td><input name="signup_button" type="submit" value="Зарегистрироваться"></td>
+		<td><input name="signup_button" type="submit" value="<?= htmlspecialchars(t('Зарегистрироваться'), ENT_QUOTES, 'UTF-8') ?>"></td>
 	</tr>
 	
 	<tr>
 		<td>&nbsp;</td>
-		<td><br>Или <a href="index.php">вернуться на главную</a>.</td>
+		<td><br><?= t('Или') ?> <a href="index.php"><?= t('вернуться на главную') ?></a>.</td>
 	</tr>
 </tbody></table>
 </form>

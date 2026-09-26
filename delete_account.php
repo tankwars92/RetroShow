@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$user]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row || $password !== $row['pass']) {
-        $error = 'Неверный пароль!';
+        $error = t('Неверный пароль!');
     } else {
         $stmt_videos = $db->prepare('SELECT id, public_id, file, preview FROM videos WHERE user = ?');
         $stmt_videos->execute([$user]);
@@ -84,8 +84,8 @@ showHeader('Удаление аккаунта');
       <td colspan="2">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Удаление аккаунта</td>
-            <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle"><a href="account.php" style="color:#0033cc; text-decoration:underline;">Назад к настройкам</a></td>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle"><?= t('Удаление аккаунта') ?></td>
+            <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle"><a href="account.php" style="color:#0033cc; text-decoration:underline;"><?= t('Назад к настройкам') ?></a></td>
           </tr>
         </table>
       </td>
@@ -96,7 +96,7 @@ showHeader('Удаление аккаунта');
           <div class="errorBox" style="margin-bottom:8px;"> <?=htmlspecialchars($error)?> </div>
         <?php endif; ?>
         <?php if ($success): ?>
-          <div class="confirmBox" style="margin-bottom:8px;">Аккаунт успешно удалён!</div>
+          <div class="confirmBox" style="margin-bottom:8px;"><?= t('Аккаунт успешно удалён!') ?></div>
         <?php endif; ?>
       </td>
     </tr>
@@ -109,13 +109,13 @@ showHeader('Удаление аккаунта');
     </tr>
   </table>
   <div style="color:#c00; font-size:13px; margin-bottom:10px; margin-top:6px;">
-    Удаление аккаунта приведёт к безвозвратному удалению всех ваших данных (видео, комментарии, избранное и т.д.) с RetroShow. Это действие необратимо.
+    <?= t('Удаление аккаунта приведёт к безвозвратному удалению всех ваших данных (видео, комментарии, избранное и т.д.) с RetroShow. Это действие необратимо.') ?>
   </div>
   <form method="post" action="delete_account.php">
-    <label for="password" style="font-size:13px;">Введите ваш пароль:</label>
+    <label for="password" style="font-size:13px;"><?= t('Введите ваш пароль:') ?></label>
     <input type="password" name="password" id="password" style="font-size:13px; border:1px solid #ccc; padding:2px 6px; margin-left:8px;" maxlength="32">
     <br><br>
-    <input type="submit" value="Удалить аккаунт" style="font-size:13px; width:130px;">
+    <input type="submit" value="<?= htmlspecialchars(t('Удалить аккаунт'), ENT_QUOTES, 'UTF-8') ?>" style="font-size:13px; width:130px;">
   </form>
 </div>
 </center>

@@ -26,7 +26,7 @@ function UTRating(ratingElementId, maxStars, objectName, formName)
 	}
 
 	function setMessage(starNum) {
-		messages = new Array("Оцените видео", "Плохо", "Ничего особенного", "Стоит посмотреть", "Довольно круто", "Отлично!");
+		messages = (typeof UT_RATING_MESSAGES != 'undefined') ? UT_RATING_MESSAGES : new Array("Оцените видео", "Плохо", "Ничего особенного", "Стоит посмотреть", "Довольно круто", "Отлично!");
 		document.getElementById('ratingMessage').innerHTML = messages[starNum];
 	}
 

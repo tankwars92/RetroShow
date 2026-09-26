@@ -67,9 +67,9 @@ $topic_h = htmlspecialchars($topic_raw !== '' ? $topic_raw : mail_list_preview((
 $kind = (string) ($msg['kind'] ?? '');
 
 $months_ru = [
-    1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
-    5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
-    9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря',
+    1 => t('января'), 2 => t('февраля'), 3 => t('марта'), 4 => t('апреля'),
+    5 => t('мая'), 6 => t('июня'), 7 => t('июля'), 8 => t('августа'),
+    9 => t('сентября'), 10 => t('октября'), 11 => t('ноября'), 12 => t('декабря'),
 ];
 $ts = (int) $msg['sent_at'];
 $sent_str = (int) date('j', $ts) . ' ' . $months_ru[(int) date('n', $ts)] . ' ' . date('Y', $ts)
@@ -109,23 +109,23 @@ $ch = $msg['channel_login'] ?? null;
 $pub = $msg['video_public_id'] ?? null;
 if ($kind === 'profile_comment' && $ch) {
     $ctx_link = 'channel.php?user=' . rawurlencode((string) $ch);
-    $ctx_label = 'Перейти на канал.';
+    $ctx_label = t('Перейти на канал.');
 } elseif ($kind === 'video_reply' && $pub) {
     $ctx_link = 'video.php?id=' . rawurlencode((string) $pub) . '#comments';
-    $ctx_label = 'Перейти к ветке комментариев под видео.';
+    $ctx_label = t('Перейти к ветке комментариев под видео.');
 } elseif ($kind === 'video_comment' && $pub) {
     $ctx_link = 'video.php?id=' . rawurlencode((string) $pub) . '#comments';
-    $ctx_label = 'Перейти к комментариям к видео.';
+    $ctx_label = t('Перейти к комментариям к видео.');
 }
 
 showHeader('Сообщение');
 ?>
 <?php if ($is_sent_view): ?>
-<div class="tableSubTitle">Исходящие сообщения</div>
+<div class="tableSubTitle"><?= t('Исходящие сообщения') ?></div>
 <table width="45%" align="center" cellpadding="5" cellspacing="0" border="0">
     <tr align="center">
         <td align="center" colspan="3">
-            <a href="my_messages.php">Входящие сообщения</a> | <a href="outbox.php" class="bold">Исходящие сообщения</a>
+            <a href="my_messages.php"><?= t('Входящие сообщения') ?></a> | <a href="outbox.php" class="bold"><?= t('Исходящие сообщения') ?></a>
         </td>
     </tr>
 </table>
@@ -133,7 +133,7 @@ showHeader('Сообщение');
 <table width="100%" align="center" cellpadding="1" cellspacing="1" border="0" bgcolor="#EEEEEE">
 <tbody>
 <tr>
-	<td width="100%"><img src="img/pixel.gif" width="1" height="5" alt=""> <?php if ($prev_href !== ''): ?><a href="<?= htmlspecialchars($prev_href, ENT_QUOTES, 'UTF-8') ?>">&lt;&lt; Назад</a><?php endif; ?><?php if ($prev_href !== '' && $next_href !== ''): ?> | <?php endif; ?><?php if ($next_href !== ''): ?><a href="<?= htmlspecialchars($next_href, ENT_QUOTES, 'UTF-8') ?>">Далее &gt;&gt;</a><?php endif; ?></td>
+	<td width="100%"><img src="img/pixel.gif" width="1" height="5" alt=""> <?php if ($prev_href !== ''): ?><a href="<?= htmlspecialchars($prev_href, ENT_QUOTES, 'UTF-8') ?>">&lt;&lt; <?= t('Назад') ?></a><?php endif; ?><?php if ($prev_href !== '' && $next_href !== ''): ?> | <?php endif; ?><?php if ($next_href !== ''): ?><a href="<?= htmlspecialchars($next_href, ENT_QUOTES, 'UTF-8') ?>"><?= t('Далее') ?> &gt;&gt;</a><?php endif; ?></td>
 </tr>
 <tr>
 	<td>
@@ -143,38 +143,38 @@ showHeader('Сообщение');
 	<tr><td colspan="2" height="10" width="35" align="right"></td></tr>
 	<?php if ($is_sent_view): ?>
 	<tr valign="top">
-		<td align="right" valign="top"><span class="label">Кому:</span></td>
+		<td align="right" valign="top"><span class="label"><?= t('Кому:') ?></span></td>
 		<td><a href="channel.php?user=<?= rawurlencode($to_user) ?>"><?= $to_h ?></a></td>
 	</tr>
 	<?php else: ?>
 	<tr valign="top">
-		<td align="right" valign="top"><span class="label">От:</span></td>
+		<td align="right" valign="top"><span class="label"><?= t('От:') ?></span></td>
 		<td><a href="channel.php?user=<?= rawurlencode($from) ?>"><?= $from_h ?></a></td>
 	</tr>
 	<tr>
 		<td align="right">&nbsp;</td>
-		<td><a href="channel.php?user=<?= rawurlencode($from) ?>&amp;tab=videos">Видео</a> (<?= (int) $vid_count ?>) | <a href="favourites.php?user=<?= rawurlencode($from) ?>">Избранное</a> (<?= (int) $fav_count ?>)</td>
+		<td><a href="channel.php?user=<?= rawurlencode($from) ?>&amp;tab=videos"><?= t('Видео') ?></a> (<?= (int) $vid_count ?>) | <a href="favourites.php?user=<?= rawurlencode($from) ?>"><?= t('Избранное') ?></a> (<?= (int) $fav_count ?>)</td>
 	</tr>
 	<?php endif; ?>
 	<tr valign="top">
-		<td align="right" valign="top"><span class="label">Отправлено:</span></td>
+		<td align="right" valign="top"><span class="label"><?= t('Отправлено:') ?></span></td>
 		<td><?= htmlspecialchars($sent_str, ENT_QUOTES, 'UTF-8') ?></td>
 	</tr>
 	<tr valign="top">
-		<td align="right" valign="top"><span class="label">Тема:</span></td>
+		<td align="right" valign="top"><span class="label"><?= t('Тема:') ?></span></td>
 		<td><?= $topic_h ?></td>
 	</tr>
 	<tr valign="top">
-		<td align="right" valign="top"><span class="label">Сообщение:</span></td>
+		<td align="right" valign="top"><span class="label"><?= t('Сообщение:') ?></span></td>
 		<td><div class="mailMessageArea"><?= nl2br($body_h) ?><?php if ($ctx_link !== '' && $ctx_label !== ''): ?><div style="margin-top:12px; padding-top:10px; border-top:1px dashed #999999;"><strong><a href="<?= htmlspecialchars($ctx_link, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($ctx_label, ENT_QUOTES, 'UTF-8') ?></a></div><?php endif; ?></div></td>
 	</tr>
 	<tr valign="top">
 		<td align="right" valign="top"></td>
-		<td><form method="post" action="read_msg.php" onsubmit="return confirm('Подтвердите: сообщение будет удалено без возможности восстановления.');">
+		<td><form method="post" action="read_msg.php" onsubmit="return confirm(<?= t_js_attr('Подтвердите: сообщение будет удалено без возможности восстановления.') ?>);">
 			<?php if ($is_sent_view): ?><input type="hidden" name="delete_sent" value="1"><?php endif; ?>
 			<input type="hidden" name="delete_mail" value="1">
 			<input type="hidden" name="mail_id" value="<?= (int) $id ?>">
-			<input type="submit" value="Удалить сообщение" style="width:135px;">
+			<input type="submit" value="<?= htmlspecialchars(t('Удалить сообщение'), ENT_QUOTES, 'UTF-8') ?>" style="width:135px;">
 		</form></td>
 	</tr>
 	</tbody>

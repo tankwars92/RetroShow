@@ -20,16 +20,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['field_login_username'
     $login = trim($_POST['field_login_username']);
 
     if ($login === '') {
-        $error = "Пожалуйста, введите имя пользователя.";
+        $error = t('Пожалуйста, введите имя пользователя.');
     } else {
         $stmt = $db->prepare("SELECT login, email FROM users WHERE login = ?");
         $stmt->execute([$login]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user) {
-            $error = "Такой пользователь не найден.";
+            $error = t('Такой пользователь не найден.');
         } elseif (empty($user['email'])) {
-            $error = "У этого пользователя не указан email, восстановить пароль невозможно.";
+            $error = t('У этого пользователя не указан email, восстановить пароль невозможно.');
         } else {
             $token = forgot_generate_token();
             $expires = time() + 3600;
@@ -52,9 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['field_login_username'
                 'Copyright © 2026 RetroShow, LLC';
 
             if (send_smtp_email_advanced($user['email'], $user['login'], $subject, $body, true)) {
-                $success = "На E-mail, указанный при регистрации, отправлена ссылка для смены пароля.";
+                $success = t('На E-mail, указанный при регистрации, отправлена ссылка для смены пароля.');
             } else {
-                $error = "Не удалось отправить письмо. Попробуйте позже.";
+                $error = t('Не удалось отправить письмо. Попробуйте позже.');
             }
         }
     }
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['field_login_username'
 showHeader("Забыли пароль");
 ?>
 
-<div class="tableSubTitle">Забыли пароль</div>
+<div class="tableSubTitle"><?= t('Забыли пароль') ?></div>
 
 <?php if ($error): ?>
     <div class="errorBox"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -75,22 +75,22 @@ showHeader("Забыли пароль");
 <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
     <tr valign="top">
         <td style="padding-right: 15px;">
-            <span class="highlight">Забыли пароль? Не проблема!</span>
+            <span class="highlight"><?= t('Забыли пароль? Не проблема!') ?></span>
             <br><br>
-            Просто введите ваше имя пользователя, и мы отправим на <b>E-mail</b> специальную ссылку для смены пароля.
+            <?= t('Просто введите ваше имя пользователя, и мы отправим на') ?> <b>E-mail</b> <?= t('специальную ссылку для смены пароля.') ?>
         </td>
         <td width="300">
             <table width="100%" cellpadding="5" cellspacing="0" bgcolor="#E5ECF9">
                 <form method="post" action="forgot.php">
                     <input type="hidden" name="field_command" value="forgot_submit">
                     <tr>
-                        <td align="right"><span class="label">Имя пользователя:</span></td>
+                        <td align="right"><span class="label"><?= t('Имя пользователя:') ?></span></td>
                         <td><input type="text" size="20" name="field_login_username" value=""></td>
                     </tr>
                     <tr>
                         <td>&nbsp;</td>
                         <td>
-                            <input type="submit" style="width:110px;" value="Выслать ссылку">
+                            <input type="submit" style="width:110px;" value="<?= htmlspecialchars(t('Выслать ссылку'), ENT_QUOTES, 'UTF-8') ?>">
                         </td>
                     </tr>
                 </form>

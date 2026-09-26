@@ -31,6 +31,10 @@ function admin_blog_date_title(int $ts): string {
     return $d . ' ' . $m . ', ' . $y . ' г.';
 }
 
+function admin_blog_date_title_en(int $ts): string {
+    return date('F j, Y', $ts);
+}
+
 function admin_modlog_file() {
     return get_modlog_path();
 }
@@ -192,48 +196,48 @@ function admin_human_log_line(array $row) {
         $u = (string)($row['upload_user'] ?? $user);
         $u = str_replace(' ', '+', $u);
         $title = (string)($row['title'] ?? '');
-        return 'Загрузка видео: аккаунт "' . $u . '", видео "' . $title . '", IP ' . $ip;
+        return 'Video uploaded by "' . $u . '", video "' . $title . '", IP ' . $ip;
     }
     if ($event === 'comment_video') {
         $author = (string)($row['author'] ?? $user);
         $author = str_replace(' ', '+', $author);
         $title = (string)($row['video_title'] ?? '');
-        return 'Комментарий к видео: аккаунт "' . $author . '", видео "' . $title . '", IP ' . $ip;
+        return 'Comment on video by "' . $author . '", video "' . $title . '", IP ' . $ip;
     }
     if ($event === 'blocked_ip') {
-        return 'Заблокированный вход по IP: ' . $ip . '; UA: ' . $ua;
+        return 'Blocked login by IP: ' . $ip . '; UA: ' . $ua;
     }
     if ($event === 'blocked_channel') {
         $blocked = (string)($row['blocked_user'] ?? $user);
-        return 'Попытка входа заблокированного канала: "' . $blocked . '", IP ' . $ip;
+        return 'Attempt to login blocked channel: "' . $blocked . '", IP ' . $ip;
     }
 
     if ($event === 'admin_ip_ban') {
         $t = (string)($row['target_ip'] ?? '');
         $by = ($admin_user !== '' ? $admin_user : $user);
-        return 'Модерация: бан IP ' . $t . ' (админ "' . $by . '")';
+        return 'Moderation: ban IP ' . $t . ' (admin "' . $by . '")';
     }
     if ($event === 'admin_ip_unban') {
         $t = (string)($row['target_ip'] ?? '');
         $by = ($admin_user !== '' ? $admin_user : $user);
-        return 'Модерация: разбан IP ' . $t . ' (админ "' . $by . '")';
+        return 'Moderation: unban IP ' . $t . ' (admin "' . $by . '")';
     }
     if ($event === 'admin_delete_videos_by_ip') {
         $t = (string)($row['target_ip'] ?? '');
         $deleted = (int)($row['deleted'] ?? 0);
         $by = ($admin_user !== '' ? $admin_user : $user);
-        return 'Модерация: удаление видео по IP ' . $t . ' (удалено ' . $deleted . ', админ "' . $by . '")';
+        return 'Moderation: deletion of videos by IP ' . $t . ' (deleted ' . $deleted . ', admin "' . $by . '")';
     }
     if ($event === 'admin_delete_channel') {
         $t = (string)($row['target_channel'] ?? '');
         $by = ($admin_user !== '' ? $admin_user : $user);
-        return 'Модерация: удаление канала "' . $t . '" (админ "' . $by . '")';
+        return 'Moderation: deletion of channel "' . $t . '" (admin "' . $by . '")';
     }
     if ($event === 'admin_delete_videos_by_channel') {
         $t = (string)($row['target_channel'] ?? '');
         $deleted = (int)($row['deleted'] ?? 0);
         $by = ($admin_user !== '' ? $admin_user : $user);
-        return 'Модерация: удаление всех видео канала "' . $t . '" (удалено ' . $deleted . ', админ "' . $by . '")';
+        return 'Moderation: deletion of all videos of channel "' . $t . '" (deleted ' . $deleted . ', admin "' . $by . '")';
     }
     if ($event === 'contact_submit') {
         $from_email = (string)($row['from_email'] ?? '');
@@ -244,9 +248,9 @@ function admin_human_log_line(array $row) {
         $subject = trim((string)($row['subject'] ?? ''));
         $ip_address = (string)($row['ip'] ?? '');
         $parts = [];
-        $parts[] = 'Обратная связь';
-        if ($from_email !== '') $parts[] = 'почта "' . $from_email . '"';
-        $parts[] = 'от "' . $who . '"';
+        $parts[] = 'Contact';
+        if ($from_email !== '') $parts[] = 'email "' . $from_email . '"';
+        $parts[] = 'from "' . $who . '"';
         $parts[] = 'IP ' . $ip_address;
         return implode(': ', [array_shift($parts), implode(', ', $parts)]);
     }
@@ -255,38 +259,49 @@ function admin_human_log_line(array $row) {
 }
 
 $news_file = __DIR__ . '/news.txt';
+$news_file_en = __DIR__ . '/news_en.txt';
 $current_news = '';
+$current_news_en = '';
 if (file_exists($news_file)) {
     $current_news = trim(file_get_contents($news_file));
+}
+if (file_exists($news_file_en)) {
+    $current_news_en = trim(file_get_contents($news_file_en));
 }
 
 $processing_settings = processing_settings_read();
 $recs_default_on = recs_default_enabled();
+$ui_lang_default = site_lang_default();
 
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'news_submit') {
     $news_text = trim($_POST['field_news_text'] ?? '');
-    if (mb_strlen($news_text) > 500) {
-        $error = 'Текст новости слишком длинный (макс. 500 символов).';
+    $news_text_en = trim($_POST['field_news_text_en'] ?? '');
+    if (mb_strlen($news_text) > 500 || mb_strlen($news_text_en) > 500) {
+        $error = t('Текст новости слишком длинный (макс. 500 символов).');
     } else {
         file_put_contents($news_file, $news_text, LOCK_EX);
+        file_put_contents($news_file_en, $news_text_en, LOCK_EX);
         $current_news = $news_text;
-        $message = 'Новость успешно добавлена!';
+        $current_news_en = $news_text_en;
+        $message = t('Новость успешно добавлена!');
     }
 }
 
 if (isset($_POST['field_command']) && $_POST['field_command'] === 'blog_add_post') {
     $blog_text = trim((string)($_POST['blog_post_text'] ?? ''));
-    if ($blog_text === '') {
-        $error = 'Текст поста не может быть пустым.';
+    $blog_text_en = trim((string)($_POST['blog_post_text_en'] ?? ''));
+    if ($blog_text === '' && $blog_text_en === '') {
+        $error = t('Текст поста не может быть пустым.');
     } else {
         try {
             $ts = time();
             $title = admin_blog_date_title($ts);
-            $st = $db->prepare('INSERT INTO blog_posts (title, body, created_at, author) VALUES (?, ?, ?, ?)');
-            $st->execute([$title, $blog_text, $ts, (string)$user]);
-            $message = 'Пост успешно опубликован.';
+            $title_en = admin_blog_date_title_en($ts);
+            $st = $db->prepare('INSERT INTO blog_posts (title, body, title_en, body_en, created_at, author) VALUES (?, ?, ?, ?, ?, ?)');
+            $st->execute([$title, $blog_text, $title_en, $blog_text_en, $ts, (string)$user]);
+            $message = t('Пост успешно опубликован.');
         } catch (Exception $e) {
-            $error = 'Ошибка публикации поста.';
+            $error = t('Ошибка публикации поста.');
         }
     }
 }
@@ -298,18 +313,18 @@ if (isset($_POST['field_command']) && $_POST['field_command'] === 'processing_su
         $url = rtrim((string)RETROSHOW_PROCESSING_SERVER, '/');
     }
     if (!preg_match('~^https?://~i', $url)) {
-        $error = 'Укажите адрес вида http://... или https://...';
+        $error = t('Укажите адрес вида http://... или https://...');
     } elseif (strlen($url) > 512) {
-        $error = 'Слишком длинный адрес.';
+        $error = t('Слишком длинный адрес.');
     } else {
         try {
             $st = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
             $st->execute(['processing_enabled', $en ? '1' : '0']);
             $st->execute(['processing_server_url', rtrim($url, '/')]);
             $processing_settings = processing_settings_read();
-            $message = 'Настройки конвертации сохранены.';
+            $message = t('Настройки конвертации сохранены.');
         } catch (Exception $e) {
-            $error = 'Не удалось сохранить настройки.';
+            $error = t('Не удалось сохранить настройки.');
         }
     }
 }
@@ -320,16 +335,29 @@ if (isset($_POST['field_command']) && $_POST['field_command'] === 'recs_default_
         $st = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
         $st->execute(['recs_default_enabled', $recsDefOn ? '1' : '0']);
         $recs_default_on = recs_default_enabled();
-        $message = 'Настройки сохранены.';
+        $message = t('Настройки сохранены.');
     } catch (Exception $e) {
-        $error = 'Не удалось сохранить настройку рекомендаций.';
+        $error = t('Не удалось сохранить настройку рекомендаций.');
+    }
+}
+
+if (isset($_POST['field_command']) && $_POST['field_command'] === 'ui_lang_default_submit') {
+    $langDef = site_lang_normalize((string)($_POST['field_ui_lang_default'] ?? 'en'));
+    try {
+        $st = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
+        $st->execute(['ui_lang_default', $langDef]);
+        site_lang_default_set($langDef);
+        $ui_lang_default = $langDef;
+        $message = t('Язык по умолчанию сохранён.');
+    } catch (Exception $e) {
+        $error = t('Не удалось сохранить язык по умолчанию.');
     }
 }
 
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'ip_ban_submit') {
     $ip = trim((string)($_POST['field_ip'] ?? ''));
     if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-        $error = 'Неверный IP адрес.';
+        $error = t('Неверный IP адрес.');
     } else {
         $exists = false;
         $bans = admin_read_bans();
@@ -337,33 +365,33 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'ip_ban_submit'
             if ($b['ip'] === $ip) { $exists = true; break; }
         }
         if ($exists) {
-            $error = 'Этот IP уже в бане.';
+            $error = t('Этот IP уже в бане.');
         } else {
             admin_append_ban($ip, $user);
             log_event('admin_ip_ban', ['target_ip' => $ip, 'admin_user' => $user]);
-            $message = 'IP успешно добавлен в бан.';
+            $message = t('IP успешно добавлен в бан.');
         }
     }
 }
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'ip_unban_submit') {
     $ip = trim((string)($_POST['field_ip'] ?? ''));
     if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-        $error = 'Неверный IP адрес.';
+        $error = t('Неверный IP адрес.');
     } else {
         admin_remove_ban_ip($ip);
         log_event('admin_ip_unban', ['target_ip' => $ip, 'admin_user' => $user]);
-        $message = 'IP удалён из бана.';
+        $message = t('IP удалён из бана.');
     }
 }
 
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_by_ip') {
     $ip = trim((string)($_POST['field_ip'] ?? ''));
     if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-        $error = 'Неверный IP адрес.';
+        $error = t('Неверный IP адрес.');
     } else {
         $ids = admin_collect_video_ids_by_ip($ip);
         if (empty($ids)) {
-            $error = 'По этому IP не найдено загруженных видео в файловом логе.';
+            $error = t('По этому IP не найдено загруженных видео в файловом логе.');
         } else {
             $deleted = 0;
             foreach ($ids as $vid) {
@@ -378,7 +406,7 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_
                 }
             }
             log_event('admin_delete_videos_by_ip', ['target_ip' => $ip, 'deleted' => (int)$deleted, 'admin_user' => $user]);
-            $message = 'Удалено видео по IP: ' . (int)$deleted . '.';
+            $message = t('Удалено видео по IP:') . ' ' . (int)$deleted . '.';
         }
     }
 }
@@ -387,18 +415,18 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_channel
     $login_raw = trim((string)($_POST['field_channel'] ?? ''));
     $login = admin_resolve_channel_login($db, $login_raw);
     if ($login === '') {
-        $error = 'Укажите логин канала.';
+        $error = t('Укажите логин канала.');
     } else {
         admin_delete_channel($db, $login);
         log_event('admin_delete_channel', ['target_channel' => $login, 'target_channel_input' => $login_raw, 'admin_user' => $user]);
-        $message = 'Канал удалён.';
+        $message = t('Канал удалён.');
     }
 }
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_by_channel') {
     $login_raw = trim((string)($_POST['field_channel'] ?? ''));
     $login = admin_resolve_channel_login($db, $login_raw);
     if ($login === '') {
-        $error = 'Укажите логин канала.';
+        $error = t('Укажите логин канала.');
     } else {
         $deleted = 0;
         try {
@@ -409,17 +437,17 @@ if (isset($_POST['field_command']) && $_POST['field_command'] == 'delete_videos_
                 admin_delete_video_full($db, $row);
                 $deleted++;
             }
-            $message = 'Удалено видео канала: ' . (int)$deleted . '.';
+            $message = t('Удалено видео канала:') . ' ' . (int)$deleted . '.';
             log_event('admin_delete_videos_by_channel', ['target_channel' => $login, 'target_channel_input' => $login_raw, 'deleted' => (int)$deleted, 'admin_user' => $user]);
         } catch (Exception $e) {
-            $error = 'Ошибка удаления видео канала.';
+            $error = t('Ошибка удаления видео канала.');
         }
     }
 }
 if (isset($_POST['field_command']) && $_POST['field_command'] == 'clear_logs') {
     $log_file = admin_modlog_file();
     @file_put_contents($log_file, '', LOCK_EX);
-    $message = 'Логи очищены.';
+    $message = t('Логи очищены.');
 }
 
 $bans_list = admin_read_bans();
@@ -478,7 +506,7 @@ $p = isset($_GET['p']) ? $_GET['p'] : '';
 $blog_posts = [];
 if ($p === 'blog') {
     try {
-        $stBlog = $db->query('SELECT id, title, body, created_at, author FROM blog_posts ORDER BY created_at DESC, id DESC LIMIT 100');
+        $stBlog = $db->query('SELECT id, title, body, title_en, body_en, created_at, author FROM blog_posts ORDER BY created_at DESC, id DESC LIMIT 100');
         $blog_posts = $stBlog->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (Exception $e) {
         $blog_posts = [];
@@ -491,9 +519,9 @@ showHeader("Администрирование");
 <div style="padding: 0px 5px 0px 5px;">
 
 <?php if ($p == 'blog'): ?>
-<div class="tableSubTitle">Управление блогом</div>
+<div class="tableSubTitle"><?= t('Управление блогом') ?></div>
 <?php else: ?>
-<div class="tableSubTitle">Администрирование</div>
+<div class="tableSubTitle"><?= t('Администрирование') ?></div>
 <?php endif; ?>
 
 <?php if ($error): ?>
@@ -501,11 +529,6 @@ showHeader("Администрирование");
 <?php endif; ?>
 <?php if ($message): ?>
 	<div class="confirmBox" style="margin-bottom:8px;"><?=htmlspecialchars($message)?></div>
-<?php endif; ?>
-
-<?php if ($p != 'blog'): ?>
-<form method="post" action="admin.php">
-<input type="hidden" name="field_command" value="news_submit">
 <?php endif; ?>
 
 <table class="roundedTable" width="180" align="right" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEEEDD">
@@ -519,16 +542,16 @@ showHeader("Администрирование");
 <tr>
     <td><img src="img/pixel.gif" width="5" height="1"></td>
     <td width="170">
-    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;">Как дела у RetroShow?</div>
-    <b>Прямо сейчас у нас:</b>
+    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;"><?= t('Как дела у RetroShow?') ?></div>
+    <b><?= t('Прямо сейчас у нас:') ?></b>
     <div style="margin-top: 10px; margin-bottom: 10px;">
-    <div style="margin-bottom: 5px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_videos)?></b> видео</div>
-    <div style="margin-bottom: 5px;"><img src="img/icon_vid.gif" alt="Watches" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_views)?></b> просмотров</div>
-    <div style="margin-bottom: 5px;"><img src="img/mail.gif" alt="Mail" width="14" height="10" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_mail)?></b> сообщений</div>
-    <div style="margin-bottom: 5px;"><img src="img/mail.gif" alt="Mail" width="14" height="10" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_comments)?></b> комментариев</div>
-    <div style="margin-bottom: 5px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_favourites)?></b> видео в избранном</div>
-    <div style="margin-bottom: 5px;"><img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_users)?></b> пользователей</div>
-    <div style="margin-top: 8px;"><b>Разве это не круто?</b></div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_videos)?></b> <?= mb_strtolower(t('видео')) ?></div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_vid.gif" alt="Watches" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_views)?></b> <?= t('просмотров') ?></div>
+    <div style="margin-bottom: 5px;"><img src="img/mail.gif" alt="Mail" width="14" height="10" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_mail)?></b> <?= t('сообщений') ?></div>
+    <div style="margin-bottom: 5px;"><img src="img/mail.gif" alt="Mail" width="14" height="10" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_comments)?></b> <?= t('комментариев') ?></div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_favourites)?></b> <?= t('видео в избранном') ?></div>
+    <div style="margin-bottom: 5px;"><img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-top; padding-left: 2px; padding-right: 1px;">&nbsp;<b><?=$stats_fmt($stats_users)?></b> <?= t('пользователей') ?></div>
+    <div style="margin-top: 8px;"><b><?= t('Разве это не круто?') ?></b></div>
     </div>
     </td>
     <td><img src="img/pixel.gif" width="5" height="1"></td>
@@ -540,87 +563,111 @@ showHeader("Администрирование");
 </tr>
 </tbody></table>
 
-<table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin-top: 10px;">
-
 <div style="font-size: 13px; font-weight: bold; text-align:center; margin-bottom: 20px;">
-    <a href="admin.php">Главная</a> // <a href="admin.php?p=blog">Управление блогом</a>
+    <a href="admin.php"><?= t('Главная') ?></a> // <a href="admin.php?p=blog"><?= t('Управление блогом') ?></a>
 </div>
-
 
 <?php if ($p == 'blog'): ?>
-</div>
-<div class="highlight">Опубликовать новый пост</div>
+<div class="highlight"><?= t('Опубликовать новый пост') ?></div>
 <form method="post" action="admin.php?p=blog">
 <input type="hidden" name="field_command" value="blog_add_post">
 <br>
-<textarea name="blog_post_text" style="width:500px;height:400px; margin-bottom: 0px;"></textarea>
-<input type="submit" value="Опубликовать пост" style="margin-top: 15px;">
+<div style="font-size:12px; margin-bottom:4px;"><b><?= t('Текст поста (рус.):') ?></b></div>
+<textarea name="blog_post_text" style="width:500px;height:180px; margin-bottom: 8px;"></textarea>
+<div style="font-size:12px; margin-bottom:4px;"><b><?= t('Текст поста (англ.):') ?></b></div>
+<textarea name="blog_post_text_en" style="width:500px;height:180px; margin-bottom: 0px;"></textarea>
+<br>
+<input type="submit" value="<?= htmlspecialchars(t('Опубликовать пост'), ENT_QUOTES, 'UTF-8') ?>" style="margin-top: 15px;">
 </form>
 
 <?php else: ?>
+
+<form method="post" action="admin.php">
+<input type="hidden" name="field_command" value="news_submit">
+<table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin-top: 10px;">
 <tr>
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Текст новости:</b></td>
-      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Текст новости (рус.):') ?></b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;">
         <textarea name="field_news_text" rows="4" cols="45" maxlength="500"><?=htmlspecialchars($_POST['field_news_text'] ?? $current_news)?></textarea>
       </td>
     </tr>
     <tr>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Текст новости (англ.):') ?></b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;">
+        <textarea name="field_news_text_en" rows="4" cols="45" maxlength="500"><?=htmlspecialchars($_POST['field_news_text_en'] ?? $current_news_en)?></textarea>
+      </td>
+    </tr>
+    <tr>
       <td></td>
-      <td style="padding-bottom:8px;" colspan="4">
-        <input type="hidden" name="field_command" value="news_submit">
-        <input type="submit" value="Добавить новость">
+      <td style="padding-bottom:8px;">
+        <input type="submit" value="<?= htmlspecialchars(t('Добавить новость'), ENT_QUOTES, 'UTF-8') ?>">
       </td>
     </tr>
 </table>
-<?php if ($p != 'blog'): ?>
 </form>
-<?php endif; ?>
 
 <form method="post" action="admin.php">
 <input type="hidden" name="field_command" value="processing_submit">
 <table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin-top: 10px;">
 <tr>
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Внешний сервер конвертации:</b></td>
-      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
-        <label><input type="checkbox" name="field_processing_enabled" value="1" id="processingEnabled"<?= !empty($processing_settings['enabled']) ? ' checked' : '' ?>> включить</label>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Внешний сервер конвертации:') ?></b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;">
+        <label><input type="checkbox" name="field_processing_enabled" value="1" id="processingEnabled"<?= !empty($processing_settings['enabled']) ? ' checked' : '' ?>> <?= t('включить') ?></label>
       </td>
     </tr>
     <tr id="processingUrlRow">
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Адрес:</b></td>
-      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Адрес:') ?></b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;">
         <input type="text" name="field_processing_url" id="processingUrl" value="<?=htmlspecialchars($processing_settings['url'])?>" style="width:320px;">
-        <br>    
-        <span class="smallText">Для использования внешнего сервера, запустите его при помощи скрипта по пути <b>converter/server.py</b> при помощи интерпретатора Python.</span>
         <br>
+        <span class="smallText"><?= t('Для использования внешнего сервера, запустите его при помощи скрипта по пути') ?> <b>converter/server.py</b> <?= t('при помощи интерпретатора Python.') ?></span>
+      </td>
     </tr>
     <tr>
       <td></td>
-      <td style="padding-bottom:8px;" colspan="4">
-        <input type="submit" value="Сохранить">
+      <td style="padding-bottom:8px;">
+        <input type="submit" value="<?= htmlspecialchars(t('Сохранить'), ENT_QUOTES, 'UTF-8') ?>">
+      </td>
+    </tr>
+
+</form>
+
+<form method="post" action="admin.php">
+<input type="hidden" name="field_command" value="recs_default_submit">
+<tr>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Рекомендации:') ?></b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;">
+        <label><input type="checkbox" name="field_recs_default_enabled" value="1"<?= $recs_default_on ? ' checked' : '' ?>> <?= t('включать персональные рекомендации у новых пользователей по умолчанию') ?></label>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td style="padding-bottom:8px;">
+        <input type="submit" value="<?= htmlspecialchars(t('Сохранить'), ENT_QUOTES, 'UTF-8') ?>">
       </td>
     </tr>
 </form>
 
 <form method="post" action="admin.php">
-<input type="hidden" name="field_command" value="recs_default_submit">
-
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Рекомендации:</b></td>
-      <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
-        <label><input type="checkbox" name="field_recs_default_enabled" value="1"<?= $recs_default_on ? ' checked' : '' ?>> включать персональные рекомендации у новых пользователей по умолчанию</label>
+<input type="hidden" name="field_command" value="ui_lang_default_submit">
+<tr>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Язык сайта по умолчанию:') ?></b></td>
+      <td style="font-size:13px; color:#222; padding-bottom:8px;">
+        <label><input type="radio" name="field_ui_lang_default" value="en"<?= $ui_lang_default === 'en' ? ' checked' : '' ?>> English</label><br>
+        <label><input type="radio" name="field_ui_lang_default" value="ru"<?= $ui_lang_default !== 'en' ? ' checked' : '' ?>> <?= t('Русский') ?></label>
       </td>
     </tr>
     <tr>
       <td></td>
-      <td style="padding-bottom:8px;" colspan="4">
-        <input type="submit" value="Сохранить">
+      <td style="padding-bottom:8px;">
+        <input type="submit" value="<?= htmlspecialchars(t('Сохранить'), ENT_QUOTES, 'UTF-8') ?>">
       </td>
     </tr>
-
 </table>
 </form>
 
 <br>
-<div class="highlight">Бан IP.</div>
+<div class="highlight"><?= t('Бан IP.') ?></div>
 <form method="post" action="admin.php" style="margin-top:8px;">
 <input type="hidden" name="field_command" value="ip_ban_submit">
 <table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0;">
@@ -631,30 +678,30 @@ showHeader("Администрирование");
 <tr>
   <td></td>
   <td style="padding-bottom:8px;">
-    <input type="submit" value="Забанить IP">
-    <button type="submit" name="field_command" value="ip_unban_submit">Разбанить IP</button>
+    <input type="submit" value="<?= htmlspecialchars(t('Забанить IP'), ENT_QUOTES, 'UTF-8') ?>">
+    <button type="submit" name="field_command" value="ip_unban_submit"><?= t('Разбанить IP') ?></button>
   </td>
 </tr>
 </table>
 </form>
 
 <div style="width:500px; margin:0 auto; font-size:12px; color:#333;">
-  <button type="button" onclick="return adminToggle('ipBansList', this);">Показать баны</button>
+  <button type="button" onclick="return adminToggle('ipBansList', this);"><?= t('Показать баны') ?></button>
   <div id="ipBansList" style="display:none; margin-top:6px;">
   <?php if (!empty($bans_list)): ?>
-    <b>Текущие баны:</b><br>
+    <b><?= t('Текущие баны:') ?></b><br>
     <?php foreach ($bans_list as $b): ?>
       <?=htmlspecialchars($b['ip'])?><br>
     <?php endforeach; ?>
   <?php else: ?>
-    Банов IP пока нет.
+    <?= t('Банов IP пока нет.') ?>
   <?php endif; ?>
   </div>
 </div>
 
 <hr>
-<div class="highlight">Удалить все видео по IP.</div>
-<form method="post" action="admin.php" style="margin-top:8px;" onsubmit="return confirm('Удалить все видео по этому IP?');">
+<div class="highlight"><?= t('Удалить все видео по IP.') ?></div>
+<form method="post" action="admin.php" style="margin-top:8px;" onsubmit="return confirm(<?= t_js_attr('Удалить все видео по этому IP?') ?>);">
 <input type="hidden" name="field_command" value="delete_videos_by_ip">
 <table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0;">
 <tr>
@@ -663,60 +710,60 @@ showHeader("Администрирование");
 </tr>
 <tr>
   <td></td>
-  <td style="padding-bottom:8px;"><input type="submit" value="Удалить видео по IP"></td>
+  <td style="padding-bottom:8px;"><input type="submit" value="<?= htmlspecialchars(t('Удалить видео по IP'), ENT_QUOTES, 'UTF-8') ?>"></td>
 </tr>
 </table>
 </form>
 
 <hr>
-<div class="highlight">Удалить канал.</div>
-<form method="post" action="admin.php" style="margin-top:8px;" onsubmit="return confirm('Удалить канал?');">
+<div class="highlight"><?= t('Удалить канал.') ?></div>
+<form method="post" action="admin.php" style="margin-top:8px;" onsubmit="return confirm(<?= t_js_attr('Удалить канал?') ?>);">
 <input type="hidden" name="field_command" value="delete_channel">
 <table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0;">
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Канал:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Канал:') ?></b></td>
   <td style="padding-bottom:8px;"><input type="text" name="field_channel" value="" style="width:220px;"></td>
 </tr>
 <tr>
   <td></td>
   <td style="padding-bottom:8px;">
-    <input type="submit" value="Удалить канал">
+    <input type="submit" value="<?= htmlspecialchars(t('Удалить канал'), ENT_QUOTES, 'UTF-8') ?>">
   </td>
 </tr>
 </table>
 </form>
 
 <hr>
-<div class="highlight">Удалить все видео канала.</div>
-<form method="post" action="admin.php" style="margin-top:8px;" onsubmit="return confirm('Удалить все видео указанного канала?');">
+<div class="highlight"><?= t('Удалить все видео канала.') ?></div>
+<form method="post" action="admin.php" style="margin-top:8px;" onsubmit="return confirm(<?= t_js_attr('Удалить все видео указанного канала?') ?>);">
 <input type="hidden" name="field_command" value="delete_videos_by_channel">
 <table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0;">
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Канал:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Канал:') ?></b></td>
   <td style="padding-bottom:8px;"><input type="text" name="field_channel" value="" style="width:220px;"></td>
 </tr>
 <tr>
   <td></td>
-  <td style="padding-bottom:8px;"><input type="submit" value="Удалить видео канала"></td>
+  <td style="padding-bottom:8px;"><input type="submit" value="<?= htmlspecialchars(t('Удалить видео канала'), ENT_QUOTES, 'UTF-8') ?>"></td>
 </tr>
 </table>
 </form>
 
 <hr>
-<div class="highlight">Логи (последние 200).</div>
+<div class="highlight"><?= t('Логи (последние 200).') ?></div>
 <form method="get" action="admin.php" style="width:760px; margin:0 auto 6px auto; font-size:12px;">
-  Поиск по логам:
+  <?= t('Поиск по логам:') ?>
   <input type="text" name="log_q" value="<?=htmlspecialchars($log_query)?>" style="width:320px;">
-  <input type="submit" value="Искать">
-  <button type="button" onclick="window.location.href='admin.php'">Сброс</button>
+  <input type="submit" value="<?= htmlspecialchars(t('Искать'), ENT_QUOTES, 'UTF-8') ?>">
+  <button type="button" onclick="window.location.href='admin.php'"><?= t('Сброс') ?></button>
 </form>
-<form method="post" action="admin.php" style="width:760px; margin:0 auto 6px auto; font-size:12px;" onsubmit="return confirm('Очистить лог-файл полностью?');">
+<form method="post" action="admin.php" style="width:760px; margin:0 auto 6px auto; font-size:12px;" onsubmit="return confirm(<?= t_js_attr('Очистить лог-файл полностью?') ?>);">
   <input type="hidden" name="field_command" value="clear_logs">
-  <input type="submit" value="Очистить логи">
+  <input type="submit" value="<?= htmlspecialchars(t('Очистить логи'), ENT_QUOTES, 'UTF-8') ?>">
 </form>
 <div style="width:760px; margin:0 auto; max-height:320px; overflow:auto; border:1px solid #CCC; background:#FFF; padding:6px; font-size:12px;">
   <?php if (empty($log_rows)): ?>
-    Логи пусты.
+    <?= t('Логи пусты.') ?>
   <?php else: ?>
     <?php foreach ($log_rows as $row): ?>
       <div style="border-bottom:1px dashed #DDD; padding:4px 0;">
@@ -727,6 +774,7 @@ showHeader("Администрирование");
     <?php endforeach; ?>
   <?php endif; ?>
 </div>
+<?php endif; ?>
 </div>
 <script type="text/javascript">
 function adminToggle(id, el) {
@@ -734,10 +782,10 @@ function adminToggle(id, el) {
   if (!d) return false;
   if (d.style.display == 'none' || d.style.display === '') {
     d.style.display = 'block';
-    if (el) el.innerHTML = 'Скрыть баны';
+    if (el) el.innerHTML = '<?= htmlspecialchars(t('Скрыть баны'), ENT_QUOTES, 'UTF-8') ?>';
   } else {
     d.style.display = 'none';
-    if (el) el.innerHTML = 'Показать баны';
+    if (el) el.innerHTML = '<?= htmlspecialchars(t('Показать баны'), ENT_QUOTES, 'UTF-8') ?>';
   }
   return false;
 }
@@ -753,5 +801,4 @@ if (pe) {
   adminProcessingToggle();
 }
 </script>
-<?php endif; ?>
 <?php showFooter(); ?>

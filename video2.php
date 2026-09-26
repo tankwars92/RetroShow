@@ -8,8 +8,8 @@ function get_video_duration($file, $id, $public_id = '') {
 
 function rus_date($format, $time) {
     $months = [
-        1 => t('января'), 2 => t('февраля'), 3 => t('марта'), 4 => t('апреля'), 5 => t('мая'), 6 => t('июня'),
-        7 => t('июля'), 8 => t('августа'), 9 => t('сентября'), 10 => t('октября'), 11 => t('ноября'), 12 => t('декабря')
+        1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля', 5 => 'мая', 6 => 'июня',
+        7 => 'июля', 8 => 'августа', 9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
     ];
     $d = date('j', $time);
     $m = $months[intval(date('n', $time))];
@@ -248,7 +248,7 @@ function get_user_current_rating($db, $video_id, $user, $ip) {
 function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $avg_rating, $initial_rating = 0) {
     ob_start();
     ?>
-						<div id="ratingMessage" class="label" style="white-space:nowrap;"><?= t('Оцените&nbsp;видео') ?></div>
+						<div id="ratingMessage" class="label" style="white-space:nowrap;">Оцените&nbsp;видео</div>
 		          		<form style="display:none;" name="ratingForm" action="video.php?id=<?=htmlspecialchars($video_public_id)?>&ajax=rating" method="POST">
 	<input type="hidden" name="action_add_rating" value="1">
 	<input type="hidden" name="video_id" value="<?=intval($video_id)?>">
@@ -263,7 +263,7 @@ function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $
 			<a href="#" onclick="ratingComponent.setStars(4); return false;" onmouseover="ratingComponent.showStars(4);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_4" class="rating" style="border: 0px"></a>
 			<a href="#" onclick="ratingComponent.setStars(5); return false;" onmouseover="ratingComponent.showStars(5);" onmouseout="ratingComponent.clearStars();"><img src="img/star_smn_bg.gif" id="star_5" class="rating" style="border: 0px"></a>
 		</nobr>
-		<div class="rating" style="white-space:nowrap;"><?= t_ratings_count($ratings_count) ?></div>
+		<div class="rating" style="white-space:nowrap;"><?=intval($ratings_count)?> оценок</div>
 	</div>
 	<script type="text/javascript">
 		if (typeof UTRating != 'undefined') {
@@ -281,7 +281,7 @@ function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $
      $current = get_user_current_rating($db, $video_id, $user, $ip);
      if ($current < 1 || $current > 5) { $current = 0; }
      ?>
- 						<div id="ratingMessage" class="label" style="white-space:nowrap;"><?= t('Спасибо за оценку!') ?></div>
+ 						<div id="ratingMessage" class="label" style="white-space:nowrap;">Спасибо за оценку!</div>
  	<div>
  		<nobr>
  			<img src="img/star_smn<?=($current>=1?'':'_bg')?>.gif" id="star_1" class="rating" style="border:0px" alt="1">
@@ -290,7 +290,7 @@ function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $
  			<img src="img/star_smn<?=($current>=4?'':'_bg')?>.gif" id="star_4" class="rating" style="border:0px" alt="4">
  			<img src="img/star_smn<?=($current>=5?'':'_bg')?>.gif" id="star_5" class="rating" style="border:0px" alt="5">
  		</nobr>
-		<div class="rating"><?= t_ratings_count($ratings_count) ?></div>
+		<div class="rating"><?=intval($ratings_count)?> оценок</div>
 	</div>
 	<?php
     return ob_get_clean();
@@ -312,7 +312,7 @@ function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $
          $remaining = max(0.0, $remaining - 1.0);
      }
      ?>
- 						<div id="ratingMessage" class="label"><?= t('Оцените видео') ?></div>
+ 						<div id="ratingMessage" class="label">Оцените видео</div>
  	<div>
  		<nobr>
  			<img src="img/star_smn<?=($stars[0]==='full'?'':($stars[0]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="1">
@@ -321,7 +321,7 @@ function render_rating_inner_html($video_id, $video_public_id, $ratings_count, $
  			<img src="img/star_smn<?=($stars[3]==='full'?'':($stars[3]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="4">
  			<img src="img/star_smn<?=($stars[4]==='full'?'':($stars[4]==='half'?'_half':'_bg'))?>.gif" class="rating" style="border:0px" alt="5">
  		</nobr>
- 		<div class="rating"><?= t_ratings_count($ratings_count) ?></div>
+ 		<div class="rating"><?=intval($ratings_count)?> оценок</div>
  	</div>
  	<?php
      return ob_get_clean();
@@ -406,12 +406,12 @@ function video_load_attach_allowed_ids(PDO $db, ?string $user): array {
 function render_video_fav_action_html($is_fav, $video_id_param, $user) {
     $video_id_h = htmlspecialchars((string)$video_id_param, ENT_QUOTES, 'UTF-8');
     if (!$user) {
-        return '<img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">' . t('Войти, чтобы добавить в избранное') . '</a>';
+        return '<img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle"> <a href="login.php" style="color:#0033cc; text-decoration:none;">Войти, чтобы добавить в избранное</a>';
     }
     if ($is_fav) {
-        return '<a href="video.php?id=' . $video_id_h . '&fav_del=1" onclick="return favToggle(\'del\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> ' . t('Убрать из избранного') . '</a>';
+        return '<a href="video.php?id=' . $video_id_h . '&fav_del=1" onclick="return favToggle(\'del\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Убрать из избранного</a>';
     }
-    return '<a href="video.php?id=' . $video_id_h . '&fav_add=1" onclick="return favToggle(\'add\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> ' . t('Добавить в избранное') . '</a>';
+    return '<a href="video.php?id=' . $video_id_h . '&fav_add=1" onclick="return favToggle(\'add\');" style="color:#0033cc; text-decoration:none;"><img src="img/fav_w_icon.gif" width="19" height="17" align="absmiddle" border="0"> Добавить в избранное</a>';
 }
 
 function video_load_is_favourite(PDO $db, ?string $user, int $video_id): bool {
@@ -445,7 +445,7 @@ if (isset($_POST['add_comment'])) {
     if (!$user) {
         if ($is_ajax_comment) {
             header('Content-Type: text/plain; charset=UTF-8');
-            echo "ERROR:" . t('Только для зарегистрированных пользователей!');
+            echo "ERROR:Только для зарегистрированных пользователей!";
             exit;
         }
         header("Location: register.php");
@@ -460,13 +460,13 @@ if (isset($_POST['add_comment'])) {
         $selected_reference_video_id = 0;
     }
     if ($comment_text === '') {
-        $comment_error = t('Комментарий не может быть пустым!');
+        $comment_error = 'Комментарий не может быть пустым!';
     } elseif (video_comment_text_len($comment_text) > 500) {
-        $comment_error = t('Комментарий слишком длинный (макс. 500 символов)!');
+        $comment_error = 'Комментарий слишком длинный (макс. 500 символов)!';
     } elseif ($reference_video_id !== null) {
         $attach_allowed_ids = video_load_attach_allowed_ids($db, $user);
         if (!isset($attach_allowed_ids[(int)$reference_video_id])) {
-            $comment_error = t('Нельзя прикрепить это видео.');
+            $comment_error = 'Нельзя прикрепить это видео.';
         }
     }
     if ($comment_error === '') {
@@ -515,7 +515,7 @@ if (isset($_POST['add_comment'])) {
             header("Location: video.php?id=" . urlencode($video['public_id'] ?? $id));
             exit;
         } catch (Exception $e) {
-            $comment_error = t('Не удалось сохранить комментарий. Попробуйте ещё раз.');
+            $comment_error = 'Не удалось сохранить комментарий. Попробуйте ещё раз.';
         }
     }
     if ($is_ajax_comment) {
@@ -1049,7 +1049,7 @@ function render_comments($tree, $level = 0) {
             echo '<div style="width:60px;">';
             echo '<a href="'.$ref_link.'">';
             echo '<img src="'.htmlspecialchars($c['ref_preview']).'" width="60" height="45" border="0" alt=""><br>';
-            echo '<span style="font-size:12px;">'.t('Видео').'</span>';
+            echo '<span style="font-size:12px;">Видео</span>';
             echo '</a>';
             echo '</div>';
 
@@ -1066,13 +1066,13 @@ function render_comments($tree, $level = 0) {
         }
         echo '<div style="text-align:right;font-size:11px;color:#0033cc;padding:0 6px 2px 0;'.$ml.'">';
         if ($user) {
-            echo '<a href="#" class="reply-link" data-id="'.$c['id'].'" onclick="return showReplyForm('.(int)$c['id'].');" style="color:#0033cc;text-decoration:underline;font-size:11px;">('.t('ответить').')</a>';
+            echo '<a href="#" class="reply-link" data-id="'.$c['id'].'" onclick="return showReplyForm('.(int)$c['id'].');" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
             if ($user === $c['user']) {
                 $vid = urlencode($video['public_id'] ?? $id);
-                echo ' <a href="video.php?id='.$vid.'&del_comment='.$c['id'].'"onclick="return confirm('.t_js_attr('Удалить комментарий?').');" style="color:#0033cc;text-decoration:underline;font-size:11px;">('.t('удалить').')</a>';
+                echo ' <a href="video.php?id='.$vid.'&del_comment='.$c['id'].'"onclick="return confirm(\'Удалить комментарий?\');" style="color:#0033cc;text-decoration:underline;font-size:11px;">(удалить)</a>';
             }
         } else {
-          echo '<a href="#" onclick="alert('.t_js_attr('Только для зарегистрированных пользователей!').'); return false;" data-id="'.$c['id'].'" style="color:#0033cc;text-decoration:underline;font-size:11px;">('.t('ответить').')</a>';
+          echo '<a href="#" onclick="alert(\'Только для зарегистрированных пользователей!\'); return false;" data-id="'.$c['id'].'" style="color:#0033cc;text-decoration:underline;font-size:11px;">(ответить)</a>';
         }
         echo '</div>';
         echo '<div class="reply-form" id="replyform-'.$c['id'].'" style="display:none;margin-left:30px;"></div>';
@@ -1084,11 +1084,11 @@ function render_comments($tree, $level = 0) {
 function render_comments_block($comments_count, $comment_tree) {
     ?>
     <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 5px;"><tr>
-      <td><b><font style="margin: 0px; font-size: 14px;"><?= htmlspecialchars(t_comments_heading($comments_count), ENT_QUOTES, 'UTF-8') ?></font></b></td>
+      <td><b><font style="margin: 0px; font-size: 14px;">Комментарии (всего <?=intval($comments_count)?>):</font></b></td>
     </tr></table>
     <div id="commentsList">
     <?php if (count($comment_tree) == 0): ?>
-      <?= t('Комментариев пока нет.') ?>
+      Комментариев пока нет.
     <?php else: ?>
       <?php render_comments($comment_tree); ?>
     <?php endif; ?>
@@ -1147,17 +1147,17 @@ function favToggle(action) {
         if (xhr.readyState !== 4) return;
         window.favToggleBusy = false;
         if (xhr.status && xhr.status !== 200) {
-            alert(<?= json_encode(t('Не удалось обновить избранное. Попробуйте ещё раз.'), JSON_UNESCAPED_UNICODE) ?>);
+            alert('Не удалось обновить избранное. Попробуйте ещё раз.');
             return;
         }
         var t = xhr.responseText || "";
         var p = t.split("\t");
         if (p.length < 3) {
-            alert(<?= json_encode(t('Не удалось обновить избранное. Попробуйте ещё раз.'), JSON_UNESCAPED_UNICODE) ?>);
+            alert('Не удалось обновить избранное. Попробуйте ещё раз.');
             return;
         }
         if (p[0] === 'ERROR') {
-            alert(<?= json_encode(t('Не удалось обновить избранное. Попробуйте ещё раз.'), JSON_UNESCAPED_UNICODE) ?>);
+            alert('Не удалось обновить избранное. Попробуйте ещё раз.');
             return;
         }
         var favHtml = p.slice(2).join("\t");
@@ -1169,12 +1169,12 @@ function favToggle(action) {
         if (c) c.innerHTML = p[1];
         var c2 = document.getElementById("favCount2");
         if (c2) c2.innerHTML = p[1];
-        if (action === 'add') alert(<?= json_encode(t('Добавлено в избранное.'), JSON_UNESCAPED_UNICODE) ?>);
-        else alert(<?= json_encode(t('Убрано из избранного.'), JSON_UNESCAPED_UNICODE) ?>);
+        if (action === 'add') alert('Добавлено в избранное.');
+        else alert('Убрано из избранного.');
     };
     try { xhr.open("GET", url, true); xhr.send(null); } catch (e3) {
         window.favToggleBusy = false;
-        alert(<?= json_encode(t('Не удалось обновить избранное. Попробуйте ещё раз.'), JSON_UNESCAPED_UNICODE) ?>);
+        alert('Не удалось обновить избранное. Попробуйте ещё раз.');
     }
     return false;
 }
@@ -1186,24 +1186,7 @@ function favToggle(action) {
 <link rel="stylesheet" href="img/watch.css" type="text/css">
 <script type="text/javascript" src="img/ui_ets.js"></script>
 <script type="text/javascript" src="img/AJAX.js"></script>
-<script type="text/javascript">
-var UT_RATING_MESSAGES = <?= json_encode([
-    t('Оцените видео'),
-    t('Плохо'),
-    t('Ничего особенного'),
-    t('Стоит посмотреть'),
-    t('Довольно круто'),
-    t('Отлично!'),
-], JSON_UNESCAPED_UNICODE) ?>;
-</script>
-<?= site_lang_switcher_script() ?>
 <script type="text/javascript" src="img/components.js"></script>
-<!--[if lte IE 8]>
-<style type="text/css">
-#playerBox, #noJsFlashFallback { display: none !important; visibility: hidden; }
-#ie6FlashPlayer { display: block !important; width: 425px; height: 350px; margin: 0 auto; }
-</style>
-<![endif]-->
 <link href="img/styles.css" rel="stylesheet" type="text/css">
 <link rel="alternate" type="application/rss+xml" title="Recently Added Videos" href="rss.hp">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1284,30 +1267,29 @@ html, body {
 		
 		<table width="670" cellpadding="0" cellspacing="0" border="0">
 			<tbody><tr valign="top">
-				<td style="padding: 0px 5px 0px 5px; font-style: italic;"><?= t('Загружайте и делитесь видео по всему миру!') ?></td>
+				<td style="padding: 0px 5px 0px 5px; font-style: italic;">Загружайте и делитесь видео по всему миру!</td>
 				<td align="right">
 				
 				<table cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr>
 			
     <?php if (!isset($_SESSION['user'])): ?>
-							<td><a href="register.php"><strong><?= t('Регистрация') ?></strong></a></td>
+							<td><a href="register.php"><strong>Регистрация</strong></a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td><a href="login.php"><?= t('Вход') ?></a></td>
+							<td><a href="login.php">Вход</a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
-							<?= site_lang_switcher_html() ?>
+							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
               <?php else: ?>
 							<?php $mail_unread = count_unread_mail($db, $_SESSION['user']); $mail_icon = $mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif'; ?>
-							<td><?= t('Привет, ') ?><a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
+							<td>Привет, <a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|&nbsp;
 							<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
-								<td><a href="admin.php" style="font-weight: bold;color: #24692A"><?= t('Админ-панель') ?></a></td>
+								<td><a href="admin.php" style="font-weight: bold;color: #24692A">Админ-панель</a></td>
 								<td style="padding: 0px 5px 0px 5px;">|</td>
 							<?php } ?>
-							<td><a href="logout.php"><?= t('Выйти') ?></a></td>
+							<td><a href="logout.php">Выйти</a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
+							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
 							
 						<?php endif; ?>
 		
@@ -1360,7 +1342,7 @@ html, body {
 						<tr>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 							<td style="padding: 0px 20px 5px 20px; font-size: 13px; font-weight: bold;">
-								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= t($t['label']) ?></a>
+								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= $t['label'] ?></a>
 							</td>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 						</tr>
@@ -1387,15 +1369,15 @@ html, body {
 
 		<table cellpadding="0" cellspacing="0" border="0">
 			<tbody><tr>
-				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos'; } else { echo 'login.php'; } ?>"><?= t('Мои видео') ?></a></td>
+				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']) . '&tab=videos'; } else { echo 'login.php'; } ?>">Мои видео</a></td>
 				<td style="padding: 0px 10px 0px 10px;">|</td>
-				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>"><?= t('Мой канал') ?></a></td>
+				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'channel.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>">Мой канал</a></td>
 				<td style="padding: 0px 10px 0px 10px;">|</td>
-				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'favourites.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>"><?= t('Избранное') ?></a></td>
+				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'favourites.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>">Избранное</a></td>
 				<td style="padding: 0px 10px 0px 10px;">|</td>
-				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'friends.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>"><?= t('Мои друзья') ?></a></td>
+				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'friends.php?user=' . urlencode($_SESSION['user']); } else { echo 'login.php'; } ?>">Мои друзья</a></td>
 				<td style="padding: 0px 10px 0px 10px;">|</td>
-				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'account.php'; } else { echo 'login.php'; } ?>"><?= t('Настройки') ?></a></td>
+				<td style="  "><a href="<?php if (isset($_SESSION['user'])) { echo 'account.php'; } else { echo 'login.php'; } ?>">Настройки</a></td>
 			</tr>
 		</tbody></table>
 			
@@ -1413,7 +1395,7 @@ html, body {
 <table align="center" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
 	<tbody><tr>
 		<td style="padding-right: 5px;"><input tabindex="1" type="text" value="<?=htmlspecialchars($_GET['search_query'] ?? '')?>" name="search_query" maxlength="128" style="color:#ff3333; font-size: 12px; width: 300px;"></td>
-		<td><input type="submit" value="<?= htmlspecialchars(t('Искать видео'), ENT_QUOTES, 'UTF-8') ?>"></td>
+		<td><input type="submit" value="Искать видео"></td>
 	</tr></tbody></table>
 </form>
 
@@ -1425,9 +1407,9 @@ html, body {
 $admin_msg = trim((string)($_GET['admin_msg'] ?? ''));
 $admin_confirm = '';
 if ($admin_msg === 'promoted') {
-    $admin_confirm = t('Видео продвинуто в блоке популярных.');
+    $admin_confirm = 'Видео продвинуто в блоке популярных.';
 } elseif ($admin_msg === 'shadow_banned') {
-    $admin_confirm = t('Теневой бан для канала включен.');
+    $admin_confirm = 'Теневой бан для канала включен.';
 }
 if ($admin_confirm !== ''):
 ?>
@@ -1443,25 +1425,10 @@ if ($admin_confirm !== ''):
   <td width="435">
     <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;"><?=htmlspecialchars($video['title'])?></div>
     <link rel="stylesheet" href="viewfinder/player.css">
-    <?php
-    $flash_swf_src = 'player.swf?video_id=' . htmlspecialchars($video['public_id'] ?? '', ENT_QUOTES, 'UTF-8') . '&l=' . intval($flash_len) . '&c=14&s=i5nkrobo60sub2rqflh31bapgg';
-    $flash_embed_html = '<embed src="' . $flash_swf_src . '" width="425" height="350" wmode="opaque" quality="high" allowscriptaccess="always" type="application/x-shockwave-flash">';
-    ?>
     <div style="text-align: center; margin-bottom: 8px;">
-        <!--[if lte IE 8]>
-        <div id="ie6FlashPlayer" style="width:425px; height:350px; margin:0 auto; overflow:hidden;">
-            <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=7,0,0,0" width="425" height="350" id="ie6FlashObject">
-                <param name="movie" value="<?= $flash_swf_src ?>">
-                <param name="quality" value="high">
-                <param name="wmode" value="opaque">
-                <param name="allowScriptAccess" value="always">
-                <embed src="<?= $flash_swf_src ?>" width="425" height="350" quality="high" wmode="opaque" allowscriptaccess="always" type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/go/getflashplayer">
-            </object>
-        </div>
-        <![endif]-->
         <div id="noJsFlashFallback" style="border: 1px solid gray; width: 425px; height: 350px; background: #fff; text-align: center;">
             <div style="padding: 20px; font-size:14px; font-weight: bold;">
-            <?= t('Кажется, у вас либо отключён JavaScript, либо установлена ​​старая версия Flash Player.') ?> <a href="http://www.oldversion.com/software/macromedia-flash-player/macromedia-flash-player-10-0-32-18/"><?= t('Нажмите здесь') ?></a>, <?= t('чтобы загрузить последнюю версию Flash Player.') ?>
+            Кажется, у вас либо отключён JavaScript, либо установлена ​​старая версия Flash Player. <a href="http://www.oldversion.com/software/macromedia-flash-player/macromedia-flash-player-10-0-32-18/">Нажмите здесь</a>, чтобы загрузить последнюю версию Flash Player.
             </div>
         </div>
 
@@ -1535,7 +1502,6 @@ if ($admin_confirm !== ''):
     
     <script type="text/javascript">
     (function() {
-        if (document.getElementById('ie6FlashPlayer')) return;
         var v = document.createElement('video');
         var supportsVideo = !!(v && v.canPlayType);
         if (!supportsVideo) return;
@@ -1548,17 +1514,6 @@ if ($admin_confirm !== ''):
     </script>
     <script type="text/javascript">
     (function(){
-        var ieFlash = document.getElementById('ie6FlashPlayer');
-        var flashBox = document.getElementById('flashPlayerBox');
-        var html5Box = document.getElementById('playerBox');
-        var html5Video = document.getElementById('video');
-        var fallback = document.getElementById('noJsFlashFallback');
-        if (ieFlash) {
-            if (fallback) fallback.style.display = 'none';
-            if (html5Box) html5Box.style.display = 'none';
-            if (flashBox) flashBox.style.display = 'none';
-            return;
-        }
         function hasFlash(){
             var has = false;
             try {
@@ -1568,9 +1523,13 @@ if ($admin_confirm !== ''):
             }
             return has;
         }
-        var userPlayerType = <?= json_encode((string)$user_player_type) ?>;
+        var userPlayerType = '<?=$user_player_type?>';
         var flashOk = hasFlash();
-        var flashEmbedHtml = <?= json_encode($flash_embed_html) ?>;
+        var flashBox = document.getElementById('flashPlayerBox');
+        var html5Box = document.getElementById('playerBox');
+        var html5Video = document.getElementById('video');
+        var fallback = document.getElementById('noJsFlashFallback');
+        var flashEmbedHtml = '<embed src="player.swf?video_id=<?=htmlspecialchars($video['public_id'] ?? '', ENT_QUOTES, 'UTF-8')?>&l=<?=$flash_len?>&c=14&s=i5nkrobo60sub2rqflh31bapgg" width="425" height="350" wmode="opaque" quality="high" allowscriptaccess="always" type="application/x-shockwave-flash">';
         function setFlashEnabled(enabled) {
             if (!flashBox) return;
             if (enabled) {
@@ -1620,14 +1579,14 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
 		<div id="actionsDiv" style="float:left; width:32%; padding:4px;">
 			<div class="actionRow" style="font-size:12px;">
         <span id="favAction"><?php echo render_video_fav_action_html($is_fav, ($video['public_id'] ?? $id), $user); ?></span><br>
-<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> <?= t('Скачать видео в AVI') ?></a> (<?= t('или') ?> <a href="get_video.php?id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
+<a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)<br>
 			</div>
 		</div>
 		<div id="statsDiv" style="float:left; width:28%; padding:4px; font-size:12px; color:#333;">
 			<div class="statRow">
-      <b><?= t('Просмотров:') ?></b> <?=intval($video['views'])?><br>
-      <b><?= t('Комментариев:') ?></b> <?=$comments_count?><br>
-      <b><?= t('Понравилось:') ?></b> <span id="favCount"><?= (int)$fav_count ?></span> <?= t('раз') ?><br>
+      <b>Просмотров:</b> <?=intval($video['views'])?><br>
+      <b>Комментариев:</b> <?=$comments_count?><br>
+      <b>Понравилось:</b> <span id="favCount"><?= (int)$fav_count ?></span> раз<br>
 			</div>
 		</div>
 		<div style="clear:both;"></div>
@@ -1637,7 +1596,7 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
       <table cellpadding="4" cellspacing="0" border="0" width="100%">
         <tr valign="top">
           <td width="33%">
-            <div style="font-weight:bold; font-size:12px; color:#333;"><?= t('Оцените видео') ?></div>
+            <div style="font-weight:bold; font-size:12px; color:#333;">Оцените видео</div>
             <div>
               <?php echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), $ratings_count, $avg_rating, $current_rating)
                                 : render_rating_inner_html_guest($ratings_count, $avg_rating); ?>
@@ -1646,13 +1605,13 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
           <td width="34%">
             <div style="font-size:12px;">
               <span id="favAction2"><?php echo render_video_fav_action_html($is_fav, ($video['public_id'] ?? $id), $user); ?></span><br>
-              <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> <?= t('Скачать видео в AVI') ?></a> (<?= t('или') ?> <a href="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
+              <a href="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>&download=avi" style="color:#0033cc; text-decoration:none; font-size:12px;"><img src="img/web_w_icon.gif" border="0" width="19" height="17" align="absmiddle"> Скачать видео в AVI</a> (или <a href="get_video.php?video_id=<?=urlencode($video['public_id'] ?? '')?>" style="color:#0033cc; text-decoration:none; font-size:12px;">MP4</a>)
             </div>
           </td>
           <td width="33%" style="font-size:12px; color:#333;">
-            <b><?= t('Просмотров:') ?></b> <?=intval($video['views'])?><br>
-            <b><?= t('Комментариев:') ?></b> <?=$comments_count?><br>
-            <b><?= t('Понравилось:') ?></b> <span id="favCount2"><?= (int)$fav_count ?></span> <?= t('раз') ?>
+            <b>Просмотров:</b> <?=intval($video['views'])?><br>
+            <b>Комментариев:</b> <?=$comments_count?><br>
+            <b>Понравилось:</b> <span id="favCount2"><?= (int)$fav_count ?></span> раз
           </td>
         </tr>
       </table>
@@ -1660,7 +1619,7 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
     <![endif]-->
 	
     <a name="comments"></a>
-    <div style="padding-bottom: 5px; font-weight: bold; color: #444;"><?= t('Прокомментируйте видео:') ?></div>
+    <div style="padding-bottom: 5px; font-weight: bold; color: #444;">Прокомментируйте видео:</div>
         <div id="commentFormBlock2">
         <form method="post" action="video.php?id=<?=htmlspecialchars($video['public_id'] ?? $id)?>" name="comment_formmain_comment2" id="comment_formmain_comment2" style="margin:0;" onsubmit="return submitCommentAjax(this);">
         <input type="hidden" name="add_comment" value="1">
@@ -1669,20 +1628,20 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
         <input type="hidden" name="comment_type" value="V">
         <textarea tabindex="2" name="comment_text" cols="55" rows="3" style="font-size: 13px; width: 98%;"></textarea><br>
         <div class="attach-video-row" style="margin-top:3px; white-space:nowrap;">
-        <span style="font-size:12px;"><?= t('Прикрепить видео:') ?></span>
+        <span style="font-size:12px;">Прикрепить видео:</span>
         <select name="reference_video_id" style="font-size:12px; width:180px;">
-            <option value=""><?= t('- Ваши видео -') ?></option>
+            <option value="">- Ваши видео -</option>
             <?php foreach ($attach_my_videos as $vopt): ?>
             <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
             <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
             <?php endforeach; ?>
-            <option value=""><?= t('- Избранные видео -') ?></option>
+            <option value="">- Избранные видео -</option>
             <?php foreach ($attach_fav_videos as $vopt): ?>
             <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
             <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
             <?php endforeach; ?>
         </select>
-        <input type="submit" name="add_comment_button" value="<?= htmlspecialchars(t('Добавить'), ENT_QUOTES, 'UTF-8') ?>" style="width: 75px;">
+        <input type="submit" name="add_comment_button" value="Добавить" style="width: 75px;">
         </div>
         
         </form>
@@ -1698,21 +1657,21 @@ echo $user ? render_rating_inner_html($id, (string)($video['public_id'] ?? ''), 
       <input type="hidden" name="comment_type" value="V">
       <textarea tabindex="2" name="comment_text" cols="55" rows="3" style="font-size: 13px; width: 98%;"></textarea><br>
       <div class="attach-video-row" style="margin-top:3px; white-space:nowrap;">
-      <span style="font-size:12px;"><?= t('Прикрепить видео:') ?></span>
+      <span style="font-size:12px;">Прикрепить видео:</span>
       <select name="reference_video_id" style="font-size:12px; width:180px;">
-        <option value=""><?= t('- Ваши видео -') ?></option>
+        <option value="">- Ваши видео -</option>
         <?php foreach ($attach_my_videos as $vopt): ?>
           <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
           <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
         <?php endforeach; ?>
-        <option value=""><?= t('- Избранные видео -') ?></option>
+        <option value="">- Избранные видео -</option>
         <?php foreach ($attach_fav_videos as $vopt): ?>
           <?php $vopt_title = (string)($vopt['title'] ?? ''); if (function_exists('mb_strlen') && function_exists('mb_substr')) { if (mb_strlen($vopt_title, 'UTF-8') > 60) $vopt_title = mb_substr($vopt_title, 0, 60, 'UTF-8') . '...'; } else { if (strlen($vopt_title) > 60) $vopt_title = substr($vopt_title, 0, 60) . '...'; } ?>
           <option value="<?= (int)$vopt['id'] ?>"<?= ((int)$selected_reference_video_id === (int)$vopt['id']) ? ' selected="selected"' : '' ?>><?= htmlspecialchars($vopt_title) ?></option>
         <?php endforeach; ?>
       </select>
-      <input type="submit" name="add_comment_button" value="<?= htmlspecialchars(t('Добавить'), ENT_QUOTES, 'UTF-8') ?>" style="width: 75px;">
-      <input type="button" name="discard_comment_button" value="<?= htmlspecialchars(t('Отмена'), ENT_QUOTES, 'UTF-8') ?>" style="width: 60px;" onclick="return cancelCommentForm(this);">
+      <input type="submit" name="add_comment_button" value="Добавить" style="width: 75px;">
+      <input type="button" name="discard_comment_button" value="Отмена" style="width: 60px;" onclick="return cancelCommentForm(this);">
       </div>
       <?php if ($comment_error): ?>
       <div style="color: #c00; font-size: 12px; padding: 3px 0; margin-top: 5px;"><?=htmlspecialchars($comment_error)?></div>
@@ -1767,12 +1726,12 @@ function submitCommentAjax(form) {
         if (xhr.readyState != 4) return;
         if (btn) {
             btn.disabled = false;
-            btn.value = '<?= htmlspecialchars(t('Добавить'), ENT_QUOTES, 'UTF-8') ?>';
+            btn.value = 'Добавить';
         }
         if (xhr.status == 200) {
             var t = xhr.responseText || '';
             if (t.indexOf('OK') === 0) {
-                alert('<?= htmlspecialchars(t('Спасибо. Ваш комментарий успешно опубликован!'), ENT_QUOTES, 'UTF-8') ?>');
+                alert('Спасибо. Ваш комментарий успешно опубликован!');
                 try {
                     if (form.comment_text) form.comment_text.value = '';
                     if (form.reference_video_id) form.reference_video_id.selectedIndex = 0;
@@ -1783,9 +1742,9 @@ function submitCommentAjax(form) {
             }
             var msg = t;
             if (msg.indexOf('ERROR:') === 0) msg = msg.substring(6);
-            alert(msg || '<?= htmlspecialchars(t('Ошибка при отправке комментария!'), ENT_QUOTES, 'UTF-8') ?>');
+            alert(msg || 'Ошибка при отправке комментария!');
         } else {
-            alert('<?= htmlspecialchars(t('Ошибка связи при отправке комментария!'), ENT_QUOTES, 'UTF-8') ?>');
+            alert('Ошибка связи при отправке комментария!');
         }
     };
     xhr.send(data.join('&'));
@@ -1863,7 +1822,7 @@ function showReplyForm(id) {
             if (row.getElementsByTagName) {
                 var spans = row.getElementsByTagName('span');
                 for (var z = spans.length - 1; z >= 0; z--) {
-                    if (spans[z].innerHTML && (spans[z].innerHTML.indexOf('Прикрепить видео') !== -1 || spans[z].innerHTML.indexOf('Attach a video') !== -1)) {
+                    if (spans[z].innerHTML && spans[z].innerHTML.indexOf('Прикрепить видео') !== -1) {
                         row.removeChild(spans[z]);
                     }
                 }
@@ -1933,7 +1892,7 @@ window.onload = function() {
 	<b class="rch3"></b>
 	<b class="rch4"></b>
 	<b class="rch5"></b>
-	</b> <div class="content"><span class="headerTitleLite"><?= t('О видео') ?></span></div>
+	</b> <div class="content"><span class="headerTitleLite">О видео</span></div>
 	</div>
     <?php
 $desc = trim($video['description']);
@@ -1966,28 +1925,28 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         } else {
           echo '<div><a href="login.php" title="subscribe" style="text-decoration:none;"><img src="img/btn_subscribe_sm_yellow_99x16.gif" class="alignMid" alt="subscribe" title="subscribe" border="0" height="16" width="99"></a></div>';
         }
-        echo '<div id="subscribeCount" class="smallText">'.t('на').' '.htmlspecialchars($video['user']).'</div>';
+        echo '<div id="subscribeCount" class="smallText">на '.htmlspecialchars($video['user']).'</div>';
         echo '</div>';
       }
       ?>
       <div id="userInfoDiv">
-      <span style="color:#333333;"><b><?= t('Загружено') ?></b></span>&nbsp;&nbsp;<b><?=rus_date('j F Y', strtotime($video['time']))?></b><br>
-      <span style="color:#333333;"><b><?= t('От') ?></b></span>&nbsp;&nbsp;<b><a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc;"><?=htmlspecialchars($video['user'])?></a></b><br>
+      <span style="color:#333333;"><b>Загружено</b></span>&nbsp;&nbsp;<b><?=rus_date('j F Y', strtotime($video['time']))?></b><br>
+      <span style="color:#333333;"><b>От</b></span>&nbsp;&nbsp;<b><a href="channel.php?user=<?=urlencode($video['user'])?>" style="color:#0033cc;"><?=htmlspecialchars($video['user'])?></a></b><br>
       </div>
       <?php if ($user && $user === $video['user'] && is_valid_video_public_id($video['public_id'] ?? '')): ?>
       <div style="margin: 8px 0px;" class="smallText">
-            <span class="smallLabel"><?= t('Настройки видео:') ?></span>
-            <a href="/my_videos_edit.php?id=<?= urlencode((string)$video['public_id']) ?>"><?= t('Редактировать') ?></a>
+            <span class="smallLabel">Настройки видео:</span>
+            <a href="/my_videos_edit.php?id=<?= urlencode((string)$video['public_id']) ?>">Редактировать</a>
       </div>
       <?php endif; ?>
       <?php if ($is_admin): ?>
       <div style="margin: 8px 0px;" class="smallText">
-            <span class="smallLabel"><?= t('Администрирование:') ?></span>
+            <span class="smallLabel">Администрирование:</span>
             <br>
-            <a href="#" onclick="if (confirm(<?= t_js_attr('Продвинуть это видео в блоке популярных?') ?>)) { document.getElementById('adminPromoteForm').submit(); } return false;"><?= t('Продвинуть видео') ?></a> |
-            <a href="#" onclick="if (confirm(<?= t_js_attr('Забанить автора и удалить канал вместе со всеми видео?') ?>)) { document.getElementById('adminBanAuthorForm').submit(); } return false;"><?= t('Забанить автора') ?></a> |
-            <a href="#" onclick="if (confirm(<?= t_js_attr('Включить теневой бан для канала автора?') ?>)) { document.getElementById('adminShadowBanForm').submit(); } return false;"><?= t('Теневой бан') ?></a> |
-            <a href="#" onclick="if (confirm(<?= t_js_attr('Удалить это видео?') ?>)) { document.getElementById('adminDeleteVideoForm').submit(); } return false;"><?= t('Удалить видео') ?></a>
+            <a href="#" onclick="if (confirm('Продвинуть это видео в блоке популярных?')) { document.getElementById('adminPromoteForm').submit(); } return false;">Продвинуть видео</a> |
+            <a href="#" onclick="if (confirm('Забанить автора и удалить канал вместе со всеми видео?')) { document.getElementById('adminBanAuthorForm').submit(); } return false;">Забанить автора</a> |
+            <a href="#" onclick="if (confirm('Включить теневой бан для канала автора?')) { document.getElementById('adminShadowBanForm').submit(); } return false;">Теневой бан</a> |
+            <a href="#" onclick="if (confirm('Удалить это видео?')) { document.getElementById('adminDeleteVideoForm').submit(); } return false;">Удалить видео</a>
             <form id="adminPromoteForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="promote"></form>
             <form id="adminBanAuthorForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="ban_author"></form>
             <form id="adminShadowBanForm" method="post" action="video.php?id=<?=urlencode((string)($video['public_id'] ?? $id))?>" style="display:none; margin:0;"><input type="hidden" name="admin_action" value="shadow_ban"></form>
@@ -1998,8 +1957,8 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
       </div>
       <?php if (trim($desc) !== ''): ?>
         <div style="padding-left: 8px;">
-        <span id="desc-short" style="font-size:13px;"><?=htmlspecialchars($desc_short)?><?php if (mb_strlen($desc) > 50): ?> <a href="#" id="desc-more" style="color:#0033cc;">(<?= t('ещё') ?>)</a><?php endif; ?></span>
-        <span id="desc-full" style="display:none; font-size:13px;"><?=nl2br(htmlspecialchars($desc))?> <a href="#" id="desc-less" style="color:#0033cc;">(<?= t('меньше') ?>)</a></span>
+        <span id="desc-short" style="font-size:13px;"><?=htmlspecialchars($desc_short)?><?php if (mb_strlen($desc) > 50): ?> <a href="#" id="desc-more" style="color:#0033cc;">(ещё)</a><?php endif; ?></span>
+        <span id="desc-full" style="display:none; font-size:13px;"><?=nl2br(htmlspecialchars($desc))?> <a href="#" id="desc-less" style="color:#0033cc;">(меньше)</a></span>
         </div>
   <?php endif; ?>
       <div id="vidFacetsDiv">
@@ -2008,7 +1967,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         
         <tbody>
         <?php if (!empty($video['tags'])): ?>
-        <tr><td class="label"><?= t('Теги') ?></td>
+        <tr><td class="label">Теги</td>
         <td class="tags">		
           <span id="vidTagsBegin">
             <?php 
@@ -2034,7 +1993,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
               ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>" class="dg"><?=htmlspecialchars($tag)?></a>&nbsp;<?php 
                 endif;
               endforeach; 
-              ?></span>&nbsp;<span id="vidTagsMore" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain'); hideInline('vidTagsMore'); showInline('vidTagsLess'); return false;"><?= t('ещё') ?></a>)</span><span id="vidTagsLess" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain'); hideInline('vidTagsLess'); showInline('vidTagsMore'); return false;"><?= t('меньше') ?></a>)</span>
+              ?></span>&nbsp;<span id="vidTagsMore" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain'); hideInline('vidTagsMore'); showInline('vidTagsLess'); return false;">ещё</a>)</span><span id="vidTagsLess" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain'); hideInline('vidTagsLess'); showInline('vidTagsMore'); return false;">меньше</a>)</span>
             <?php endif; ?>
           </span>
         </td>
@@ -2046,7 +2005,7 @@ $desc_short = mb_strlen($desc) > 50 ? mb_substr($desc, 0, 50) . '...' : $desc;
         </td>
         </tr>
         <?php $embed_file_base = video_uploads_file_base((int)$video['id'], $video['public_id'] ?? ''); ?>
-        <tr><td class="smallLabel"><?= t('Вставка') ?></td>
+        <tr><td class="smallLabel">Вставка</td>
         <td>
         <input name="embed_code" value="&lt;script type=&quot;text/javascript&quot; src=&quot;http://<?=$_SERVER['HTTP_HOST']?>/jwplayer/jwplayer.js&quot;&gt;&lt;/script&gt;&lt;div id=&quot;mediaplayer&quot;&gt;&lt;/div&gt;&lt;script type=&quot;text/javascript&quot;&gt;jwplayer(&quot;mediaplayer&quot;).setup({&#39;controlbar.position&#39;:&#39;bottom&#39;,&#39;logo.hide&#39;:&#39;true&#39;,file:&quot;http://<?=$_SERVER['HTTP_HOST']?>/uploads/<?= htmlspecialchars($embed_file_base, ENT_QUOTES, 'UTF-8') ?>.mp4&quot;,image:&quot;http://<?=$_SERVER['HTTP_HOST']?>/uploads/<?= htmlspecialchars($embed_file_base, ENT_QUOTES, 'UTF-8') ?>_preview.jpg&quot;,height:344,width:425,modes:[{type:&quot;html5&quot;},{type:&quot;flash&quot;,src:&quot;http://<?=$_SERVER['HTTP_HOST']?>/jwplayer/player.swf&quot;},{type:&quot;download&quot;}]});&lt;/script&gt;" class="vidURLField" onclick="javascript:document.urlForm.embed_code.focus();document.urlForm.embed_code.select();" readonly="true" type="text">
         </td></tr>
@@ -2093,7 +2052,7 @@ if (window.attachEvent) {
 	<b class="rch3"></b>
 	<b class="rch4"></b>
 	<b class="rch5"></b>
-	</b> <div class="content"><span class="headerTitleLite"><?= t('Посмотрите больше видео') ?></span></div>
+	</b> <div class="content"><span class="headerTitleLite">Посмотрите больше видео</span></div>
 	</div>  
     <?php
     $curr_id = (int)($video['id'] ?? 0);
@@ -2151,8 +2110,8 @@ if (window.attachEvent) {
         <?php if ($rec_shown > 0): ?>
         <table width="100%" cellpadding="2" cellspacing="0" border="0" class="showingTable" >
           <tr>
-            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><?= t('Показано') ?> 1-<?= (int)$rec_shown ?> <?= t('из') ?> 20</td>
-            <td class="smallText" align="right" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;"><?= t('Ещё видео') ?></a></td>
+            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;">Показано 1-<?= (int)$rec_shown ?> из 20</td>
+            <td class="smallText" align="right" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;">Ещё видео</a></td>
           </tr>
         </table>
         <div id="side_related_scroll" style="height:360px; overflow-y:scroll; overflow-x:hidden; width:100%; display:block;">
@@ -2164,8 +2123,8 @@ if (window.attachEvent) {
     <td>
         <a href="#"><span class="title" style="color:#0033CC"><?=htmlspecialchars($video['title'])?></span></a><br>
         <span class="runtime"><?=get_video_duration($video['file'], $video['id'], $video['public_id'] ?? '')?></span><br>
-        <span style="font-size: 11px;"><?= t('Автор:') ?> <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a></span><br>
-        <span style="font-size: 11px;"><?= t('Просмотров:') ?> <?=intval($video['views'] ?? 212)?></span>
+        <span style="font-size: 11px;">Автор: <a href="channel.php?user=<?=htmlspecialchars($video['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($video['user'])?></a></span><br>
+        <span style="font-size: 11px;">Просмотров: <?=intval($video['views'] ?? 212)?></span>
     </td>
 </tr>
 </table>
@@ -2183,8 +2142,8 @@ if (window.attachEvent) {
             <span class="title" style="color:#0033CC"><?=htmlspecialchars($rec['title'])?></span>
         </a><br>
         <span class="runtime"><?=get_video_duration($rec['file'], $rec['id'], $rec['public_id'] ?? '')?></span><br>
-        <span style="font-size: 11px;"><?= t('Автор:') ?> <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a></span><br>
-        <span style="font-size: 11px;"><?= t('Просмотров:') ?> <?=intval($rec['views'] ?? 0)?></span>
+        <span style="font-size: 11px;">Автор: <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a></span><br>
+        <span style="font-size: 11px;">Просмотров: <?=intval($rec['views'] ?? 0)?></span>
     </td>
 </tr>
 <?php endforeach; ?>
@@ -2193,8 +2152,8 @@ if (window.attachEvent) {
         <?php endif; ?>
         <table width="100%" cellpadding="2" cellspacing="0" border="0" class="showingTable">
           <tr>
-            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><?= t('Показано') ?> 1-<?= (int)$rec_shown ?> <?= t('из') ?> 20</td>
-            <td class="smallText" align="right" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;"><?= t('Ещё видео') ?></a></td>
+            <td class="smallText" style="padding-top:0px; padding-bottom:0px; line-height:16px;">Показано 1-<?= (int)$rec_shown ?> из 20</td>
+            <td class="smallText" align="right" style="padding-top:0px; padding-bottom:0px; line-height:16px;"><a href="<?=htmlspecialchars($more_href, ENT_QUOTES, 'UTF-8')?>" style="color:#0033cc;">Ещё видео</a></td>
           </tr>
         </table>
       </td></tr>
@@ -2208,7 +2167,7 @@ if (window.attachEvent) {
         </td></tr></table>
         <table cellpadding="10" cellspacing="0" border="0" align="center">
     <tbody><tr>
-        <td align="center" valign="center"><span class="footer"><a href="about.php?p=whats_new"><?= t('Что нового?') ?></a> | <a href="about.php"><?= t('О сайте') ?></a> | <a href="http://github.com/tankwars92/RetroShow"><?= t('Исходный код') ?></a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
+        <td align="center" valign="center"><span class="footer"><a href="about.php?p=whats_new">Что нового?</a> | <a href="about.php">О сайте</a> | <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | <a href="http://downgrade-net.ru/">Downgrade Net</a></span> 
         <br><br>Copyright © 2026 RetroShow | <a href="rss.php"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a></span>
         <br>
         <br>
@@ -2239,7 +2198,7 @@ function toggleCommentForm() {
         btn.onclick = function() {
             var f = document.getElementById ? document.getElementById('commentFormBlock') : document.all['commentFormBlock'];
             if (!f) {
-                alert('<?= htmlspecialchars(t('Только для зарегистрированных пользователей!'), ENT_QUOTES, 'UTF-8') ?>');
+                alert('Только для зарегистрированных пользователей!');
                 return false;
             }
             if (f.style.display == '' || f.style.display == 'none') {

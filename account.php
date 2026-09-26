@@ -14,7 +14,7 @@ $pw_error = '';
 $pw_success = false;
 
 try {
-    $stmt = $db->prepare('SELECT email, about_me, gender, birthday_mon, birthday_day, birthday_yr, country, name, last_n, relationship, website, profile_bull, player_type, home_block_type, recs_enabled, header_logo, hometown, city FROM users WHERE login = ?');
+    $stmt = $db->prepare('SELECT email, about_me, gender, birthday_mon, birthday_day, birthday_yr, country, name, last_n, relationship, website, profile_bull, player_type, home_block_type, recs_enabled, header_logo, hometown, city, ui_lang FROM users WHERE login = ?');
     $stmt->execute([$user]);
     $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -59,12 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($header_logo !== 'youtube') {
         $header_logo = 'retroshow';
     }
+    $ui_lang = (($_POST['ui_lang'] ?? '') === 'en') ? 'en' : 'ru';
     
     if (mb_strlen($about_me) > 500) $about_me = mb_substr($about_me, 0, 500);
     
-    $stmt = $db->prepare('UPDATE users SET email = ?, about_me = ?, gender = ?, birthday_mon = ?, birthday_day = ?, birthday_yr = ?, country = ?, name = ?, last_n = ?, relationship = ?, website = ?, profile_bull = ?, player_type = ?, home_block_type = ?, recs_enabled = ?, header_logo = ?, hometown = ?, city = ? WHERE login = ?');
-    if ($stmt->execute([$email, $about_me, $gender, $birthday_mon, $birthday_day, $birthday_yr, $country, $name, $last_n, $relationship, $website, $profile_bull, $player_type, $home_block_type, $recs_enabled, $header_logo, $hometown, $city, $user])) {
+    $stmt = $db->prepare('UPDATE users SET email = ?, about_me = ?, gender = ?, birthday_mon = ?, birthday_day = ?, birthday_yr = ?, country = ?, name = ?, last_n = ?, relationship = ?, website = ?, profile_bull = ?, player_type = ?, home_block_type = ?, recs_enabled = ?, header_logo = ?, hometown = ?, city = ?, ui_lang = ? WHERE login = ?');
+    if ($stmt->execute([$email, $about_me, $gender, $birthday_mon, $birthday_day, $birthday_yr, $country, $name, $last_n, $relationship, $website, $profile_bull, $player_type, $home_block_type, $recs_enabled, $header_logo, $hometown, $city, $ui_lang, $user])) {
         $success = true;
+        site_lang_set($ui_lang);
 		
         $user_data['email'] = $email;
         $user_data['about_me'] = $about_me;
@@ -84,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_data['header_logo'] = $header_logo;
         $user_data['hometown'] = $hometown;
         $user_data['city'] = $city;
+        $user_data['ui_lang'] = $ui_lang;
     } else {
         $error = 'Ошибка при обновлении данных.';
     }
@@ -138,8 +141,8 @@ showHeader('Настройки аккаунта');
       <td colspan="5">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Настройки аккаунта</td>
-            <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle"><a href="channel.php?user=<?=urlencode($user)?>" style="color:#0033cc; text-decoration:underline;">Перейти к каналу</a></td>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle"><?= t('Настройки аккаунта') ?></td>
+            <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle"><a href="channel.php?user=<?=urlencode($user)?>" style="color:#0033cc; text-decoration:underline;"><?= t('Перейти к каналу') ?></a></td>
           </tr>
         </table>
       </td>
@@ -148,9 +151,9 @@ showHeader('Настройки аккаунта');
       <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
     </tr>
 <tr>
-  <td colspan="3" style="font-size:11px; color:#444; padding-top:6px;">* Показывает обязательное поле.</td>
+  <td colspan="3" style="font-size:11px; color:#444; padding-top:6px;"><?= t('* Показывает обязательное поле.') ?></td>
   <td colspan="2" align="right" style="padding-top:0; margin-top:0;">
-    <a href="delete_account.php" style="color:#c00; font-size:12px; text-decoration:underline; font-weight:bold; margin-top:0; padding-top:0;">Удалить мой аккаунт</a>
+    <a href="delete_account.php" style="color:#c00; font-size:12px; text-decoration:underline; font-weight:bold; margin-top:0; padding-top:0;"><?= t('Удалить мой аккаунт') ?></a>
   </td>
 </tr>
 
@@ -160,13 +163,13 @@ showHeader('Настройки аккаунта');
       <div class="errorBox" style="margin-bottom:8px;"> <?=htmlspecialchars($error)?> </div>
     <?php endif; ?>
     <?php if ($success): ?>
-      <div class="confirmBox" style="margin-bottom:8px;">Данные успешно сохранены!</div>
+      <div class="confirmBox" style="margin-bottom:8px;"><?= t('Данные успешно сохранены!') ?></div>
     <?php endif; ?>
   </td>
 </tr>
 <tr><td colspan="5" height="10"></td></tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Имя пользователя:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Имя пользователя:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4"> <?=htmlspecialchars($user)?></td>
 </tr>
 <tr>
@@ -180,7 +183,7 @@ showHeader('Настройки аккаунта');
       <td colspan="5">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Личные данные</td>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle"><?= t('Личные данные') ?></td>
           </tr>
         </table>
       </td>
@@ -189,40 +192,40 @@ showHeader('Настройки аккаунта');
       <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
     </tr>
 <tr>
-  <td style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>О себе:</b><br><font size="1px" color="#555555">(Расскажите о себе)</font></td>
+  <td style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('О себе:') ?></b><br><font size="1px" color="#555555"><?= t('(Расскажите о себе)') ?></font></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <textarea maxlength="500" name="about" rows="5" cols="45"><?=htmlspecialchars($user_data['about_me'] ?? '')?></textarea>
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Имя:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Имя:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="text" size="20" maxlength="500" name="name" value="<?=htmlspecialchars($user_data['name'] ?? '')?>">
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Фамилия:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Фамилия:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="text" size="20" maxlength="500" name="last_n" value="<?=htmlspecialchars($user_data['last_n'] ?? '')?>">
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Дата рождения:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Дата рождения:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <select name="birthday_mon">
       <option value="---">---</option>
-      <option value="1" <?= ($user_data['birthday_mon'] ?? '') == '1' ? 'selected' : '' ?>>Янв</option>
-      <option value="2" <?= ($user_data['birthday_mon'] ?? '') == '2' ? 'selected' : '' ?>>Фев</option>
-      <option value="3" <?= ($user_data['birthday_mon'] ?? '') == '3' ? 'selected' : '' ?>>Мар</option>
-      <option value="4" <?= ($user_data['birthday_mon'] ?? '') == '4' ? 'selected' : '' ?>>Апр</option>
-      <option value="5" <?= ($user_data['birthday_mon'] ?? '') == '5' ? 'selected' : '' ?>>Май</option>
-      <option value="6" <?= ($user_data['birthday_mon'] ?? '') == '6' ? 'selected' : '' ?>>Июн</option>
-      <option value="7" <?= ($user_data['birthday_mon'] ?? '') == '7' ? 'selected' : '' ?>>Июл</option>
-      <option value="8" <?= ($user_data['birthday_mon'] ?? '') == '8' ? 'selected' : '' ?>>Авг</option>
-      <option value="9" <?= ($user_data['birthday_mon'] ?? '') == '9' ? 'selected' : '' ?>>Сен</option>
-      <option value="10" <?= ($user_data['birthday_mon'] ?? '') == '10' ? 'selected' : '' ?>>Окт</option>
-      <option value="11" <?= ($user_data['birthday_mon'] ?? '') == '11' ? 'selected' : '' ?>>Ноя</option>
-      <option value="12" <?= ($user_data['birthday_mon'] ?? '') == '12' ? 'selected' : '' ?>>Дек</option>
+      <option value="1" <?= ($user_data['birthday_mon'] ?? '') == '1' ? 'selected' : '' ?>><?= t('Янв') ?></option>
+      <option value="2" <?= ($user_data['birthday_mon'] ?? '') == '2' ? 'selected' : '' ?>><?= t('Фев') ?></option>
+      <option value="3" <?= ($user_data['birthday_mon'] ?? '') == '3' ? 'selected' : '' ?>><?= t('Мар') ?></option>
+      <option value="4" <?= ($user_data['birthday_mon'] ?? '') == '4' ? 'selected' : '' ?>><?= t('Апр') ?></option>
+      <option value="5" <?= ($user_data['birthday_mon'] ?? '') == '5' ? 'selected' : '' ?>><?= t('Май') ?></option>
+      <option value="6" <?= ($user_data['birthday_mon'] ?? '') == '6' ? 'selected' : '' ?>><?= t('Июн') ?></option>
+      <option value="7" <?= ($user_data['birthday_mon'] ?? '') == '7' ? 'selected' : '' ?>><?= t('Июл') ?></option>
+      <option value="8" <?= ($user_data['birthday_mon'] ?? '') == '8' ? 'selected' : '' ?>><?= t('Авг') ?></option>
+      <option value="9" <?= ($user_data['birthday_mon'] ?? '') == '9' ? 'selected' : '' ?>><?= t('Сен') ?></option>
+      <option value="10" <?= ($user_data['birthday_mon'] ?? '') == '10' ? 'selected' : '' ?>><?= t('Окт') ?></option>
+      <option value="11" <?= ($user_data['birthday_mon'] ?? '') == '11' ? 'selected' : '' ?>><?= t('Ноя') ?></option>
+      <option value="12" <?= ($user_data['birthday_mon'] ?? '') == '12' ? 'selected' : '' ?>><?= t('Дек') ?></option>
     </select>
     <select name="birthday_day">
       <option value="---">---</option>
@@ -239,27 +242,27 @@ showHeader('Настройки аккаунта');
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Пол:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Пол:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <select name="gender">
-      <option value="0" <?= ($user_data['gender'] ?? '') == '0' ? 'selected' : '' ?>>Не указан</option>
-      <option value="m" <?= ($user_data['gender'] ?? '') == 'm' ? 'selected' : '' ?>>Мужской</option>
-      <option value="f" <?= ($user_data['gender'] ?? '') == 'f' ? 'selected' : '' ?>>Женский</option>
+      <option value="0" <?= ($user_data['gender'] ?? '') == '0' ? 'selected' : '' ?>><?= t('Не указан') ?></option>
+      <option value="m" <?= ($user_data['gender'] ?? '') == 'm' ? 'selected' : '' ?>><?= t('Мужской') ?></option>
+      <option value="f" <?= ($user_data['gender'] ?? '') == 'f' ? 'selected' : '' ?>><?= t('Женский') ?></option>
     </select>
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Семейное положение:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Семейное положение:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <select name="relationship">
-      <option value="0" <?= ($user_data['relationship'] ?? '') == '0' ? 'selected' : '' ?>>Не указано</option>
-      <option value="1" <?= ($user_data['relationship'] ?? '') == '1' ? 'selected' : '' ?>>Холост/Не замужем</option>
-      <option value="2" <?= ($user_data['relationship'] ?? '') == '2' ? 'selected' : '' ?>>В отношениях</option>
+      <option value="0" <?= ($user_data['relationship'] ?? '') == '0' ? 'selected' : '' ?>><?= t('Не указано') ?></option>
+      <option value="1" <?= ($user_data['relationship'] ?? '') == '1' ? 'selected' : '' ?>><?= t('Холост/Не замужем') ?></option>
+      <option value="2" <?= ($user_data['relationship'] ?? '') == '2' ? 'selected' : '' ?>><?= t('В отношениях') ?></option>
     </select>
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Личный сайт:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Личный сайт:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="text" size="20" maxlength="500" name="website" value="<?=htmlspecialchars($user_data['website'] ?? '')?>">
   </td>
@@ -275,7 +278,7 @@ showHeader('Настройки аккаунта');
       <td colspan="5">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Информация о местоположении</td>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle"><?= t('Информация о местоположении') ?></td>
           </tr>
         </table>
       </td>
@@ -284,19 +287,19 @@ showHeader('Настройки аккаунта');
       <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
     </tr>
     <tr>
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Родной город:</b></td>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Родной город:') ?></b></td>
       <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
         <input type="text" size="20" maxlength="500" name="hometown" value="<?=htmlspecialchars($user_data['hometown'] ?? '')?>">
       </td>
     </tr>
     <tr>
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Текущий город:</b></td>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Текущий город:') ?></b></td>
       <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
         <input type="text" size="20" maxlength="500" name="city" value="<?=htmlspecialchars($user_data['city'] ?? '')?>">
       </td>
     </tr>
     <tr>
-      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b>Текущая страна:</b></td>
+      <td width="120" style="font-size:13px; color:#333; padding-bottom:8px;"><b><?= t('Текущая страна:') ?></b></td>
       <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
              <select name="country" tabindex="5">
                <option value="" <?= ($user_data['country'] ?? '') == '' ? 'selected' : '' ?>>---</option>
@@ -551,7 +554,7 @@ showHeader('Настройки аккаунта');
       <td colspan="5">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Настройки сайта</td>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle"><?= t('Настройки сайта') ?></td>
           </tr>
         </table>
       </td>
@@ -560,34 +563,34 @@ showHeader('Настройки аккаунта');
       <td colspan="5"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table></td>
     </tr>
   <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Тип плеера:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Тип плеера:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="radio" name="player_type" value="auto" id="player_type_auto" <?= ($user_data['player_type'] ?? 'auto') == 'auto' ? 'checked' : '' ?>> 
-    <label for="player_type_auto">Автоматический выбор (рекомендуется)</label><br>
+    <label for="player_type_auto"><?= t('Автоматический выбор (рекомендуется)') ?></label><br>
     <input type="radio" name="player_type" value="flash" id="player_type_flash" <?= ($user_data['player_type'] ?? 'auto') == 'flash' ? 'checked' : '' ?>>
-    <label for="player_type_flash">Всегда Flash плеер</label><br>
+    <label for="player_type_flash"><?= t('Всегда Flash плеер') ?></label><br>
     <input type="radio" name="player_type" value="html5" id="player_type_html5" <?= ($user_data['player_type'] ?? 'auto') == 'html5' ? 'checked' : '' ?>>
-    <label for="player_type_html5">Всегда HTML5 плеер</label><br>
+    <label for="player_type_html5"><?= t('Всегда HTML5 плеер') ?></label><br>
   </td>
   </tr>
   <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Блок на главной:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Блок на главной:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="radio" name="home_block_type" value="recent_added" id="home_block_recent_added" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_added' ? 'checked' : '' ?>> 
-    <label for="home_block_recent_added">Недавно добавленные</label><br>
+    <label for="home_block_recent_added"><?= t('Недавно добавленные') ?></label><br>
     <input type="radio" name="home_block_type" value="recent_viewed" id="home_block_recent_viewed" <?= ($user_data['home_block_type'] ?? 'recent_added') == 'recent_viewed' ? 'checked' : '' ?>>
-    <label for="home_block_recent_viewed">Недавно просмотренные</label><br>
+    <label for="home_block_recent_viewed"><?= t('Недавно просмотренные') ?></label><br>
   </td>
   </tr>
   <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Рекомендации:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Рекомендации:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="checkbox" name="recs_enabled" value="1" id="recs_enabled" <?= user_recs_enabled($db, $user) ? 'checked' : '' ?>>
-    <label for="recs_enabled">Включить персональные рекомендации</label>
+    <label for="recs_enabled"><?= t('Включить персональные рекомендации') ?></label>
   </td>
   </tr>
   <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Логотип:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Логотип:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <select name="header_logo" id="header_logo" style="font-size:13px;">
       <option value="retroshow" <?= (($user_data['header_logo'] ?? 'retroshow') === 'retroshow') ? 'selected' : '' ?>>RetroShow</option>
@@ -596,10 +599,20 @@ showHeader('Настройки аккаунта');
   </td>
   </tr>
   <tr>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Язык:') ?></b></td>
+  <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
+    <?php $cur_ui_lang = site_lang_normalize($user_data['ui_lang'] ?? site_lang()); ?>
+    <input type="radio" name="ui_lang" value="ru" id="ui_lang_ru" <?= $cur_ui_lang !== 'en' ? 'checked' : '' ?>>
+    <label for="ui_lang_ru"><?= t('Русский') ?></label><br>
+    <input type="radio" name="ui_lang" value="en" id="ui_lang_en" <?= $cur_ui_lang === 'en' ? 'checked' : '' ?>>
+    <label for="ui_lang_en">English</label>
+  </td>
+  </tr>
+  <tr>
       <td colspan="5">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">Смена пароля</td>
+            <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle"><?= t('Смена пароля') ?></td>
           </tr>
         </table>
       </td>
@@ -613,24 +626,24 @@ showHeader('Настройки аккаунта');
           <div class="errorBox" style="margin-bottom:8px;"> <?=htmlspecialchars($pw_error)?> </div>
         <?php endif; ?>
         <?php if ($pw_success): ?>
-          <div class="confirmBox" style="margin-bottom:8px;">Пароль успешно изменён!</div>
+          <div class="confirmBox" style="margin-bottom:8px;"><?= t('Пароль успешно изменён!') ?></div>
         <?php endif; ?>
       </td>
     </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Старый пароль:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Старый пароль:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="password" name="old_password" maxlength="64" style="width:200px;">
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Новый пароль:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Новый пароль:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="password" name="new_password" maxlength="64" style="width:200px;">
   </td>
 </tr>
 <tr>
-  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Повторите новый пароль:</b></td>
+  <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Повторите новый пароль:') ?></b></td>
   <td style="font-size:13px; color:#222; padding-bottom:8px;" colspan="4">
     <input type="password" name="new_password2" maxlength="64" style="width:200px;">
   </td>
@@ -638,7 +651,7 @@ showHeader('Настройки аккаунта');
 <tr>
   <td></td>
   <td style="padding-bottom:8px;" colspan="4">
-    <input type="submit" value="Обновить профиль">
+    <input type="submit" value="<?= htmlspecialchars(t('Обновить профиль'), ENT_QUOTES, 'UTF-8') ?>">
   </td>
 </tr>
 </table>

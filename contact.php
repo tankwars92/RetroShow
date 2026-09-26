@@ -26,11 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['field_command'] ?? '') ===
 	$message = trim((string)($_POST['field_contact_message'] ?? ''));
 
 	if ($fromEmail === '' || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
-		$error = 'Введите корректный email.';
+		$error = t('Введите корректный email.');
 	} elseif (!isset($subjectMap[$subjectKey])) {
-		$error = 'Выберите тему.';
+		$error = t('Выберите тему.');
 	} elseif ($message === '') {
-		$error = 'Введите сообщение.';
+		$error = t('Введите сообщение.');
 	} else {
 		$ip = get_client_ip_info();
 		$subjectText = $subjectMap[$subjectKey];
@@ -69,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['field_command'] ?? '') ===
 		]);
 
 		if ($sent > 0) {
-			$success = 'Сообщение отправлено администраторам в ЛС.';
+			$success = t('Сообщение отправлено администраторам в ЛС.');
 			$_POST['field_contact_message'] = '';
 		} else {
-			$error = 'Не удалось отправить сообщение!';
+			$error = t('Не удалось отправить сообщение!');
 		}
 	}
 }
@@ -95,9 +95,9 @@ showHeader("Связаться с нами");
 				<td style="padding: 5px 0px 5px 0px;">
 				
 
-<div class="tableSubTitle">Связаться с нами</div>
+<div class="tableSubTitle"><?= t('Связаться с нами') ?></div>
 
-Если у вас есть какие-либо вопросы или предложения по сайту, заполните и отправьте форму ниже. Учтите, что ваше сообщение будет доставлено всем администраторам веб-ресурса. Ваш IP-адрес будет сохранён и виден администраторам, чтобы предотвратить спам-атаки, а ваша почта также будет видна только администраторам, чтобы они могли отправить ответное письмо.
+<?= t('Если у вас есть какие-либо вопросы или предложения по сайту, заполните и отправьте форму ниже. Учтите, что ваше сообщение будет доставлено всем администраторам веб-ресурса. Ваш IP-адрес будет сохранён и виден администраторам, чтобы предотвратить спам-атаки, а ваша почта также будет видна только администраторам, чтобы они могли отправить ответное письмо.') ?>
 
 <br><br>
 <?php if (!empty($error)): ?><div class="errorBox"><?=$error?></div><?php endif; ?>
@@ -106,30 +106,30 @@ showHeader("Связаться с нами");
 	<form method="post" action="contact.php">
 	<input type="hidden" name="field_command" value="contact_submit">
 	<tbody><tr>
-		<td width="200" align="right"><span class="label">Ваша почта:</span></td>
+		<td width="200" align="right"><span class="label"><?= t('Ваша почта:') ?></span></td>
 		<td><input type="text" size="30" maxlength="60" name="field_contact_email" value="<?=htmlspecialchars((string)($_POST['field_contact_email'] ?? ''), ENT_QUOTES, 'UTF-8')?>"></td>
 	</tr>
 	<tr>
-		<td align="right"><span class="label">Тема:</span></td>
+		<td align="right"><span class="label"><?= t('Тема:') ?></span></td>
 
 		
 		<td><select name="field_contact_subject">
 			    <option value="0">---</option>
-			    <option value="1"<?=((string)($_POST['field_contact_subject'] ?? '')==='1')?' selected="selected"':''?>>Вопрос о сайте</option>
-			    <option value="2"<?=((string)($_POST['field_contact_subject'] ?? '')==='2')?' selected="selected"':''?>>Ошибка или баг</option>
-			    <option value="3"<?=((string)($_POST['field_contact_subject'] ?? '')==='3')?' selected="selected"':''?>>Предложение по улучшению</option>
-			    <option value="4"<?=((string)($_POST['field_contact_subject'] ?? '')==='4')?' selected="selected"':''?>>Вопрос по контенту</option>
-			    <option value="5"<?=((string)($_POST['field_contact_subject'] ?? '')==='5')?' selected="selected"':''?>>Другое</option>
+			    <option value="1"<?=((string)($_POST['field_contact_subject'] ?? '')==='1')?' selected="selected"':''?>><?= t('Вопрос о сайте') ?></option>
+			    <option value="2"<?=((string)($_POST['field_contact_subject'] ?? '')==='2')?' selected="selected"':''?>><?= t('Ошибка или баг') ?></option>
+			    <option value="3"<?=((string)($_POST['field_contact_subject'] ?? '')==='3')?' selected="selected"':''?>><?= t('Предложение по улучшению') ?></option>
+			    <option value="4"<?=((string)($_POST['field_contact_subject'] ?? '')==='4')?' selected="selected"':''?>><?= t('Вопрос по контенту') ?></option>
+			    <option value="5"<?=((string)($_POST['field_contact_subject'] ?? '')==='5')?' selected="selected"':''?>><?= t('Другое') ?></option>
 			</select>
 		</td>
 	</tr>
 	<tr>
-		<td align="right" valign="top"><span class="label">Сообщение:</span></td>
+		<td align="right" valign="top"><span class="label"><?= t('Сообщение:') ?></span></td>
 		<td><textarea name="field_contact_message" cols="40" rows="4"><?=htmlspecialchars((string)($_POST['field_contact_message'] ?? ''), ENT_QUOTES, 'UTF-8')?></textarea></td>
 	</tr>
 	<tr>
 		<td>&nbsp;</td>
-		<td><input type="submit" value="Отправить"></td>
+		<td><input type="submit" value="<?= htmlspecialchars(t('Отправить'), ENT_QUOTES, 'UTF-8') ?>"></td>
 	</tr>
 </tbody></form></table>
 

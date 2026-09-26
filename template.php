@@ -33,9 +33,9 @@ function showHeader($title = "RetroShow") {
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?php if ($title === "Главная"): ?>
-<title><?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?> - Загружайте и делитесь видео по всему миру!</title>
+<title><?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?> - <?= t('Загружайте и делитесь видео по всему миру! ') ?></title>
 <?php else: ?>
-<title><?= htmlspecialchars($title) ?> - <?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?></title>
+<title><?= htmlspecialchars(t($title)) ?> - <?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?></title>
 <?php endif; ?>
 		
 		<script language="javascript" type="text/javascript">
@@ -48,6 +48,7 @@ function showHeader($title = "RetroShow") {
 			}
 		}
 		</script>
+<?= site_lang_switcher_script() ?>
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <meta name="description" content="Share your videos with friends and family">
@@ -163,35 +164,39 @@ html, body {
 		
 		<table width="670" cellpadding="0" cellspacing="0" border="0">
 			<tbody><tr valign="top">
-				<td style="padding: 0px 5px 0px 5px; font-style: italic;">Загружайте и делитесь видео по всему миру!</td>
+				<td style="padding: 0px 5px 0px 5px; font-style: italic;"><?= t('Загружайте и делитесь видео по всему миру!') ?></td>
 				<td align="right">
 				
 				<table cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr>
 		
 						<?php if (!isset($_SESSION['user'])): ?>
-							<td><a href="register.php"><strong>Регистрация</strong></a></td>
+							<td><a href="register.php"><strong><?= t('Регистрация') ?></strong></a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td><a href="login.php">Вход</a></td>
+							<td><a href="login.php"><?= t('Вход') ?></a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
+							<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
 						<?php else: ?>
 							<?php
 							global $db;
 							$mail_unread = (isset($db) && $db instanceof PDO) ? count_unread_mail($db, $_SESSION['user']) : 0;
 							$mail_icon = $mail_unread > 0 ? 'img/mail_unread.gif' : 'img/mail.gif';
 							?>
-							<td>Привет, <a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
+							<td><?= t('Привет, ') ?><a href="channel.php?user=<?=urlencode($_SESSION['user'])?>"><?=htmlspecialchars($_SESSION['user'])?></a>!&nbsp;&nbsp;&nbsp;<a href="my_messages.php"><img src="<?= htmlspecialchars($mail_icon, ENT_QUOTES, 'UTF-8') ?>" id="mailico" border="0" alt=""></a>&nbsp;(<a href="my_messages.php"><?= (int) $mail_unread ?></a>)</td>					
 							<td class="myAccountContainer" style="padding: 0px 0px 0px 5px;">|&nbsp;
 							<?php $admins = @unserialize(RETROSHOW_ADMINS); if (in_array($_SESSION['user'], $admins, true)) {?>
-								<td><a href="admin.php" style="font-weight: bold;color: #24692A">Админ-панель</a></td>
+								<td><a href="admin.php" style="font-weight: bold;color: #24692A"><?= t('Админ-панель') ?></a></td>
 								<td style="padding: 0px 5px 0px 5px;">|</td>
 							<?php } ?>
-							<td><a href="logout.php">Выйти</a></td>
+							<td><a href="logout.php"><?= t('Выйти') ?></a></td>
 							<td style="padding: 0px 5px 0px 5px;">|</td>
-							<td style="padding-right: 5px;"><a href="help.php">Помощь</a></td>
+							<td style="padding-right: 0px;"><a href="help.php"><?= t('Помощь') ?></a></td>
 							
 						<?php endif; ?>
+
+						
+						
+						<?= site_lang_switcher_html() ?>
 	
 		
 										
@@ -243,7 +248,7 @@ html, body {
 						<tr>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 							<td style="padding: 0px 20px 5px 20px; font-size: 13px; font-weight: bold;">
-								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= $t['label'] ?></a>
+								<a href="<?= htmlspecialchars($t['href'], ENT_QUOTES, 'UTF-8') ?>"><?= t($t['label']) ?></a>
 							</td>
 							<td><img src="/img/pixel.gif" width="5" height="1"></td>
 						</tr>
@@ -251,6 +256,7 @@ html, body {
 				</td>
 				<?php endforeach; ?>
 			</tr></tbody>
+			
 		</table>
 		</td>
 	</tr>
@@ -288,18 +294,20 @@ $link_fav = isset($_SESSION['user']) ? 'favourites.php?user=' . urlencode($_SESS
 $link_friends = isset($_SESSION['user']) ? 'friends.php?user=' . urlencode($_SESSION['user']) : 'login.php';
 $link_account = isset($_SESSION['user']) ? 'account.php' : 'login.php';
 ?>
-<td style="  "><?=nav_link_ex($link_my_videos, 'Мои видео', $is_my_videos)?></td>
+<td style="  "><?=nav_link_ex($link_my_videos, t('Мои видео'), $is_my_videos)?></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><?=nav_link_ex($link_my_channel, 'Мой канал', $is_my_channel)?></td>
+<td style="  "><?=nav_link_ex($link_my_channel, t('Мой канал'), $is_my_channel)?></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><?=nav_link_ex($link_fav, 'Избранное', $is_fav)?></td>
+<td style="  "><?=nav_link_ex($link_fav, t('Избранное'), $is_fav)?></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><?=nav_link_ex($link_friends, 'Мои друзья', $is_friends)?></td>
+<td style="  "><?=nav_link_ex($link_friends, t('Мои друзья'), $is_friends)?></td>
 <td style="padding: 0px 10px 0px 10px;">|</td>
-<td style="  "><?=nav_link_ex($link_account, 'Настройки', $is_account)?></td>
+<td style="  "><?=nav_link_ex($link_account, t('Настройки'), $is_account)?></td>
 <td style="font-size: 10px;">&nbsp;</td>
+
 </tr></table>
-			
+
+		
 		</td>
 		<td><img src="img/pixel.gif" width="5" height="1"></td>
 	</tr>
@@ -314,9 +322,12 @@ $link_account = isset($_SESSION['user']) ? 'account.php' : 'login.php';
 <table align="center" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 10px;">
 	<tbody><tr>
 		<td style="padding-right: 5px;"><input tabindex="1" type="text" value="<?=htmlspecialchars($_GET['search_query'] ?? '')?>" name="search_query" maxlength="128" style="color:#ff3333; font-size: 12px; width: 300px;"></td>
-		<td><input type="submit" value="Искать видео"></td>
-	</tr></tbody></table>
+		<td><input type="submit" value="<?= htmlspecialchars(t('Искать видео'), ENT_QUOTES, 'UTF-8') ?>"></td>
+		
+	</tr></tbody>
+</table>
 </form>
+
 
 <script language="javascript">
 	onLoadFunctionList.push(function () { document.searchForm.search_query.focus(); });
@@ -324,11 +335,18 @@ $link_account = isset($_SESSION['user']) ? 'account.php' : 'login.php';
 
 <?php
 $news_file = __DIR__ . '/news.txt';
-if (file_exists($news_file)) {
-    $news_text = trim(file_get_contents($news_file));
-    if (!empty($news_text)) {
-        echo '<div class="confirmBox">' . nl2br($news_text) . '</div>';
-    }
+$news_file_en = __DIR__ . '/news_en.txt';
+$news_ru = is_file($news_file) ? trim((string)file_get_contents($news_file)) : '';
+$news_en = is_file($news_file_en) ? trim((string)file_get_contents($news_file_en)) : '';
+$news_bits = [];
+if ($news_ru !== '') {
+    $news_bits[] = '<b>RU:</b> ' . nl2br($news_ru);
+}
+if ($news_en !== '') {
+    $news_bits[] = '<b>EN:</b> ' . nl2br($news_en);
+}
+if ($news_bits) {
+    echo '<div class="confirmBox" style="padding:4px 8px; font-size:12px;">' . implode('<br>', $news_bits) . '</div>';
 }
 ?>
 
@@ -349,9 +367,9 @@ function showFooter() {
                 <table cellpadding="0" cellspacing="0" border="0" width="400" align="center">
                 <tr>
                     <td align="center">
-                    	<a href="about.php?p=whats_new">Что нового?</a> |
-                        <a href="about.php">О сайте</a> | 
-                        <a href="http://github.com/tankwars92/RetroShow">Исходный код</a> | 
+                    	<a href="about.php?p=whats_new"><?= t('Что нового?') ?></a> |
+                        <a href="about.php"><?= t('О сайте') ?></a> | 
+                        <a href="http://github.com/tankwars92/RetroShow"><?= t('Исходный код') ?></a> | 
                         <a href="http://downgrade-net.ru/">Downgrade Net</a>
                     </td>
                 </tr>

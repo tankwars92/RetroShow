@@ -14,15 +14,6 @@ $sent = false;
 $sent_count = 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emails = array();
-    if (!empty($_POST['email_family'])) {
-        foreach ($_POST['email_family'] as $idx => $email) {
-            $email = trim($email);
-            if ($email != '') {
-                $name = isset($_POST['fname_family'][$idx]) ? trim($_POST['fname_family'][$idx]) : '';
-                $emails[] = array('email' => $email, 'name' => $name);
-            }
-        }
-    }
     if (!empty($_POST['email_friends'])) {
         foreach ($_POST['email_friends'] as $idx => $email) {
             $email = trim($email);
@@ -67,7 +58,6 @@ Copyright © 2026 RetroShow, LLC
 }
 ?>
 <style type="text/css">
-.invite-title { color: #cc6633; font-weight: bold; font-size: 15px; margin-bottom: 6px; }
 .invite-section { margin-bottom: 18px; }
 .invite-label { font-size: 13px; color: #333; width: 110px; display: inline-block; }
 .invite-input { width: 220px; font-size: 13px; }
@@ -90,58 +80,99 @@ Copyright © 2026 RetroShow, LLC
 
 <table width="790" align="center" cellpadding="0" cellspacing="0" border="0" style="font-family:Tahoma,Arial,sans-serif; font-size:13px;">
 <tr><td>
-<div class="invite-title">Пригласить друзей</div>
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;"><tr><td height="1" bgcolor="#CCCCCC"></td></tr></table>
-<?php if ($sent): ?>
-  <div class="confirmBox">Приглашения отправлены! (<?= $sent_count ?>)</div>
-<?php endif; ?>
-<div style="font-size:12px; color:#444; margin-bottom:8px;">RetroShow становится интереснее с друзьями!<br>
-Хотите поделиться семейными или праздничными видео? Пригласите родственников присоединиться!</div>
+<div class="tableSubTitle"><?= t('Пригласить друзей') ?></div>
+<?php if ($sent && $sent_count > 0) { ?>
+  <div class="confirmBox"><?= t('Приглашения отправлены!') ?> (<?= $sent_count ?>)</div>
+<?php } elseif (!empty($_POST['email_family']) || !empty($_POST['email_friends'])) { ?>
+  <div class="errorBox"><?= t('Приглашения не отправлены! Попробуйте еще раз.') ?></div>
+<?php } ?>
+<div style="font-size:12px; color:#444; margin-bottom:8px;"><?= t('RetroShow становится интереснее с друзьями!') ?><br><br>
+<?= t('Хотите поделиться интересными или забавными видео с коллегами и друзьями? Пригласите их присоединиться!') ?></div>
 
 <form method="post" action="my_friends_invite.php">
-<div class="invite-section">
-<?php for ($i=0; $i<4; $i++): ?>
-  <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:4px;"><tr>
-    <td style="padding-right:8px;"><b>E-mail:</b></td>
-    <td><input type="text" name="email_family[]" class="invite-input"></td>
-    <td style="padding-right:8px; padding-left:8px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Имя:</b></td>
-    <td><input type="text" name="fname_family[]" class="invite-name"></td>
-  </tr></table>
-<?php endfor; ?>
-</div>
+<table cellspacing="5" cellpadding="0" border="0" id="table5">
+<tbody>
 
-Хотите поделиться забавными видео с коллегами и друзьями? Пригласите их присоединиться!<br><br>
-<div class="invite-section">
-<?php for ($i=0; $i<4; $i++): ?>
-  <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:4px;"><tr>
-    <td style="padding-right:8px;"><b>E-mail:</b></td>
-    <td><input type="text" name="email_friends[]" class="invite-input"></td>
-    <td style="padding-right:8px; padding-left:8px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>Имя:</b></td>
-    <td><input type="text" name="fname_friends[]" class="invite-name"></td>
-  </tr></table>
-<?php endfor; ?>
-</div>
+<tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr><tr>
+  <td align="right"><span class="label"><nobr>Email:</nobr></span></td>
+  <td>
+    <input maxlength="60" size="30" name="email_friends[]">
+    <span class="label" style="margin-left:3em"><nobr><?= t('Имя:') ?></nobr></span>
+    <input type="text" name="fname_friends[]" class="invite-input">
+  </td>
+</tr>
+<tr><td colspan="2">&nbsp;</td></tr>
+</table>
 
 <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;"><tr>
-  <td style="vertical-align:top; font-weight:bold; font-size:13px;">Сообщение:</td>
+  <td style="vertical-align:top; font-weight:bold; font-size:13px;"><?= t('Сообщение:') ?></td>
   <td style="vertical-align:top; padding-left:8px;">
     <div class="formHighlight" style="width:500px; margin-top:0; padding-top:0;">
       <br>
-      Здравствуйте,<br>
+      <?= t('Здравствуйте,') ?><br>
       <br>
-      RetroShow - это отличный сайт для обмена и хранения личных видео. Я использую RetroShow, чтобы делиться видео с друзьями и семьёй. Я бы хотел добавить вас в список людей, с которыми могу делиться своими видео.<br>
+      <?= t('RetroShow - это отличный сайт для обмена и хранения личных видео. Я использую RetroShow, чтобы делиться видео с друзьями и семьёй. Я бы хотел добавить вас в список людей, с которыми могу делиться своими видео.') ?><br>
       <br>
-      Ваше личное сообщение:<br>
-      <textarea name="personal_message" class="invite-textarea">Вы слышали про RetroShow? Мне очень нравится этот сайт.</textarea><br>
+      <?= t('Ваше личное сообщение:') ?><br>
+      <textarea name="personal_message" class="invite-textarea"><?= t('Вы слышали про RetroShow? Мне очень нравится этот сайт.') ?></textarea><br>
       <br>
-      Спасибо,<br>
-      <?php echo isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : "ваше_имя"; ?>
+      <?= t('Спасибо,') ?><br>
+      <?php echo isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']) : t('ваше_имя'); ?>
     </div>
   </td>
 </tr></table>
 
 <div style="margin-top:10px; margin-left:83px;">
-  <input type="submit" value="Отправить приглашения" class="invite-btn">
+  <input type="submit" value="<?= htmlspecialchars(t('Отправить приглашения'), ENT_QUOTES, 'UTF-8') ?>" class="invite-btn">
 </div>
 </form>
 </td></tr>

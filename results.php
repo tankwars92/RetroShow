@@ -56,7 +56,7 @@ function render_avg_stars_html($avg, $count) {
         <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
         <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
       </nobr>
-      <span style="color:#666666; font-size:smaller;">(<?=intval($count)?> оценок)</span>
+      <span style="color:#666666; font-size:smaller;">(<?= t_ratings_count($count) ?>)</span>
     </div>
     <?php
     return ob_get_clean();
@@ -242,18 +242,18 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                <table width="100%" cellpadding="0" cellspacing="0" border="0">
                  <tr>
                    <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">
-                     Результаты поиска: '<?=htmlspecialchars($search_query)?>'
+                     <?= t('Результаты поиска:') ?> '<?=htmlspecialchars($search_query)?>'
                    </td>
                    <td style="font-size:12px; font-weight:bold; color:#444; text-align:right; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-                     Показано
-                     <?=($page-1)*$per_page+1?>-<?=min($page*$per_page, $total)?> из <?=$total?>
+                     <?= t('Показано') ?>
+                     <?=($page-1)*$per_page+1?>-<?=min($page*$per_page, $total)?> <?= t('из') ?> <?=$total?>
                    </td>
                  </tr>
                </table>
              </div>
             
             <?php if (empty($videos)): ?>
-              <div style="padding:10px;">Не найдено видео по запросу '<?=htmlspecialchars($search_query)?>'.</div>
+              <div style="padding:10px;"><?= t('Не найдено видео по запросу') ?> '<?=htmlspecialchars($search_query)?>'.</div>
             <?php else: ?>
               
               <?php foreach ($paged_videos as $video):
@@ -282,14 +282,14 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                         </div>
                         <div class="moduleEntryDescription">
                         <span id="<?= $desc_id ?>-short">
-                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
+                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('ещё') ?>)</a><?php endif; ?>
                         </span>
                         <span id="<?= $desc_id ?>-full" style="display:none;">
-                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
+                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('меньше') ?>)</a>
                         </span>
                         <?php if (!empty($video['tags'])): ?>
                         <div class="vfacets">
-                            <div class="moduleEntryTags">Теги //
+                            <div class="moduleEntryTags"><?= t('Теги //') ?>
                               <span class="vidTagsBegin-<?=$video['id']?>">
                                     <?php
                                     $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
@@ -314,17 +314,17 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                                       ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> : <?php
                                         endif;
                                       endforeach;
-                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;">меньше</a>)</span>
+                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;"><?= t('ещё') ?></a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;"><?= t('меньше') ?></a>)</span>
                                     <?php endif; ?>
                                 </span>
                             </div>
                         </div>
                         <?php endif; ?>
                         <div class="moduleEntryDetails">
-                          Добавлено: <?= time_ago(strtotime($video['time'])) ?> от <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
+                          <?= t('Добавлено:') ?> <?= time_ago(strtotime($video['time'])) ?> <?= t('от') ?> <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
                         </div>
                         <div class="moduleEntryDetails">
-                          Время: <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | Просмотров: <?= intval($video['views']) ?> | Комментариев: <?= intval($comments_count) ?>
+                          <?= t('Время:') ?> <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | <?= t('Просмотров:') ?> <?= intval($video['views']) ?> | <?= t('Комментариев:') ?> <?= intval($comments_count) ?>
                         </div>
                         <?= render_avg_stars_html($ra, $rc) ?>
                         </div>
@@ -336,7 +336,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
               
                                                            <?php if ($total_pages > 1): ?>
                 <div class="pagingDiv" style="background: #CCC; margin: 0px 0 0px 0; padding: 5px 0px; font-size: 13px; color: #333; font-weight: bold; text-align: right;">
-                    Стр.
+                    <?= t('Стр.') ?>
                     <?php
                     $start_page = max(1, $page - 2);
                     $end_page = min($total_pages, $page + 2);
@@ -364,7 +364,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                     }
                     
                     if ($page < $total_pages) {
-                        echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?'.$search_param.'page='.($page + 1).'" style="color: #03C; text-decoration: underline;">Далее</a></span>';
+                        echo '<span class="pagerNotCurrent" style="color: #03C; background-color: #CCC; padding: 1px 4px; border: 1px solid #999; margin-right: 5px; text-decoration: underline; cursor: pointer;"><a href="?'.$search_param.'page='.($page + 1).'" style="color: #03C; text-decoration: underline;">'.t('Далее').'</a></span>';
                     }
                     ?>
                 </div>
@@ -403,7 +403,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
     ?>
     <td width="180">
     <a href="rss.php?tag=<?=urlencode($search_query)?>"><img src="img/rss.gif" width="36" height="14" border="0" style="vertical-align: text-top;"></a>
-    <span style="font-size: 11px; margin-right: 3px;"><a href="rss.php?tag=<?=urlencode($search_query)?>">Лента для тега // <?=htmlspecialchars($search_query)?></a></span>
+    <span style="font-size: 11px; margin-right: 3px;"><a href="rss.php?tag=<?=urlencode($search_query)?>"><?= t('Лента для тега // ') ?><?=htmlspecialchars($search_query)?></a></span>
     <div style="padding-top: 10px;">
     <table class="roundedTable" width="180" align="center" cellpadding="0" cellspacing="0" border="0" bgcolor="#EEEEDD">
             <tbody>
@@ -415,7 +415,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
             <tr>
               <td><img src="img/pixel.gif" width="5" height="1"></td>
               <td width="170">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;">Последние 4 канала...</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;"><?= t('Последние 4 канала...') ?></div>
                 <?php foreach ($online_users as $iuser): $u = $iuser['login']; $vnum = $count_user_videos($u); $fnum = $count_user_favorites($u); $frnum = $count_user_friends($u); ?>
                   <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php?user=<?=urlencode($u)?>"><?=htmlspecialchars($u)?></a></div>
                   <div style="font-size: 12px; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 1px dashed #CCCC66;">
@@ -424,10 +424,10 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
                      | <a href="friends.php?user=<?=urlencode($u)?>"><img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"></a> (<a href="friends.php?user=<?=urlencode($u)?>"><?=$frnum?></a>)
                   </div>
                 <?php endforeach; ?>
-                <div style="font-weight: bold; margin-bottom: 5px;">Иконки означают:</div>
-                <div style="margin-bottom: 4px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Видео</div>
-                <div style="margin-bottom: 4px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Избранное</div>
-                <img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Друзья
+                <div style="font-weight: bold; margin-bottom: 5px;"><?= t('Иконки означают:') ?></div>
+                <div style="margin-bottom: 4px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - <?= t('Видео') ?></div>
+                <div style="margin-bottom: 4px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - <?= t('Избранное') ?></div>
+                <img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - <?= t('Друзья') ?>
               </td>
               <td><img src="img/pixel.gif" width="5" height="1"></td>
             </tr>
@@ -440,7 +440,7 @@ showHeader('Результаты поиска: ' . htmlspecialchars($search_quer
     </table>
     </div>
     <?php if (!empty($related_tags)): ?>
-      <div style="font-weight: bold; color: #333; margin: 4px 0px 5px 0px;">Похожие теги:</div>
+      <div style="font-weight: bold; color: #333; margin: 4px 0px 5px 0px;"><?= t('Похожие теги:') ?></div>
       <?php foreach ($related_tags as $rt): ?>
         <div style="padding: 0px 0px 4px 0px; color: #999;">&raquo; <a href="results.php?search_type=tag&amp;search_query=<?=urlencode((string)$rt['tag'])?>"><?=htmlspecialchars((string)$rt['tag'])?></a></div>
       <?php endforeach; ?>

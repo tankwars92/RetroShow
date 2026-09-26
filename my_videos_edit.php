@@ -48,11 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $broadcast = $_POST['broadcast'] ?? 'public';
 
     if ($title === '') {
-        $error = 'Введите название видео.';
+        $error = t('Введите название видео.');
     } elseif ($tags === '') {
-        $error = 'Введите хотя бы один тег!';
+        $error = t('Введите хотя бы один тег!');
     } elseif (mb_strlen($description) > 5000) {
-        $error = 'Описание не должно превышать 5000 символов.';
+        $error = t('Описание не должно превышать 5000 символов.');
     } else {
         $is_private = ($broadcast === 'private') ? 1 : 0;
         try {
@@ -84,10 +84,10 @@ showHeader('Редактирование видео');
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">
-                Редактирование видео
+                <?= t('Редактирование видео') ?>
               </td>
               <td align="right" style="font-size:12px; font-weight:normal; padding-bottom:2px;" valign="middle">
-                <a href="delete_video.php?id=<?=urlencode($public_id)?>" style="color:#c00; text-decoration:underline;"><b>Удалить видео</b></a>
+                <a href="delete_video.php?id=<?=urlencode($public_id)?>" style="color:#c00; text-decoration:underline;"><b><?= t('Удалить видео') ?></b></a>
               </td>
             </tr>
           </table>
@@ -107,47 +107,47 @@ showHeader('Редактирование видео');
             <div class="errorBox" style="margin-bottom:8px;"><?=htmlspecialchars($error)?></div>
           <?php endif; ?>
           <?php if ($success): ?>
-            <div class="confirmBox" style="margin-bottom:8px;">Изменения успешно сохранены.</div>
+            <div class="confirmBox" style="margin-bottom:8px;"><?= t('Изменения успешно сохранены.') ?></div>
           <?php endif; ?>
         </td>
       </tr>
 
       <tr>
-        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Название:</b></td>
+        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Название:') ?></b></td>
         <td style="font-size:13px; color:#222; padding-bottom:8px;">
           <input type="text" name="title" value="<?=htmlspecialchars($title)?>" style="width: 350px; font-size: 13px;">
         </td>
       </tr>
 
       <tr>
-        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Описание:</b></td>
+        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Описание:') ?></b></td>
         <td style="font-size:13px; color:#222; padding-bottom:8px;">
           <textarea name="description" rows="6" style="width: 350px; font-size: 13px;"><?=htmlspecialchars($description)?></textarea>
         </td>
       </tr>
 
       <tr>
-        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Теги:</b></td>
+        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Теги:') ?></b></td>
         <td style="font-size:13px; color:#222; padding-bottom:8px;">
           <input type="text" name="tags" value="<?=htmlspecialchars($tags)?>" style="width: 350px; font-size: 13px;">
           <br>
           <span class="smallText">
-            Введите один или несколько тегов, разделённых пробелами. Например: <code>серфинг пляж волны</code>.
+            <?= t('Введите один или несколько тегов, разделённых пробелами. Например:') ?> <code>серфинг пляж волны</code>.
           </span>
         </td>
       </tr>
 
       <tr>
-        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b>Показ:</b></td>
+        <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Показ:') ?></b></td>
         <td style="font-size:13px; color:#222; padding-bottom:8px;">
           <label>
             <input type="radio" name="broadcast" value="public" <?= $broadcast === 'public' ? 'checked' : '' ?>>
-            <b>Публично</b>: видео будет доступно всем.
+            <b><?= t('Публично') ?></b>: <?= t('видео будет доступно всем.') ?>
           </label>
           <br>
           <label>
             <input type="radio" name="broadcast" value="private" <?= $broadcast === 'private' ? 'checked' : '' ?>>
-            <b>Приватно</b>: видео будет доступно только по ссылке.
+            <b><?= t('Приватно') ?></b>: <?= t('видео будет доступно только по ссылке.') ?>
           </label>
         </td>
       </tr>
@@ -155,7 +155,7 @@ showHeader('Редактирование видео');
       <tr>
         <td></td>
         <td style="padding-top:10px;">
-          <input type="submit" value="Сохранить изменения">
+          <input type="submit" value="<?= htmlspecialchars(t('Сохранить изменения'), ENT_QUOTES, 'UTF-8') ?>">
         </td>
       </tr>
     </table>

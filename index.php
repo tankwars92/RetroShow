@@ -183,7 +183,7 @@ function render_avg_stars_html($avg, $count) {
         <img src="img/star_smn<?=($parts[3]==='full'?'':($parts[3]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
         <img src="img/star_smn<?=($parts[4]==='full'?'':($parts[4]==='half'?'_half':'_bg'))?>.gif" style="border:0; padding:0px; margin:0px; vertical-align:middle;">
       </nobr>
-      <span style="color:#666666; font-size:smaller;">(<?=intval($count)?> оценок)</span>
+      <span style="color:#666666; font-size:smaller;">(<?= t_ratings_count($count) ?>)</span>
     </div>
     <?php
     return ob_get_clean();
@@ -406,8 +406,8 @@ if ($tags_mode === 'tags') {
 
     ?>
     <div style="padding: 10px 0 0 0;">
-        <div class="tableSubTitle">Теги</div>
-        <div style="font-size: 14px; font-weight: bold; color: #666666; margin-bottom: 10px;">Последние теги //</div>
+        <div class="tableSubTitle"><?= t('Теги') ?></div>
+        <div style="font-size: 14px; font-weight: bold; color: #666666; margin-bottom: 10px;"><?= t('Последние теги //') ?></div>
         <div style="margin-bottom: 20px; font-size: 13px; color: #333333;">
             <?php if (!empty($latest_top)): ?>
                 <?php
@@ -436,11 +436,11 @@ if ($tags_mode === 'tags') {
                 <?php endforeach; ?>
                     :
             <?php else: ?>
-                <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+                <div style="font-size: 12px; color: #000;"><i><?= t('Тегов пока нет!') ?></i></div>
             <?php endif; ?>
         </div>
 
-        <div style="font-size: 16px; font-weight: bold; color: #666666; margin-bottom: 10px;">Популярные теги //</div>
+        <div style="font-size: 16px; font-weight: bold; color: #666666; margin-bottom: 10px;"><?= t('Популярные теги //') ?></div>
         <div style="font-size: 13px; color: #333333;">
             <?php if (!empty($popular_top)): ?>
                 <?php $i = 0; $popular_base_font_size = 12; $popular_max_font_size = 28; ?>
@@ -462,7 +462,7 @@ if ($tags_mode === 'tags') {
                 <?php endforeach; ?>
                     :
             <?php else: ?>
-                <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+                <div style="font-size: 12px; color: #000;"><i><?= t('Тегов пока нет!') ?></i></div>
             <?php endif; ?>
         </div>
     </div>
@@ -473,19 +473,19 @@ if ($tags_mode === 'tags') {
 ?>
 
 <?php if (isset($_GET['error']) && $_GET['error'] === 'video_not_found'): ?>
-  <div class="errorBox">Видео не найдено.</div>
+  <div class="errorBox"><?= t('Видео не найдено.') ?></div>
 <?php endif; ?>
 
 <?php if (isset($_GET['error']) && $_GET['error'] === 'video_not_allowed'): ?>
-  <div class="errorBox">Видео не найдено или у вас нет прав для его редактирования.</div>
+  <div class="errorBox"><?= t('Видео не найдено или у вас нет прав для его редактирования.') ?></div>
 <?php endif; ?>
 
 <?php if (isset($_GET['info']) && $_GET['info'] === 'video_converting'): ?>
-  <div class="confirmBox">Ваше видео конвертируется! Скоро он будет доступно к просмотру.</div>
+  <div class="confirmBox"><?= t('Ваше видео конвертируется! Скоро он будет доступно к просмотру.') ?></div>
 <?php endif; ?>
 
 <?php if (isset($_GET['admin_msg']) && $_GET['admin_msg'] === 'author_banned'): ?>
-  <div class="confirmBox">Автор забанен, канал и все его видео удалены.</div>
+  <div class="confirmBox"><?= t('Автор забанен, канал и все его видео удалены.') ?></div>
 <?php endif; ?>
 
 <style>
@@ -524,30 +524,30 @@ if ($tags_mode === 'tags') {
 				<table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr valign="top">
 					<td width="50%" style="border-right: 1px dashed #369; padding: 0px 10px 2px 10px; color: #444;">
-                    <div style="font-size: 16px; font-weight: bold; color: #003366; margin-bottom: 10px;">Мой аккаунт</div>
-                    <div style="margin-bottom: 5px; font-size: 13px;"><b>Имя пользователя:</b> <a href="channel.php?user=<?php echo urlencode($_SESSION['user']); ?>"><?php echo htmlspecialchars($_SESSION['user'], ENT_QUOTES, 'UTF-8'); ?></a></div>
-                    <div style="margin-bottom: 5px; font-size: 13px;"><b>Email:</b> <?php echo htmlspecialchars($account_email !== '' ? $account_email : '-', ENT_QUOTES, 'UTF-8'); ?></div>
-                    <div style="margin-bottom: 5px; font-size: 13px;"><b>Видео просмотрено:</b> <?php echo (int)$account_videos_watched; ?></div>
+                    <div style="font-size: 16px; font-weight: bold; color: #003366; margin-bottom: 10px;"><?= t('Мой аккаунт') ?></div>
+                    <div style="margin-bottom: 5px; font-size: 13px;"><b><?= t('Имя пользователя:') ?></b> <a href="channel.php?user=<?php echo urlencode($_SESSION['user']); ?>"><?php echo htmlspecialchars($_SESSION['user'], ENT_QUOTES, 'UTF-8'); ?></a></div>
+                    <div style="margin-bottom: 5px; font-size: 13px;"><b><?= t('Email:') ?></b> <?php echo htmlspecialchars($account_email !== '' ? $account_email : '-', ENT_QUOTES, 'UTF-8'); ?></div>
+                    <div style="margin-bottom: 5px; font-size: 13px;"><b><?= t('Видео просмотрено:') ?></b> <?php echo (int)$account_videos_watched; ?></div>
 
 
                     <table border="0" cellpadding="0" cellspacing="5" width="100%">
                     <tr>
                       <td width="33%" bgcolor="#FFFFFF" align="center" style="padding: 4px 3px;">
-                        <a href="channel.php?user=<?php echo urlencode($current_user); ?>&tab=videos" style="color: #0033CC; font-size: 14px;">Видео: <?php echo (int)$account_videos_count; ?></a><br>
+                        <a href="channel.php?user=<?php echo urlencode($current_user); ?>&tab=videos" style="color: #0033CC; font-size: 14px;"><?= t('Видео:') ?> <?php echo (int)$account_videos_count; ?></a><br>
                         <font size="1" color="#555555">
-                          Просмотров: <?php echo (int)$video_views; ?><br>
-                          * Фанатов: <?php echo (int)$account_fans_count; ?>
+                          <?= t('Просмотров:') ?> <?php echo (int)$video_views; ?><br>
+                          <?= t('* Фанатов:') ?> <?php echo (int)$account_fans_count; ?>
                         </font>
                       </td>
                       <td width="33%" bgcolor="#FFFFFF" align="center" valign="top" style="padding: 4px 3px;">
-                        <a href="favourites.php?user=<?php echo urlencode($current_user); ?>" style="color: #0033CC; font-size: 14px;">Избранных: <?php echo (int)$account_favourites_count; ?></a>
+                        <a href="favourites.php?user=<?php echo urlencode($current_user); ?>" style="color: #0033CC; font-size: 14px;"><?= t('Избранных:') ?> <?php echo (int)$account_favourites_count; ?></a>
                       </td>
                       <td width="33%" bgcolor="#FFFFFF" align="center" style="padding: 4px 3px;">
-                        <a href="friends.php?user=<?php echo urlencode($current_user); ?>" style="color: #0033CC; font-size: 14px;">Друзей: <?php echo (int)$friends_count; ?></a><br>
+                        <a href="friends.php?user=<?php echo urlencode($current_user); ?>" style="color: #0033CC; font-size: 14px;"><?= t('Друзей:') ?> <?php echo (int)$friends_count; ?></a><br>
                         <font style="font-size: 10px;">
                           <div style="margin-top: 1px;">
-                            <a href="friends.php?user=<?php echo urlencode($current_user); ?>">Видео</a> (<?php echo (int)$account_friends_videos_count; ?>)<br>
-                            <a href="friends.php?user=<?php echo urlencode($current_user); ?>">Избранные</a> (<?php echo (int)$account_friends_favourites_count; ?>)
+                            <a href="friends.php?user=<?php echo urlencode($current_user); ?>"><?= t('Их видео') ?></a> (<?php echo (int)$account_friends_videos_count; ?>)<br>
+                            <a href="friends.php?user=<?php echo urlencode($current_user); ?>"><?= t('Их избранное') ?></a> (<?php echo (int)$account_friends_favourites_count; ?>)
                           </div>
                         </font>
                       </td>
@@ -555,15 +555,15 @@ if ($tags_mode === 'tags') {
                     </tr>
                     </table>
 
-                    <div style="margin-top: 10px; margin-bottom: 0px; line-height: 1.0;"><span class="small">* Количество пользователей, добавивших ваши видео в избранное</span></div>
+                    <div style="margin-top: 10px; margin-bottom: 0px; line-height: 1.0;"><span class="small">* <?= t('Количество пользователей, добавивших ваши видео в избранное') ?></span></div>
 					</td>
 					<td width="33%" style="padding: 0px 10px 10px 10px; color: #444;">
-					<img src="<?= htmlspecialchars($account_mail_icon, ENT_QUOTES, 'UTF-8') ?>" width="14" height="10" border="0"> У вас <a href="my_messages.php"><?= (int)$account_unread_mail ?> новых сообщений</a>.
+					<img src="<?= htmlspecialchars($account_mail_icon, ENT_QUOTES, 'UTF-8') ?>" width="14" height="10" border="0"> <?= t('У вас') ?> <a href="my_messages.php"><?= (int)$account_unread_mail ?> <?= t('новых сообщений') ?></a>.
           <br>
-          <div style="margin-top: 5px; margin-bottom: 5px;"><span class="highlight">ToDo...</span></div>
-          <img src="img/icon_todo.gif" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> <a href="my_friends_invite.php">Пригласите своих друзей</a>
+          <div style="margin-top: 5px; margin-bottom: 5px;"><span class="highlight"><?= t('ToDo...') ?></span></div>
+          <img src="img/icon_todo.gif" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> <a href="my_friends_invite.php"><?= t('Пригласите своих друзей') ?></a>
           <br>
-          <img src="img/icon_todo.gif" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> <a href="account.php">Кастомизируйте свой профиль</a>
+          <img src="img/icon_todo.gif" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> <a href="account.php"><?= t('Кастомизируйте свой профиль') ?></a>
 					</td>
 					</tr>
 				</tbody></table>
@@ -573,16 +573,16 @@ if ($tags_mode === 'tags') {
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
 					<tbody><tr valign="top">
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
-					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php">Смотрите</a></div>
-					Мгновенно находите и смотрите тысячи видео.
+					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php"><?= t('Смотрите') ?></a></div>
+					<?= t('Мгновенно находите и смотрите тысячи видео.') ?>
 					</td>
 					<td width="33%" style="border-right: 1px dashed #369; padding: 0px 10px 10px 10px; color: #444;">
-					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="upload.php">Загружайте</a></div>
-					Быстро загружайте видео практически в любом формате.
+					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="upload.php"><?= t('Загружайте') ?></a></div>
+					<?= t('Быстро загружайте видео практически в любом формате.') ?>
 					</td>
 					<td width="33%" style="padding: 0px 10px 10px 10px; color: #444;">
-					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="my_friends_invite.php">Делитесь</a></div>
-					Легко делитесь своими видео с семьей, друзьями или коллегами.
+					<div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"><a href="my_friends_invite.php"><?= t('Делитесь') ?></a></div>
+					<?= t('Легко делитесь своими видео с семьей, друзьями или коллегами.') ?>
 					</td>
 					</tr>
 				</tbody></table>
@@ -625,14 +625,14 @@ if ($tags_mode === 'tags') {
                         <table width="571" height="28" cellpadding="0" cellspacing="0" border="0" background="img/MediumGenericTab.jpg">
                             <tbody><tr>
                                 <td width="370">
-                                    <span style="padding-left: 5px; font-size: 13px; color: #6D6D6D; font-weight: bold; padding-right: 5px;">Рекомендованное для вас</span>
+                                    <span style="padding-left: 5px; font-size: 13px; color: #6D6D6D; font-weight: bold; padding-right: 5px;"><?= t('Рекомендованное для вас') ?></span>
                                     <span style="font-size: 10px; color: #999999;"><span id="counter_recs_for_you">[1 - <?=min(4,$recs_total)?> из <?=$recs_total?>]</span></span>
                                 </td>
                                 <td align="left"><span style="font-size: 13px; color: #6D6D6D;"><span></span></span></td>
                                 <td align="right">
                                     <span style="padding-right: 10px; padding-left: 10px;">
                                         <img src="img/icon_todo.gif" border="0" width="23" height="14" style="padding-right: 5px; vertical-align: middle;">
-                                        <a href="channel.php?filter=recs">Больше похожих видео...</a>
+                                        <a href="channel.php?filter=recs"><?= t('Больше похожих видео...') ?></a>
                                     </span>
                                 </td>
                             </tr></tbody>
@@ -657,7 +657,7 @@ if ($tags_mode === 'tags') {
                                                     $rt = (string)($rv['title'] ?? '');
                                                     $rt_short = (function_exists('mb_strlen') && mb_strlen($rt, 'UTF-8') > 18) ? mb_substr($rt, 0, 18, 'UTF-8') . '...' : $rt;
                                                     $rts = strtotime((string)($rv['time'] ?? ''));
-                                                    $rago = ($rts !== false && $rts > 0) ? time_ago((int)$rts) : 'только что';
+                                                    $rago = ($rts !== false && $rts > 0) ? time_ago((int)$rts) : t('только что');
                                                 ?>
                                                 <div id="recs_item_<?=$slot?>" style="display:block;">
                                                     <div style="margin-top: 8px;">
@@ -696,7 +696,7 @@ if ($tags_mode === 'tags') {
                             $rt = (string)($rv['title'] ?? '');
                             $rt_short = (function_exists('mb_strlen') && mb_strlen($rt, 'UTF-8') > 18) ? mb_substr($rt, 0, 18, 'UTF-8') . '...' : $rt;
                             $rts = strtotime((string)($rv['time'] ?? ''));
-                            $rago = ($rts !== false && $rts > 0) ? time_ago((int)$rts) : 'только что';
+                            $rago = ($rts !== false && $rts > 0) ? time_ago((int)$rts) : t('только что');
                             $jsParts[] = "{id:'" . addslashes($rpid) . "',p:'" . addslashes((string)($rv['preview'] ?? '')) . "',t:'" . addslashes($rt) . "',ts:'" . addslashes($rt_short) . "',ago:'" . addslashes($rago) . "'}";
                         }
                         echo implode(",\n", $jsParts);
@@ -777,7 +777,7 @@ if ($tags_mode === 'tags') {
 				<td><img src="img/pixel.gif" width="5" height="1"></td>
 				<td width="585">
 				<div style="padding: 2px 5px 8px 5px;">
-				<div style="font-size: 14px; font-weight: bold; color: #666633;"><?= ($recent_block_mode === 'recent_viewed') ? 'Недавно просмотренные...' : 'Недавно добавленные...' ?></div>
+				<div style="font-size: 14px; font-weight: bold; color: #666633;"><?= ($recent_block_mode === 'recent_viewed') ? t('Недавно просмотренные...') : t('Недавно добавленные...') ?></div>
 				
 				<table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
 				<tbody><tr>
@@ -832,9 +832,9 @@ echo time_ago($ago_ts);
 				<div class="moduleTitleBar">
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;">Популярные видео сегодня</td>
+      <td style="font-size:14px; font-weight:bold; color:#444; text-align:left; padding-left: 5px;  padding-bottom: 5px;"><?= t('Популярные видео сегодня') ?></td>
       <td style="text-align:right; font-size:12px; padding-right:5px; padding-bottom: 7px; white-space:nowrap;">
-		<nobr><a href="channel.php"><b>Больше видео</b></a></nobr>
+		<nobr><a href="channel.php"><b><?= t('Больше видео') ?></b></a></nobr>
 		</td>
     </tr>
   </table>
@@ -871,14 +871,14 @@ echo time_ago($ago_ts);
                         ?>
                         <div class="moduleEntryDescription">
                         <span id="<?= $desc_id ?>-short">
-                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(ещё)</a><?php endif; ?>
+                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('ещё') ?>)</a><?php endif; ?>
                         </span>
                         <span id="<?= $desc_id ?>-full" style="display:none;">
-                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(меньше)</a>
+                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('меньше') ?>)</a>
                         </span>
                         <?php if (!empty($video['tags'])): ?>
                         <div class="vfacets">
-                            <div class="moduleEntryTags">Теги //
+                            <div class="moduleEntryTags"><?= t('Теги //') ?>
                               <span class="vidTagsBegin-<?=$video['id']?>">
                                     <?php 
                                     $tags = preg_split('/\s+/', trim($video['tags'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
@@ -903,16 +903,16 @@ echo time_ago($ago_ts);
                                       ?><a href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a> : <?php 
                                         endif;
                                       endforeach; 
-                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;">ещё</a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;">меньше</a>)</span>
+                                      ?></span>&nbsp;<span id="vidTagsMore-<?=$video['id']?>" class="smallText">(<a href="#" class="eLink" onclick="showInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsMore-<?=$video['id']?>'); showInline('vidTagsLess-<?=$video['id']?>'); return false;"><?= t('ещё') ?></a>)</span><span id="vidTagsLess-<?=$video['id']?>" class="smallText" style="display: none;">(<a href="#" class="eLink" onclick="hideInline('vidTagsRemain-<?=$video['id']?>'); hideInline('vidTagsLess-<?=$video['id']?>'); showInline('vidTagsMore-<?=$video['id']?>'); return false;"><?= t('меньше') ?></a>)</span>
                                     <?php endif; ?>
                                 </span>
                             </div>
                         <?php endif; ?>
                         <div class="moduleEntryDetails">
-                          Добавлено: <?= time_ago(strtotime($video['time'])) ?> от <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
+                          <?= t('Добавлено:') ?> <?= time_ago(strtotime($video['time'])) ?> <?= t('от') ?> <a href="channel.php?user=<?= htmlspecialchars($video['user']) ?>" style="color:#0033cc; text-decoration:underline;"><?= htmlspecialchars($video['user']) ?></a>
                         </div>
                         <div class="moduleEntryDetails">
-                          Время: <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | Просмотров: <?= intval($video['views']) ?> | Комментариев: <?= intval($comments_count) ?>
+                          <?= t('Время:') ?> <?=get_video_duration_fast($video['file'], $video['id'], $video['public_id'] ?? '')?> | <?= t('Просмотров:') ?> <?= intval($video['views']) ?> | <?= t('Комментариев:') ?> <?= intval($comments_count) ?>
                         </div>
 						<?= render_avg_stars_html($ra, $rc) ?>
                       </td>
@@ -945,7 +945,7 @@ echo time_ago($ago_ts);
 				<td width="170">
 		
 								
-				<div style="font-size: 16px; font-weight: bold; text-align: center; padding: 5px 5px 10px 5px;"><a href="register.php">Зарегистрируйтесь бесплатно!</a></div>
+				<div style="font-size: 16px; font-weight: bold; text-align: center; padding: 5px 5px 10px 5px;"><a href="register.php"><?= t('Зарегистрируйтесь бесплатно!') ?></a></div>
 				
 								
 				</td>
@@ -970,7 +970,7 @@ echo time_ago($ago_ts);
 			<tr>
 				<td><img src="img/pixel.gif" width="5" height="1"></td>
 				<td width="170" style="padding: 5px; text-align: center;">
-				<div style="font-weight: bold; font-size: 13px;">Сентябрьский конкурс!</div>
+				<div style="font-weight: bold; font-size: 13px;"><?= t('Сентябрьский конкурс!') ?></div>
 				
 				<a href="#"><img src="" width="80" height="60" style="border: 5px solid #FFFFFF; margin-top: 10px;"></a>
 				
@@ -978,7 +978,7 @@ echo time_ago($ago_ts);
 				<div style="font-size: 11px; padding: 10px 0px 5px 0px;">RetroShow представляет наш первый ежемесячный конкурс видео!</div>
 				
 								
-				<div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="<?= isset($_SESSION['user']) ? 'monthly_contest.php' : 'signup.php' ?>">Присоединяйтесь к конкурсу сейчас!</a></div>
+				<div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="<?= isset($_SESSION['user']) ? 'monthly_contest.php' : 'signup.php' ?>"><?= t('Присоединяйтесь к конкурсу сейчас!') ?></a></div>
 				
 								
 				</td>
@@ -1058,7 +1058,7 @@ echo time_ago($ago_ts);
                 <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
               <?php endforeach; ?>
             <?php else: ?>
-              <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+              <div style="font-size: 12px; color: #000;"><i><?= t('Тегов пока нет!') ?></i></div>
             <?php endif; ?>
           </div>
 
@@ -1078,11 +1078,11 @@ echo time_ago($ago_ts);
                 <a style="font-size: <?=$font_size?>px;" href="results.php?search_type=tag&search_query=<?=urlencode($tag)?>"><?=htmlspecialchars($tag)?></a>
               <?php endforeach; ?>
             <?php else: ?>
-              <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+              <div style="font-size: 12px; color: #000;"><i><?= t('Тегов пока нет!') ?></i></div>
             <?php endif; ?>
           </div>
         <?php else: ?>
-          <div style="margin: 10px 0px 5px 0px; font-size: 12px; font-weight: bold; color: #333;">Недавние теги:</div>
+          <div style="margin: 10px 0px 5px 0px; font-size: 12px; font-weight: bold; color: #333;"><?= t('Недавние теги:') ?></div>
           <div style="font-size: 13px; color: #333333;">
               <?php if (!empty($latest_top)): ?>
                   <?php
@@ -1111,11 +1111,11 @@ echo time_ago($ago_ts);
                   <?php endforeach; ?>
                   :
               <?php else: ?>
-                  <div style="font-size: 12px; color: #000;"><i>Тегов пока нет!</i></div>
+                  <div style="font-size: 12px; color: #000;"><i><?= t('Тегов пока нет!') ?></i></div>
               <?php endif; ?>
           </div>
           <div style="font-size: 14px; font-weight: bold; margin-top: 10px;">
-            <a href="index.php?p=tags">Больше тегов</a>
+            <a href="index.php?p=tags"><?= t('Больше тегов') ?></a>
           </div>
         <?php endif; ?>
         
@@ -1151,7 +1151,7 @@ echo time_ago($ago_ts);
             <tr>
               <td><img src="img/pixel.gif" width="5" height="1"></td>
               <td width="170">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;">Последние 8 каналов...</div>
+                <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color:#666633;"><?= t('Последние 8 каналов...') ?></div>
                 <?php foreach ($online_users as $iuser): $u = $iuser['login']; $vnum = $count_user_videos($u); $fnum = $count_user_favorites($u); $frnum = $count_user_friends($u); ?>
                   <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;"><a href="channel.php?user=<?=urlencode($u)?>"><?=htmlspecialchars($u)?></a></div>
                   <div style="font-size: 12px; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 1px dashed #CCCC66;">
@@ -1160,10 +1160,10 @@ echo time_ago($ago_ts);
                      | <a href="friends.php?user=<?=urlencode($u)?>"><img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"></a> (<a href="friends.php?user=<?=urlencode($u)?>"><?=$frnum?></a>)
                   </div>
                 <?php endforeach; ?>
-                <div style="font-weight: bold; margin-bottom: 5px;">Иконки означают:</div>
-                <div style="margin-bottom: 4px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Видео</div>
-                <div style="margin-bottom: 4px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Избранное</div>
-                <img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - Друзья
+                <div style="font-weight: bold; margin-bottom: 5px;"><?= t('Иконки означают:') ?></div>
+                <div style="margin-bottom: 4px;"><img src="img/icon_vid.gif" alt="Videos" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - <?= t('Видео') ?></div>
+                <div style="margin-bottom: 4px;"><img src="img/icon_fav.gif" alt="Favorites" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - <?= t('Избранное') ?></div>
+                <img src="img/icon_friends.gif" alt="Friends" width="14" height="14" border="0" style="vertical-align: text-bottom; padding-left: 2px; padding-right: 1px;"> - <?= t('Друзья') ?>
               </td>
               <td><img src="img/pixel.gif" width="5" height="1"></td>
             </tr>

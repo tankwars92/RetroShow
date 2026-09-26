@@ -14,8 +14,8 @@ $success = false;
 $public_id = video_public_id_from_get();
 if ($public_id === '') {
     showHeader('Удаление видео');
-    echo '<div class="errorBox">Видео не найдено.</div>';
-    echo '<div><a href="channel.php?user='.urlencode($current_user).'&tab=videos">Вернуться к моим видео</a></div>';
+    echo '<div class="errorBox">'.t('Видео не найдено.').'</div>';
+    echo '<div><a href="channel.php?user='.urlencode($current_user).'&tab=videos">'.t('Вернуться к моим видео').'</a></div>';
     showFooter();
     exit;
 }
@@ -30,8 +30,8 @@ try {
 
 if (!$video || $video['user'] !== $current_user) {
     showHeader('Удаление видео');
-    echo '<div class="errorBox">Видео не найдено или у вас нет прав для его удаления.</div>';
-    echo '<div><a href="channel.php?user='.urlencode($current_user).'&tab=videos">Вернуться к моим видео</a></div>';
+    echo '<div class="errorBox">'.t('Видео не найдено или у вас нет прав для его удаления.').'</div>';
+    echo '<div><a href="channel.php?user='.urlencode($current_user).'&tab=videos">'.t('Вернуться к моим видео').'</a></div>';
     showFooter();
     exit;
 }
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm']) && $_POST[
         if ($db->inTransaction()) {
             $db->rollBack();
         }
-        $error = 'Ошибка при удалении видео.';
+        $error = t('Ошибка при удалении видео.');
     }
 }
 
@@ -109,10 +109,10 @@ showHeader('Удаление видео');
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td style="color:#CC6633; font-weight:bold; font-size:15px; padding-bottom:2px;" valign="middle">
-              Удаление видео
+              <?= t('Удаление видео') ?>
             </td>
             <td align="right" style="font-size:12px; color:#0033cc; font-weight:normal; padding-bottom:2px;" valign="middle">
-              <a href="my_videos_edit.php?id=<?=urlencode($public_id)?>" style="color:#0033cc; text-decoration:underline;">Назад к редактированию</a>
+              <a href="my_videos_edit.php?id=<?=urlencode($public_id)?>" style="color:#0033cc; text-decoration:underline;"><?= t('Назад к редактированию') ?></a>
             </td>
           </tr>
         </table>
@@ -135,17 +135,17 @@ showHeader('Удаление видео');
   </table>
 
   <div style="color:#c00; font-size:13px; margin-bottom:10px; margin-top:6px;">
-    Удаление этого видео приведёт к безвозвратному удалению файла видео, его обложки, комментариев, оценок, просмотров и ссылок в избранном.
-    Это действие необратимо.
+    <?= t('Удаление этого видео приведёт к безвозвратному удалению файла видео, его обложки, комментариев, оценок, просмотров и ссылок в избранном.') ?>
+    <?= t('Это действие необратимо.') ?>
   </div>
 
   <div style="font-size:13px; margin-bottom:10px;">
-    Вы действительно хотите удалить видео "<b><?=htmlspecialchars($video['title'])?></b>"?
+    <?= t('Вы действительно хотите удалить видео') ?> "<b><?=htmlspecialchars($video['title'])?></b>"?
   </div>
 
   <form method="post" action="delete_video.php?id=<?=urlencode($public_id)?>">
     <input type="hidden" name="confirm" value="yes">
-    <input type="submit" value="Удалить видео" style="font-size:13px; width:130px;">
+    <input type="submit" value="<?= htmlspecialchars(t('Удалить видео'), ENT_QUOTES, 'UTF-8') ?>" style="font-size:13px; width:130px;">
   </form>
 </div>
 </center>

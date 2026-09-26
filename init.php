@@ -101,49 +101,57 @@ function rus_plural(int $n, string $one, string $few, string $many): string {
 
 function time_ago($time): string {
     $time = (int)$time;
+    $en = function_exists('site_lang_is_en') && site_lang_is_en();
+    $unit = static function (int $n, string $one, string $few, string $many) use ($en): string {
+        if ($en) {
+            return abs($n) === 1 ? $one : $many;
+        }
+        return rus_plural($n, $one, $few, $many);
+    };
+    $ago = $en ? ' ago' : ' назад';
     if ($time <= 0) {
-        return 'только что';
+        return t('только что');
     }
     $nowTs = time();
     $diff = $nowTs - $time;
     if ($diff < 0) {
-        return 'только что';
+        return t('только что');
     }
     if ($diff < 60) {
         $n = max(1, $diff);
-        return $n . ' ' . rus_plural($n, 'секунду', 'секунды', 'секунд') . ' назад';
+        return $n . ' ' . $unit($n, t('секунду'), t('секунды'), t('секунд')) . $ago;
     }
 
     $then = DateTime::createFromFormat('U', (string)$time);
     $now = DateTime::createFromFormat('U', (string)$nowTs);
     if (!$then || !$now) {
-        return 'только что';
+        return t('только что');
     }
     $interval = $then->diff($now);
 
     $years = (int)$interval->y;
     if ($years >= 1) {
-        return $years . ' ' . rus_plural($years, 'год', 'года', 'лет') . ' назад';
+        return $years . ' ' . $unit($years, t('год'), t('года'), t('лет')) . $ago;
     }
     $months = (int)$interval->m;
     if ($months >= 1) {
-        return $months . ' ' . rus_plural($months, 'месяц', 'месяца', 'месяцев') . ' назад';
+        return $months . ' ' . $unit($months, t('месяц'), t('месяца'), t('месяцев')) . $ago;
     }
     $days = (int)$interval->d;
     if ($days >= 7) {
         $weeks = (int)floor($days / 7);
-        return $weeks . ' ' . rus_plural($weeks, 'неделю', 'недели', 'недель') . ' назад';
+        return $weeks . ' ' . $unit($weeks, t('неделю'), t('недели'), t('недель')) . $ago;
     }
     if ($days >= 1) {
-        return $days . ' ' . rus_plural($days, 'день', 'дня', 'дней') . ' назад';
+        return $days . ' ' . $unit($days, t('день'), t('дня'), t('дней')) . $ago;
     }
 
     $hours = (int)floor($diff / 3600);
     if ($hours >= 1) {
-        return $hours . ' ' . rus_plural($hours, 'час', 'часа', 'часов') . ' назад';
+        return $hours . ' ' . $unit($hours, t('час'), t('часа'), t('часов')) . $ago;
     }
     $mins = (int)floor($diff / 60);
-    return $mins . ' ' . rus_plural($mins, 'минуту', 'минуты', 'минут') . ' назад';
+    return $mins . ' ' . $unit($mins, t('минуту'), t('минуты'), t('минут')) . $ago;
 }
 
 function profile_country_options(): array {
@@ -160,10 +168,11 @@ function profile_country_options(): array {
     if (!is_string($html) || $html === '') {
         return $options;
     }
-    if (preg_match_all('/<option value="([A-Z]{2})"[^>]*>([^<]+)<\/option>/', $html, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all('/<option value="([A-Z]{2})"[^\n]*\?>([^<]+)<\/option>/', $html, $matches, PREG_SET_ORDER)) {
         foreach ($matches as $match) {
             $code = (string)$match[1];
             $label = trim(html_entity_decode(strip_tags((string)$match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $label = ltrim($label, ">\t ");
             if ($code !== '' && $label !== '') {
                 $options[$code] = $label;
             }
@@ -219,6 +228,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
     session_start();
 }
+
+require_once __DIR__ . '/lang.php';
 
 function get_client_ip_info() {
     $checks = [
@@ -825,6 +836,16 @@ $db->exec("CREATE TABLE IF NOT EXISTS blog_posts (
     author TEXT
 )");
 try { $db->exec("CREATE INDEX IF NOT EXISTS idx_blog_posts_created_at ON blog_posts (created_at DESC, id DESC)"); } catch (Exception $e) {}
+try {
+    $blogCols = $db->query('PRAGMA table_info(blog_posts)')->fetchAll(PDO::FETCH_ASSOC);
+    $blogColNames = array_column($blogCols, 'name');
+    if (!in_array('title_en', $blogColNames, true)) {
+        $db->exec('ALTER TABLE blog_posts ADD COLUMN title_en TEXT');
+    }
+    if (!in_array('body_en', $blogColNames, true)) {
+        $db->exec('ALTER TABLE blog_posts ADD COLUMN body_en TEXT');
+    }
+} catch (Exception $e) {}
 
 try {
     $has_en = $db->query("SELECT 1 FROM meta WHERE key = 'processing_enabled' LIMIT 1")->fetchColumn();
@@ -851,6 +872,11 @@ try {
     if ($has_recs_def === false) {
         $ins = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
         $ins->execute(['recs_default_enabled', '1']);
+    }
+    $has_lang_def = $db->query("SELECT 1 FROM meta WHERE key = 'ui_lang_default' LIMIT 1")->fetchColumn();
+    if ($has_lang_def === false) {
+        $ins = $db->prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)');
+        $ins->execute(['ui_lang_default', 'en']);
     }
 } catch (Exception $e) {
 }
@@ -973,6 +999,7 @@ $missing_cols = [
     'home_block_type' => 'TEXT DEFAULT "recent_added"',
     'recs_enabled' => 'TEXT DEFAULT "1"',
     'header_logo' => 'TEXT DEFAULT "retroshow"',
+    'ui_lang' => 'TEXT DEFAULT "en"',
     'reset_token' => 'TEXT',
     'reset_token_expires' => 'INTEGER'
 ];
@@ -985,6 +1012,11 @@ foreach ($missing_cols as $col_name => $col_def) {
         }
     }
 }
+
+if (!empty($_SESSION['user']) && isset($db) && $db instanceof PDO) {
+    site_lang_apply_user($db, (string)$_SESSION['user']);
+}
+site_lang_apply_request();
 
 $cols = $db->query("PRAGMA table_info(videos)")->fetchAll(PDO::FETCH_ASSOC);
 $existing_cols = array_column($cols, 'name');
@@ -1306,22 +1338,25 @@ function channel_sidebar_nav_html(string $channelUser, string $active, array $co
     $fr = (int)($counts['friends'] ?? 0);
 
     $items = [
-        ['key' => 'profile', 'label' => 'Профиль', 'href' => 'channel.php?user=' . $u, 'count' => null],
-        ['key' => 'public', 'label' => 'Видео', 'href' => 'channel.php?user=' . $u . '&tab=videos&view=public', 'count' => $pub],
-        ['key' => 'private', 'label' => 'Приватные видео', 'href' => 'channel.php?user=' . $u . '&tab=videos', 'count' => $priv],
-        ['key' => 'favorites', 'label' => 'Избранные', 'href' => 'favourites.php?user=' . $u . '&from=channel', 'count' => $fav],
-        ['key' => 'friends', 'label' => 'Друзья', 'href' => 'friends.php?user=' . $u, 'count' => $fr],
+        ['key' => 'profile', 'label' => 'Профиль', 'label_en' => 'Profile', 'href' => 'channel.php?user=' . $u, 'count' => null],
+        ['key' => 'public', 'label' => 'Видео', 'label_en' => 'Public Videos', 'href' => 'channel.php?user=' . $u . '&tab=videos&view=public', 'count' => $pub],
+        ['key' => 'private', 'label' => 'Приватные видео', 'label_en' => 'Private Videos', 'href' => 'channel.php?user=' . $u . '&tab=videos', 'count' => $priv],
+        ['key' => 'favorites', 'label' => 'Избранные', 'label_en' => 'Favorites', 'href' => 'favourites.php?user=' . $u . '&from=channel', 'count' => $fav],
+        ['key' => 'friends', 'label' => 'Друзья', 'label_en' => 'Friends', 'href' => 'friends.php?user=' . $u, 'count' => $fr],
     ];
 
     ob_start();
     foreach ($items as $idx => $item) {
         $isActive = ($active === $item['key']);
         $mb = ($idx === count($items) - 1) ? '20px' : '10px';
+        $lab = (function_exists('site_lang_is_en') && site_lang_is_en())
+            ? (string)($item['label_en'] ?? t($item['label']))
+            : (string)$item['label'];
         echo '<div style="font-size:14px;font-weight:bold;margin-bottom:' . $mb . ';color:#444;">&raquo; ';
         if ($isActive) {
-            echo htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8');
+            echo htmlspecialchars($lab, ENT_QUOTES, 'UTF-8');
         } else {
-            echo '<a href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') . '</a>';
+            echo '<a href="' . htmlspecialchars($item['href'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lab, ENT_QUOTES, 'UTF-8') . '</a>';
             if ($item['count'] !== null) {
                 echo ' (' . $item['count'] . ')';
             }

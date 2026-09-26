@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 		$pass = (string)($_POST['field_login_password'] ?? '');
 
 		if ($login === '' || $pass === '') {
-			$error = 'Введите имя пользователя и пароль.';
+			$error = t('Введите имя пользователя и пароль.');
 		} else {
 			$stmt = $db->prepare("SELECT id FROM users WHERE login = ? AND pass = ?");
 			$stmt->execute([$login, $pass]);
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				header("Location: index.php");
 				exit;
 			}
-			$error = "Неверный логин или пароль.";
+			$error = t('Неверный логин или пароль.');
 		}
 	}
 }
@@ -42,27 +42,27 @@ showHeader("Вход");
 <div style="padding: 0px 5px 0px 5px;">
 
 
-<div class="tableSubTitle">Вход</div>
+<div class="tableSubTitle"><?= t('Вход') ?></div>
 
 <table width="100%" align="center" cellpadding="0" cellspacing="0" border="0">
 	<tr valign="top">
 		<td style="padding-right: 15px;">
 		
 		
-		<span class="highlight">Что такое RetroShow?</span>
+		<span class="highlight"><?= t('Что такое RetroShow?') ?></span>
 
-		RetroShow — это способ донести ваши видео до людей, которые важны для вас. С RetroShow вы можете:
+		<?= t('RetroShow — это способ донести ваши видео до людей, которые важны для вас. С RetroShow вы можете:') ?>
 		
 		<ul>
-		<li>Показывать любимые видео всему миру</li>
-		<li>Делиться видео, снятыми на камеру или телефон</li>
-		<li>Приватно показывать видео друзьям и семье по всему миру</li>
-		<li>... и многое другое!</li></ul>
+		<li><?= t('Показывать любимые видео всему миру') ?></li>
+		<li><?= t('Делиться видео, снятыми на камеру или телефон') ?></li>
+		<li><?= t('Приватно показывать видео друзьям и семье по всему миру') ?></li>
+		<li><?= t('... и многое другое!') ?></li></ul>
 
-		<br><span class="highlight"><a href="register.php">Зарегистрируйтесь сейчас</a> и откройте бесплатный аккаунт.</span>
+		<br><span class="highlight"><a href="register.php"><?= t('Зарегистрируйтесь сейчас') ?></a> <?= t('и откройте бесплатный аккаунт.') ?></span>
 		<br><br><br>
 		
-		Чтобы узнать больше о нашем сервисе, посетите раздел <a href="help.php">Помощь</a>.<br><br><br>
+		<?= t('Чтобы узнать больше о нашем сервисе, посетите раздел') ?> <a href="help.php"><?= t('Помощь') ?></a>.<br><br><br>
 		</td>
 		<td width="300">
 		
@@ -70,22 +70,22 @@ showHeader("Вход");
 			<form method="post" name="loginForm" id="loginForm" action="login.php">
 			<input type="hidden" name="field_command" value="login_submit">
 				<tr>
-					<td align="center" colspan="2"><div style="font-size: 14px; font-weight: bold; color:#003366; margin-bottom: 5px; padding-top: 5px;">Вход в RetroShow</div></td>
+					<td align="center" colspan="2"><div style="font-size: 14px; font-weight: bold; color:#003366; margin-bottom: 5px; padding-top: 5px;"><?= t('Вход в RetroShow') ?></div></td>
 				</tr>
 				<tr>
-					<td align="right"><span class="label">Имя пользователя:</span></td>
+					<td align="right"><span class="label"><?= t('Имя пользователя:') ?></span></td>
 					<td><input tabindex="1" type="text" name="field_login_username" value="" style="width: 135px;"></td>
 				</tr>
 				<tr>
-					<td align="right"><span class="label">Пароль:</span></td>
+					<td align="right"><span class="label"><?= t('Пароль:') ?></span></td>
 					<td><input tabindex="2" type="password" name="field_login_password" style="width: 135px;"></td>
 				</tr>
 				<tr>
 					<td align="right"><span class="label">&nbsp;</span></td>
-					<td><input type="submit" value="Войти"></td>
+					<td><input type="submit" value="<?= htmlspecialchars(t('Войти'), ENT_QUOTES, 'UTF-8') ?>"></td>
 				</tr>
 				<tr>
-					<td align="center" colspan="2"><a href="forgot.php">Забыли пароль?</a><br><br></td>
+					<td align="center" colspan="2"><a href="forgot.php"><?= t('Забыли пароль?') ?></a><br><br></td>
 				</tr>
 			</form>
 		</table>

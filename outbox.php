@@ -12,11 +12,11 @@ $to_user = isset($_GET['user']) ? trim((string)$_GET['user']) : '';
 $is_compose = ($to_user !== '');
 
 $months_ru = [
-    1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
-    5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
-    9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря',
+    1 => t('января'), 2 => t('февраля'), 3 => t('марта'), 4 => t('апреля'),
+    5 => t('мая'), 6 => t('июня'), 7 => t('июля'), 8 => t('августа'),
+    9 => t('сентября'), 10 => t('октября'), 11 => t('ноября'), 12 => t('декабря'),
 ];
-$days_ru = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+$days_ru = [t('Воскресенье'), t('Понедельник'), t('Вторник'), t('Среда'), t('Четверг'), t('Пятница'), t('Суббота')];
 
 $total = 0;
 try {
@@ -53,11 +53,11 @@ if ($is_compose && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['messag
     $body = trim((string)($_POST['comment'] ?? ''));
 
     if ($topic === '' && $body === '') {
-        $msg = 'Введите тему или текст сообщения.';
+        $msg = t('Введите тему или текст сообщения.');
     } elseif (strlen($topic) > 200) {
-        $msg = 'Тема слишком длинная.';
+        $msg = t('Тема слишком длинная.');
     } elseif (strlen($body) > 5000) {
-        $msg = 'Сообщение слишком длинное.';
+        $msg = t('Сообщение слишком длинное.');
     } else {
         try {
             $stU = $db->prepare('SELECT 1 FROM users WHERE login = ? LIMIT 1');
@@ -67,13 +67,13 @@ if ($is_compose && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['messag
             $exists = false;
         }
         if (!$exists) {
-            $msg = 'Пользователь не найден.';
+            $msg = t('Пользователь не найден.');
         } elseif ($to_user === $me) {
-            $msg = 'Нельзя отправить сообщение самому себе.';
+            $msg = t('Нельзя отправить сообщение самому себе.');
         } else {
             add_mail($db, $to_user, $me, $topic, $body, 'user_message', null, null, null, $to_user);
             $ok = true;
-            $msg = 'Сообщение отправлено.';
+            $msg = t('Сообщение отправлено.');
         }
     }
 }
@@ -88,11 +88,11 @@ showHeader('Сообщения');
 </style>
 
 
-    <div class="tableSubTitle"><?= $is_compose ? 'Исходящие сообщения' : 'Исходящие сообщения' ?></div>
+    <div class="tableSubTitle"><?= t('Исходящие сообщения') ?></div>
     <table width="45%" align="center" cellpadding="5" cellspacing="0" border="0">
         <tr align="center">
             <td align="center" colspan="3">
-                <a href="my_messages.php">Входящие</a> | <a href="outbox.php" class="bold">Исходящие</a>
+                <a href="my_messages.php"><?= t('Входящие') ?></a> | <a href="outbox.php" class="bold"><?= t('Исходящие') ?></a>
             </td>
         </tr>
     </table>
@@ -113,24 +113,24 @@ showHeader('Сообщения');
                     <form method="post" action="outbox.php?user=<?=urlencode($to_user)?>">
                         <table width="75%" cellpadding="4" cellspacing="9" align="center">
                             <tr>
-                                <td align="right"><span class="label">Кому:</span></td>
+                                <td align="right"><span class="label"><?= t('Кому:') ?></span></td>
                                 <td><input type="text" size="50" value="<?=htmlspecialchars($to_user)?>" disabled></td>
                             </tr>
                             <tr>
-                                <td align="right"><span class="label">Отправлено:</span></td>
+                                <td align="right"><span class="label"><?= t('Отправлено:') ?></span></td>
                                 <td><?=htmlspecialchars(date('d.m.Y, H:i'))?></td>
                             </tr>
                             <tr>
-                                <td align="right"><span class="label">Тема:</span></td>
+                                <td align="right"><span class="label"><?= t('Тема:') ?></span></td>
                                 <td><input type="text" size="50" name="title" value="<?=htmlspecialchars((string)($_POST['title'] ?? ''))?>"></td>
                             </tr>
                             <tr>
-                                <td align="right"><span class="label">Сообщение:</span></td>
+                                <td align="right"><span class="label"><?= t('Сообщение:') ?></span></td>
                                 <td><textarea name="comment" cols="66" rows="6"><?=htmlspecialchars((string)($_POST['comment'] ?? ''))?></textarea></td>
                             </tr>
                             <tr>
                                 <td></td>
-                                <td><input type="submit" name="message" value="Отправить сообщение"></td>
+                                <td><input type="submit" name="message" value="<?= htmlspecialchars(t('Отправить сообщение'), ENT_QUOTES, 'UTF-8') ?>"></td>
                             </tr>
                         </table>
                     </form>
@@ -148,8 +148,8 @@ showHeader('Сообщения');
                 <td><img src="img/pixel.gif" width="5" height="1" alt=""></td>
                 <td>
                     <div class="moduleTitleBar">
-                        <div class="moduleTitle"><div style="float: right; padding: 1px 5px 0px 0px; font-size: 12px;">Сообщения <?= $total ? ($offset + 1) . '-' . min($offset + $per_page, $total) . ' из ' . $total : '0 из 0' ?></div>
-                            Сообщения // Исходящие сообщения
+                        <div class="moduleTitle"><div style="float: right; padding: 1px 5px 0px 0px; font-size: 12px;"><?= t('Сообщения') ?> <?= $total ? ($offset + 1) . '-' . min($offset + $per_page, $total) . ' ' . t('из') . ' ' . $total : '0 ' . t('из') . ' 0' ?></div>
+                            <?= t('Сообщения // Исходящие сообщения') ?>
                         </div>
                     </div>
                     <table width="100%" cellpadding="3" cellspacing="0" align="center" border="0">
@@ -157,15 +157,15 @@ showHeader('Сообщения');
                         <tr><td colspan="5" height="10"></td></tr>
                         <tr>
                             <td width="20">&nbsp;</td>
-                            <td><b>Сообщение</b></td>
+                            <td><b><?= t('Сообщение') ?></b></td>
                             <td width="20">&nbsp;</td>
-                            <td width="70"><b>Кому</b></td>
-                            <td width="160"><b>Дата</b></td>
+                            <td width="70"><b><?= t('Кому') ?></b></td>
+                            <td width="160"><b><?= t('Дата') ?></b></td>
                         </tr>
                         <?php if (empty($rows)): ?>
                         <tr>
                             <td colspan="5" style="padding: 10px; text-align: center; background: #fff;">
-                                У вас нет отправленных сообщений.
+                                <?= t('У вас нет отправленных сообщений.') ?>
                             </td>
                         </tr>
                         <?php else: ?>
@@ -194,7 +194,7 @@ showHeader('Сообщения');
 
                     <?php if ($total_pages > 1): ?>
                     <div class="channelPagingDiv pagingDiv">
-                        Стр.
+                        <?= t('Стр.') ?>
                         <?php
                         $start_page = max(1, $page - 2);
                         $end_page = min($total_pages, $page + 2);
@@ -214,7 +214,7 @@ showHeader('Сообщения');
                             echo '<span class="pagerNotCurrent"><a href="?page='.$total_pages.'">'.$total_pages.'</a></span>';
                         }
                         if ($page < $total_pages) {
-                            echo '<span class="pagerNotCurrent"><a href="?page='.($page + 1).'">Далее</a></span>';
+                            echo '<span class="pagerNotCurrent"><a href="?page='.($page + 1).'">'.t('Далее').'</a></span>';
                         }
                         ?>
                     </div>
