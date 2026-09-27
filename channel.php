@@ -282,11 +282,11 @@ if ($user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
             $n10 = $age_val % 10;
             $n100 = $age_val % 100;
             if ($n10 === 1 && $n100 !== 11) {
-                $age_word = 'год';
+                $age_word = t('год');
             } elseif ($n10 >= 2 && $n10 <= 4 && ($n100 < 10 || $n100 >= 20)) {
-                $age_word = 'года';
+                $age_word = t('года');
             } else {
-                $age_word = 'лет';
+                $age_word = t('лет');
             }
             $age_text = $age_val . ' ' . $age_word;
         }

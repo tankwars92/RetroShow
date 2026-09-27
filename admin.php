@@ -603,12 +603,10 @@ showHeader("Администрирование");
         <input type="submit" value="<?= htmlspecialchars(t('Добавить новость'), ENT_QUOTES, 'UTF-8') ?>">
       </td>
     </tr>
-</table>
 </form>
 
 <form method="post" action="admin.php">
 <input type="hidden" name="field_command" value="processing_submit">
-<table width="500" align="center" cellpadding="0" cellspacing="0" border="0" style="border-collapse: separate; border-spacing: 0; margin-top: 10px;">
 <tr>
       <td width="120" style="font-size:13px; color:#333; padding-bottom:8px; vertical-align:top;"><b><?= t('Внешний сервер конвертации:') ?></b></td>
       <td style="font-size:13px; color:#222; padding-bottom:8px;">
