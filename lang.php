@@ -394,6 +394,7 @@ function site_lang_en_map(): array {
         'Загрузка видео (Шаг 2 из 2)' => 'Video Upload (Step 2 of 2)',
         'Далее ->' => 'Continue ->',
         'Загрузка...' => 'Uploading...',
+        'Загрузка файла...' => 'Uploading...',
         'Показ:' => 'Broadcast:',
         'Публично' => 'Public',
         'Приватно' => 'Private',
