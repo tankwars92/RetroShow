@@ -207,6 +207,7 @@ function site_lang_en_map(): array {
         'Видео:' => 'Videos:',
         'Избранных:' => 'Favorites:',
         'Видео' => 'Videos',
+        'Видео</a>' => 'Related</a>',
         'Друзья' => 'Friends',
         'Загрузка видео' => 'Upload Video',
         'Результаты поиска: ' => 'Search Results: ',

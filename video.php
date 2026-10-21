@@ -1049,8 +1049,8 @@ function render_comments($tree, $level = 0) {
             echo '<div style="width:60px;">';
             echo '<a href="'.$ref_link.'">';
             echo '<img src="'.htmlspecialchars($c['ref_preview']).'" width="60" height="45" border="0" alt=""><br>';
-            echo '<span style="font-size:12px;">'.t('Видео').'</span>';
-            echo '</a>';
+            echo '<span style="font-size:12px;">'.t('Видео</a>').'</span>';
+            echo '';
             echo '</div>';
 
             echo '</td>';
