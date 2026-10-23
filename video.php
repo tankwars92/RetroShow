@@ -2180,7 +2180,7 @@ if (window.attachEvent) {
     </td>
     <td>
         <a href="video.php?id=<?=htmlspecialchars($rec['public_id'] ?? $rec['id'])?>">
-            <span class="title" style="color:#0033CC"><?=htmlspecialchars($rec['title'])?></span>
+            <span class="title" title="<?=htmlspecialchars($rec['title']);?>" style="color:#0033CC"><?=htmlspecialchars(mb_strimwidth($rec['title'], 0, 45, "...", "UTF-8"));?></span>
         </a><br>
         <span class="runtime"><?=get_video_duration($rec['file'], $rec['id'], $rec['public_id'] ?? '')?></span><br>
         <span style="font-size: 11px;"><?= t('Автор:') ?> <a href="channel.php?user=<?=htmlspecialchars($rec['user'])?>" style="color: #000; text-decoration: underline;"><?=htmlspecialchars($rec['user'])?></a></span><br>
