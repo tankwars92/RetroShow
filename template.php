@@ -32,25 +32,39 @@ function showHeader($title = "RetroShow") {
 
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<?php
+$isYt = (
+    user_header_logo_src(
+        $db,
+        isset($_SESSION['user']) ? $_SESSION['user'] : ''
+    ) === 'img/logo_sm_YT.gif'
+);
+
+$siteName = $isYt ? 'YouTube' : 'RetroShow';
+$favicon = $isYt ? 'yt_favicon.ico' : 'favicon.ico';
+?>
+
 <?php if ($title === "Главная"): ?>
-<title><?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?> - <?= t('Загружайте и делитесь видео по всему миру! ') ?></title>
+<title><?= $siteName ?> - <?= t('Загружайте и делитесь видео по всему миру! ') ?></title>
 <?php else: ?>
-<title><?= htmlspecialchars(t($title)) ?> - <?= (user_header_logo_src($db, isset($_SESSION['user']) ? $_SESSION['user'] : '') === 'img/logo_sm_YT.gif') ? 'YouTube' : 'RetroShow'; ?></title>
+<title><?= htmlspecialchars(t($title)) ?> - <?= $siteName ?></title>
 <?php endif; ?>
-		
-		<script language="javascript" type="text/javascript">
-		onLoadFunctionList = new Array();
-		function performOnLoadFunctions()
-		{
-			for (var i in onLoadFunctionList)
-			{
-				onLoadFunctionList[i]();
-			}
-		}
-		</script>
+
+<script language="javascript" type="text/javascript">
+onLoadFunctionList = new Array();
+function performOnLoadFunctions()
+{
+    for (var i in onLoadFunctionList)
+    {
+        onLoadFunctionList[i]();
+    }
+}
+</script>
+
 <?= site_lang_switcher_script() ?>
-<link rel="icon" href="favicon.ico" type="image/x-icon">
-<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+
+<link rel="icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
+<link rel="shortcut icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
 <meta name="description" content="Share your videos with friends and family">
 <link rel="stylesheet" href="img/styles.css" type="text/css">
 <link rel="stylesheet" href="img/base.css" type="text/css">

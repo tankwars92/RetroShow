@@ -1179,8 +1179,18 @@ function favToggle(action) {
     return false;
 }
 </script>
-<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-<link rel="icon" href="favicon.ico" type="image/x-icon">
+<?php
+$isYt = (
+    user_header_logo_src(
+        $db,
+        isset($_SESSION['user']) ? $_SESSION['user'] : ''
+    ) === 'img/logo_sm_YT.gif'
+);
+
+$favicon = $isYt ? 'yt_favicon.ico' : 'favicon.ico';
+?>
+<link rel="icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
+<link rel="shortcut icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
 <link rel="stylesheet" href="img/styles.css" type="text/css">
 <link rel="stylesheet" href="img/base.css" type="text/css">
 <link rel="stylesheet" href="img/watch.css" type="text/css">

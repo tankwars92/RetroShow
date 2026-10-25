@@ -1082,8 +1082,18 @@ if (!$user && (!isset($_GET['tab']) || $_GET['tab'] === '')) {
 <link rel="stylesheet" href="img/styles.css" type="text/css">
 <link rel="stylesheet" href="img/base.css" type="text/css">
 <link rel="stylesheet" href="img/watch.css" type="text/css">
-<link rel="icon" href="favicon.ico" type="image/x-icon">
-<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+<?php
+$isYt = (
+    user_header_logo_src(
+        $db,
+        isset($_SESSION['user']) ? $_SESSION['user'] : ''
+    ) === 'img/logo_sm_YT.gif'
+);
+
+$favicon = $isYt ? 'yt_favicon.ico' : 'favicon.ico';
+?>
+<link rel="icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
+<link rel="shortcut icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
 <meta name="description" content="Share your videos with friends and family">
 <meta name="keywords" content="video,sharing,camera phone,video phone">
 <script type="text/javascript" src="img/ui_ets.js"></script>
@@ -1621,8 +1631,18 @@ if ($user && isset($_GET['tab']) && $_GET['tab'] === 'comments' && !isset($_GET[
 
 ?>
 <html><head><title><?=( $user ? 'Канал ' . htmlspecialchars($user) : $filter_name . ' видео' )?> - RetroShow</title>
-<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-<link rel="icon" href="favicon.ico" type="image/x-icon">
+<?php
+$isYt = (
+    user_header_logo_src(
+        $db,
+        isset($_SESSION['user']) ? $_SESSION['user'] : ''
+    ) === 'img/logo_sm_YT.gif'
+);
+
+$favicon = $isYt ? 'yt_favicon.ico' : 'favicon.ico';
+?>
+<link rel="icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
+<link rel="shortcut icon" href="<?= htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8') ?>" type="image/x-icon">
 <link href="img/styles.css" rel="stylesheet" type="text/css">
 
 <link rel="stylesheet" href="img/retroshow" type="text/css">
