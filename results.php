@@ -206,7 +206,7 @@ $total_pages = ceil($total / $per_page);
 $offset = ($page - 1) * $per_page;
 $paged_videos = array_slice($videos, $offset, $per_page);
 
-showHeader('Результаты поиска: ' . htmlspecialchars($search_query));
+showHeader(t('Результаты поиска: ') . htmlspecialchars($search_query));
 ?>
 
 <style>
