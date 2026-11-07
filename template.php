@@ -348,11 +348,8 @@ $link_account = isset($_SESSION['user']) ? 'account.php' : 'login.php';
 </script>
 
 <?php
-// Если ui_lang равен 'ru', то используем 'ru', во всех остальных случаях (включая если ui_lang нет) — 'en'
 $lang = isset($_SESSION['ui_lang']) && $_SESSION['ui_lang'] === 'ru' ? 'ru' : 'en';
 
-// Корректируем логику суффикса: для 'en' теперь нужен суффикс (или наоборот, если файлы называются иначе)
-// В данном случае, если язык 'en', добавляем '_en', если 'ru' — оставляем без суффикса
 $file_suffix = ($lang === 'en') ? '_en' : '';
 $news_file = __DIR__ . '/news' . $file_suffix . '.txt';
 
