@@ -349,7 +349,6 @@ $link_account = isset($_SESSION['user']) ? 'account.php' : 'login.php';
 
 <?php
 $lang = isset($_SESSION['ui_lang']) && $_SESSION['ui_lang'] === 'ru' ? 'ru' : 'en';
-
 $file_suffix = ($lang === 'en') ? '_en' : '';
 $news_file = __DIR__ . '/news' . $file_suffix . '.txt';
 
