@@ -148,9 +148,7 @@ if ($user) {
 }
 
 if ($user && !$user_data) {
-    showHeader(t('Канал не найден'));
-    echo '<div class="errorBox">'.t('Канал не найден!').'</div>';
-    showFooter();
+    header("Location: index.php?error=channel_not_found");
     exit;
 }
 

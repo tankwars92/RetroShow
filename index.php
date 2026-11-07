@@ -476,6 +476,10 @@ if ($tags_mode === 'tags') {
   <div class="errorBox"><?= t('Видео не найдено.') ?></div>
 <?php endif; ?>
 
+<?php if (isset($_GET['error']) && $_GET['error'] === 'channel_not_found'): ?>
+  <div class="errorBox"><?= t('Канал не найден') . '.' ?></div>
+<?php endif; ?>
+
 <?php if (isset($_GET['error']) && $_GET['error'] === 'video_not_allowed'): ?>
   <div class="errorBox"><?= t('Видео не найдено или у вас нет прав для его редактирования.') ?></div>
 <?php endif; ?>
@@ -846,7 +850,6 @@ echo time_ago($ago_ts);
                 foreach ($featured_videos as $item):
                     $video = $item['video'];
                     $desc = htmlspecialchars($video['description']);
-                    $desc_short = mb_strlen($desc) > 30 ? mb_substr($desc, 0, 30) . '...' : $desc;
                     $comments_count = 0;
                     try {
                         $stmtCc = $db->prepare("SELECT COUNT(*) FROM comments WHERE video_id = ?");
@@ -868,14 +871,22 @@ echo time_ago($ago_ts);
                         <?php
                         $desc_id = 'desc_' . $video['id'];
                         $desc_full = nl2br($desc);
-                        ?>
-                        <div class="moduleEntryDescription">
-                        <span id="<?= $desc_id ?>-short">
-                          <?= $desc_short ?><?php if (mb_strlen($desc) > 30): ?> <a href="#" onclick="return showDescMore('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('ещё') ?>)</a><?php endif; ?>
-                        </span>
-                        <span id="<?= $desc_id ?>-full" style="display:none;">
-                          <?= $desc_full ?> <a href="#" onclick="return showDescless('<?= $desc_id ?>');" style="color:#0033cc; font-size:11px;">(<?= t('меньше') ?>)</a>
-                        </span>
+                        if (!function_exists('wrapLongWords')) {
+    function wrapLongWords($text, $length = 20) {
+        return preg_replace_callback(
+            '/(\S{' . $length . '})/u',
+            function ($m) {
+                return $m[1] . '&shy;';
+            },
+            $text
+        );
+    }
+}
+?>
+
+<div class="moduleEntryDescription" style="width:100%; white-space:normal;"><?=
+    wrapLongWords($desc_full)
+?></div>
                         <?php if (!empty($video['tags'])): ?>
                         <div class="vfacets">
                             <div class="moduleEntryTags"><?= t('Теги //') ?>
@@ -1179,18 +1190,3 @@ echo time_ago($ago_ts);
 	</tr>
 </tbody></table>
 <?php showFooter(); ?>
-
-<script type="text/javascript">
-function showDescMore(id) {
-  var s = document.getElementById(id+'-short');
-  var f = document.getElementById(id+'-full');
-  if (s && f) { s.style.display = 'none'; f.style.display = 'inline'; }
-  return false;
-}
-function showDescless(id) {
-  var s = document.getElementById(id+'-short');
-  var f = document.getElementById(id+'-full');
-  if (s && f) { f.style.display = 'none'; s.style.display = 'inline'; }
-  return false;
-}
-</script>

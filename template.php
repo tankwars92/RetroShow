@@ -348,21 +348,24 @@ $link_account = isset($_SESSION['user']) ? 'account.php' : 'login.php';
 </script>
 
 <?php
-$news_file = __DIR__ . '/news.txt';
-$news_file_en = __DIR__ . '/news_en.txt';
-$news_ru = is_file($news_file) ? trim((string)file_get_contents($news_file)) : '';
-$news_en = is_file($news_file_en) ? trim((string)file_get_contents($news_file_en)) : '';
-$news_bits = [];
-if ($news_ru !== '') {
-    $news_bits[] = '<b>RU:</b> ' . nl2br($news_ru);
-}
-if ($news_en !== '') {
-    $news_bits[] = '<b>EN:</b> ' . nl2br($news_en);
-}
-if ($news_bits) {
-    echo '<div class="confirmBox" style="padding:4px 8px; font-size:12px;">' . implode('<br>', $news_bits) . '</div>';
+// Если ui_lang равен 'ru', то используем 'ru', во всех остальных случаях (включая если ui_lang нет) — 'en'
+$lang = isset($_SESSION['ui_lang']) && $_SESSION['ui_lang'] === 'ru' ? 'ru' : 'en';
+
+// Корректируем логику суффикса: для 'en' теперь нужен суффикс (или наоборот, если файлы называются иначе)
+// В данном случае, если язык 'en', добавляем '_en', если 'ru' — оставляем без суффикса
+$file_suffix = ($lang === 'en') ? '_en' : '';
+$news_file = __DIR__ . '/news' . $file_suffix . '.txt';
+
+if (is_file($news_file)) {
+    $news_text = trim((string)file_get_contents($news_file));
+    
+    if ($news_text !== '') {
+        echo '<div class="confirmBox">' . nl2br($news_text) . '</div>';
+    }
 }
 ?>
+
+
 
 <div style="padding: 0px 5px 0px 5px;">
 
