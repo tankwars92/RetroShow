@@ -222,8 +222,9 @@ if (!$view_user) {
     }
     if ($total_pages > 1): ?>
     <div class="channelPagingDiv pagingDiv">
-      Стр.
+      
       <?php
+      echo t('Стр.');
       $start_page = max(1, $page - 2);
       $end_page = min($total_pages, $page + 2);
       $user_param = $view_user ? ('user='.urlencode($view_user).'&') : '';
